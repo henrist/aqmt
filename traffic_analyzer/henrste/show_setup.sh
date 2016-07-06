@@ -11,7 +11,7 @@ tc_verbose=
 while getopts "v" opt; do
     case $opt in
         v)
-            tc_verbose=-s
+            tc_verbose="-s -d"
     esac
 done
 shift $((OPTIND-1))

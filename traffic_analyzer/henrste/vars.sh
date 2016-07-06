@@ -9,5 +9,7 @@ serverb_iface=enp2s0f2
 servera_ip=10.0.3.201
 serverb_ip=10.0.2.200
 
+clients_aqm_ip=10.0.1.100
+
 servera_aqm_ip=10.0.3.100
 serverb_aqm_ip=10.0.2.100

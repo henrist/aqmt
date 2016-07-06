@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. vars.sh
+. "$(dirname $(readlink -f $BASH_SOURCE))/vars.sh"
 
 # run all tc and ip commands through sudo if needed
 function tc {
