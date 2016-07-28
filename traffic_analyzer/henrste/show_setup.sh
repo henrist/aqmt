@@ -5,7 +5,7 @@
 
 . common.sh
 
-links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:]\+\):.*/\1/')
+links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:@]\+\)[:@].*/\1/')
 tc_verbose=
 
 while getopts "v" opt; do
