@@ -3,20 +3,49 @@
 # this script opens three panes and monitor the three interfaces
 # showing their current bandwidth
 
-delay=1
+# example:
+# ./monitor.sh 0.05 $((1024*1024*5))
+
+delay=0.05
+max=$((1024*1024*2))
+
+ifaces=($IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB)
+
+if [ ${#ifaces[@]} -eq 0 ]; then
+    echo "Missing IFACE_* environment variables"
+    exit 1
+fi
 
 if ! [ -z $1 ]; then
     delay=$1
 fi
 
-for x in 2 3 1; do
-    cmd="speedometer -i $delay -l -r enp2s0f$x -t enp2s0f$x -m $((1024*1024*6))"
+if ! [ -z $2 ]; then
+    max=$2
+fi
 
-    if [ $x = 1 ]; then
-        $cmd
+sn="monitor-$(date +%s)"
+
+i=0
+for iface in ${ifaces[@]}; do
+    cmd="speedometer -i $delay -l -r $iface -t $iface -m $max"
+
+    i=$(($i+1))
+    if [ $i -eq 1 ]; then
+        if [ -z $TMUX ]; then
+            tmux new-session -d -n $sn $cmd
+        else
+            tmux new-window -n $sn $cmd
+        fi
     else
-        tmux split-window $cmd
-        tmux select-layout even-horizontal
+        tmux split-window -t $sn $cmd
+        tmux select-layout -t $sn even-horizontal
     fi
 done
 
+tmux select-layout -t $sn even-horizontal
+tmux set-window -t $sn synchronize-panes
+
+if [ -z $TMUX ]; then
+    tmux attach-session
+fi
