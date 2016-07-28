@@ -10,7 +10,7 @@ map=(
   "clienta 10.25.0.11"
   "clientb 10.25.0.12"
   "servera 10.25.0.21"
-  "servera 10.25.0.22"
+  "serverb 10.25.0.31"
 )
 
 host=""
