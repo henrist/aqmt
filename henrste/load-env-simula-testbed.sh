@@ -1,3 +1,10 @@
+# Simula testbed setup
+
+# interfaces:
+#   enp2s0f1   To client A (10.0.1.211) and client B (10.0.1.210)
+#   enp2s0f2   To server A (10.0.3.201)
+#   enp2s0f3   To server B (10.0.2.200)
+
 export IFACE_CLIENTS=enp2s0f1
 export IFACE_SERVERA=enp2s0f3
 export IFACE_SERVERB=enp2s0f2
