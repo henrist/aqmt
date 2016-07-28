@@ -1,0 +1,104 @@
+version: '2'
+
+services:
+  aqm:
+    build: .
+    image: testbed
+    cap_add:
+      - NET_ADMIN
+    #privileged: true
+    hostname: aqm
+    networks:
+      management:
+        ipv4_address: 10.25.0.2
+      clients:
+        ipv4_address: 10.25.1.2
+      servera:
+        ipv4_address: 10.25.2.2
+      serverb:
+        ipv4_address: 10.25.3.2
+    volumes:
+      - ../:/opt/testbed/
+      - .vars.sh:/tmp/testbed-vars.sh
+  clienta:
+    build: .
+    image: testbed
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    hostname: clienta
+    networks:
+      management:
+        ipv4_address: 10.25.0.11
+      clients:
+        ipv4_address: 10.25.1.11
+    volumes:
+      - ../:/opt/testbed/
+      - .vars.sh:/tmp/testbed-vars.sh
+  clientb:
+    build: .
+    image: testbed
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    hostname: clientb
+    networks:
+      management:
+        ipv4_address: 10.25.0.12
+      clients:
+        ipv4_address: 10.25.1.12
+    volumes:
+      - ../:/opt/testbed/
+      - .vars.sh:/tmp/testbed-vars.sh
+  servera:
+    build: .
+    image: testbed
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    hostname: servera
+    networks:
+      management:
+        ipv4_address: 10.25.0.21
+      servera:
+        ipv4_address: 10.25.2.21
+    volumes:
+      - ../:/opt/testbed/
+      - .vars.sh:/tmp/testbed-vars.sh
+  serverb:
+    build: .
+    image: testbed
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    hostname: serverb
+    networks:
+      management:
+        ipv4_address: 10.25.0.31
+      serverb:
+        ipv4_address: 10.25.3.31
+    volumes:
+      - ../:/opt/testbed/
+      - .vars.sh:/tmp/testbed-vars.sh
+
+networks:
+  management:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.25.0.0/24
+  clients:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.25.1.0/24
+  servera:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.25.2.0/24
+  serverb:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.25.3.0/24
