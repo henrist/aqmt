@@ -14,4 +14,4 @@ host=$1
 tcp_congestion_control=$2
 tcp_ecn=$3
 
-set_host_cc $host $tcp_congestion_control $tcp_ecn
+configure_host_cc $host $tcp_congestion_control $tcp_ecn

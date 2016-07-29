@@ -24,10 +24,10 @@ aqm_params=
 
 configure_clients_edge $testrate $rtt_clients $aqm_name "$aqm_params"
 
-#utils/configure_host_cc.sh client-a dctcp 1
-#utils/configure_host_cc.sh server-a dctcp 1
-#utils/configure_host_cc.sh client-b dctcp 1
-#utils/configure_host_cc.sh server-b dctcp 1
+#configure_host_cc $IP_CLIENTA_MGMT dctcp 1
+#configure_host_cc $IP_SERVERA_MGMT dctcp 1
+#configure_host_cc $IP_CLIENTB_MGMT dctcp 1
+#configure_host_cc $IP_SERVERB_MGMT dctcp 1
 
 configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA $rtt_servera
 configure_server_edge $IP_SERVERB_MGMT $IP_AQM_SB $IFACE_SERVERB $IFACE_ON_SERVERB $rtt_serverb
@@ -42,7 +42,7 @@ echo "    - serverb: $rtt_serverb ms"
 if [ -n "$aqm_name" ]; then
     params=""
     if [ -n "$aqm_params" ]; then params=" ($aqm_params)"; fi
-    echo "  aqm: $aqm_name ($aqm_params)"
+    echo "  aqm: $aqm_name$aqm_params"
 else
     echo "  no aqm"
 fi
