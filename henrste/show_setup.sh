@@ -6,54 +6,86 @@
 . common.sh
 
 links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:@]\+\)[:@].*/\1/')
-tc_verbose=
+verbose=
+show_ip=0
+show_link=0
+show_route=0
 
-while getopts "v" opt; do
+while getopts "hilrv" opt; do
     case $opt in
+        h)
+            echo "Usage: ./show_setup.sh [-hilrv] [interface ...]"
+            echo "  -h  show help"
+            echo "  -i  show ip addr details"
+            echo "  -l  show ip link details"
+            echo "  -r  show ip route details"
+            echo "  -v  show statistics"
+            exit
+            ;;
+        i)
+            show_ip=1
+            ;;
+        l)
+            show_link=1
+            ;;
+        r)
+            show_route=1
+            ;;
         v)
-            tc_verbose="-s -d"
+            verbose="-s -d"
+            ;;
     esac
 done
 shift $((OPTIND-1))
 
-if ! [ -z "$@" ]; then
+if [ $# -gt 0 ]; then
     links="$@"
 fi
 
-function echo_indent {
+echo_indent() {
     echo "$@" | sed 's/^/  /'
 }
 
-function show {
-    echo "#### Showing network setup ####"
-    echo "Syntax: ./show_setup.sh [-v] [interface1] [interface2] [...]"
-
+show() {
+    first=1
     for link in $links; do
-        echo
-        echo
-        echo "------------ link: $link ------------"
-
-        echo
-        echo "qdisc:"
-        echo_indent "$(tc $tc_verbose qdisc show dev $link)"
-        
-        out=$(tc $tc_verbose class show dev $link)
-        if ! [ -z "$out" ]; then
+        if [ $first -eq 0 ]; then
             echo
+        fi
+        first=0
+
+        ip=$(ip addr show dev $link | grep "inet " | sed 's/.*inet \? \(.*\)\/.*/\1/')
+        echo "------------ link: $link (${ip//$'\n'/, }) ------------"
+
+        echo "qdisc:"
+        echo_indent "$(tc $verbose qdisc show dev $link)"
+
+        out=$(tc $verbose class show dev $link)
+        if ! [ -z "$out" ]; then
             echo "class:"
             echo_indent "$out"
         fi
 
         out=$(tc filter show dev $link)
         if ! [ -z "$out" ]; then
-            echo
             echo "filter:"
             echo_indent "$out"
         fi
 
-        #echo
-        #echo "ip:"
-        #echo_indent "$(ip addr show dev $link)"
+        if [ $show_ip -eq 1 ]; then
+            echo "ip:"
+            echo_indent "$(ip $verbose addr show dev $link)"
+        fi
+
+        if [ $show_link -eq 1 ]; then
+            echo "link:"
+            echo_indent "$(ip $verbose link show dev $link)"
+        fi
+
+        if [ $show_route -eq 1 ]; then
+            echo "route:"
+            echo_indent "$(ip $verbose route show dev $link)"
+        fi
     done
 }
 
