@@ -24,6 +24,11 @@ configure_host_cc() {
     local tcp_congestion_control=$2
     local tcp_ecn=$3
 
+    local feature_ecn=""
+    if [ "$tcp_ecn" == "1" ]; then
+        feature_ecn=" features ecn"
+    fi
+
     # the 10.25. range belongs to the Docker setup
     # it needs to use congctl for a per route configuration
     # (congctl added in iproute2 v4.0.0)
@@ -35,12 +40,12 @@ configure_host_cc() {
             . /tmp/testbed-vars-local.sh
             if ip a show $IFACE_AQM | grep -q 10.25.1.; then
                 # on client
-                ip route replace 10.25.2.0/24 via 10.25.1.2 dev $IFACE_AQM congctl '$tcp_congestion_control'
-                ip route replace 10.25.3.0/24 via 10.25.1.2 dev $IFACE_AQM congctl '$tcp_congestion_control'
+                ip route replace 10.25.2.0/24 via 10.25.1.2 dev $IFACE_AQM congctl '$tcp_congestion_control$feature_ecn'
+                ip route replace 10.25.3.0/24 via 10.25.1.2 dev $IFACE_AQM congctl '$tcp_congestion_control$feature_ecn'
             else
                 # on server
                 ip_prefix=$(ip a show $IFACE_AQM | grep "inet 10" | awk "{print \$2}" | sed "s/\.[0-9]\+\/.*//")
-                ip route replace 10.25.1.0/24 via ${ip_prefix}.2 dev $IFACE_AQM congctl '$tcp_congestion_control'
+                ip route replace 10.25.1.0/24 via ${ip_prefix}.2 dev $IFACE_AQM congctl '$tcp_congestion_control$feature_ecn'
             fi
         fi
         sudo sysctl -q -w net.ipv4.tcp_ecn='$tcp_ecn
