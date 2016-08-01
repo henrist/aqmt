@@ -5,7 +5,7 @@ tc=tc
 
 # load variables if running on simula testbed
 if [ "$(hostname)" == "ford" ]; then
-    . "$(dirname $(readlink -f $BASH_SOURCE))/load-env-simula-testbed.sh"
+    . "$(dirname $(readlink -f $BASH_SOURCE))/simula-testbed.env"
 fi
 
 error=0
