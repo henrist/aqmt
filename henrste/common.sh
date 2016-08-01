@@ -3,7 +3,7 @@
 . "$(dirname $(readlink -f $BASH_SOURCE))/vars.sh"
 
 # run all tc and ip commands through sudo if needed
-function tc {
+tc() {
     if [ $(id -u) -ne 0 ]; then
         sudo $tc "$@"
     else
@@ -11,7 +11,7 @@ function tc {
     fi
 }
 
-function ip {
+ip() {
     if [ $(id -u) -ne 0 ]; then
         sudo ip "$@"
     else
