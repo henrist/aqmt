@@ -7,16 +7,14 @@ terminate=0
 
 while getopts "k" opt; do
     case $opt in
-        k)
-            terminate=1
-            ;;
+        k) terminate=1 ;;
     esac
 done
 
 shift $((OPTIND-1))
 
 if [ -z $3 ] || ([ -z $4 ] && [ $terminate -eq 0 ]); then
-    echo "Syntax: $0 [-k] <client mgmt ip> <server mgmt ip> <server ip> <port>"
+    echo "Usage: $0 [-k] <client mgmt ip> <server mgmt ip> <server ip> <port>"
     echo "        -k is used to kill the connection"
     echo "           (port is optional with -k)"
     exit 1
