@@ -41,6 +41,7 @@ RUN chmod 600 /root/.ssh/* \
          iperf3 \
          iptraf \
          less \
+         net-tools \
          openssh-server \
          psmisc \
          speedometer \
