@@ -3,6 +3,7 @@
 # this script shows the current tc/ip setup on the local computer
 # (it is piped through less to make it easier to use)
 
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . common.sh
 
 links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:@]\+\)[:@].*/\1/')
@@ -22,18 +23,10 @@ while getopts "hilrv" opt; do
             echo "  -v  show statistics"
             exit
             ;;
-        i)
-            show_ip=1
-            ;;
-        l)
-            show_link=1
-            ;;
-        r)
-            show_route=1
-            ;;
-        v)
-            verbose="-s -d"
-            ;;
+        i) show_ip=1 ;;
+        l) show_link=1 ;;
+        r) show_route=1 ;;
+        v) verbose="-s -d" ;;
     esac
 done
 shift $((OPTIND-1))
