@@ -25,3 +25,7 @@ export IP_SERVERA=10.0.3.201
 
 export IP_SERVERB_MGMT=192.168.200.203
 export IP_SERVERB=10.0.2.200
+
+export IFACE_ON_SERVERA=enp3s0
+export IFACE_ON_SERVERB=enp3s0
+# TODO: clients?

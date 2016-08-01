@@ -9,9 +9,7 @@ if [ "$(hostname)" == "ford" ]; then
 fi
 
 error=0
-for check in IFACE_CLIENTS \
-             IFACE_SERVERA \
-             IFACE_SERVERB \
+for check in \
              IP_AQM_MGMT \
              IP_AQM_C \
              IP_AQM_SA \
@@ -32,12 +30,4 @@ done
 
 if [ $error -eq 1 ]; then
     exit 1
-fi
-
-if [ -z $IFACE_ON_SERVERA ]; then
-    IFACE_ON_SERVERA=enp3s0
-fi
-
-if [ -z $IFACE_ON_SERVERB ]; then
-    IFACE_ON_SERVERB=enp3s0
 fi
