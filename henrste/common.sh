@@ -32,9 +32,9 @@ configure_host_cc() {
     # the 10.25. range belongs to the Docker setup
     # it needs to use congctl for a per route configuration
     # (congctl added in iproute2 v4.0.0)
-    ssh $host '
+    ssh root@$host '
         if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
-            sudo sysctl -q -w net.ipv4.tcp_congestion_control='$tcp_congestion_control'
+            sysctl -q -w net.ipv4.tcp_congestion_control='$tcp_congestion_control'
         else
             # we are on docker
             . /tmp/testbed-vars-local.sh
@@ -48,7 +48,7 @@ configure_host_cc() {
                 ip route replace 10.25.1.0/24 via ${ip_prefix}.2 dev $IFACE_AQM congctl '$tcp_congestion_control$feature_ecn'
             fi
         fi
-        sudo sysctl -q -w net.ipv4.tcp_ecn='$tcp_ecn
+        sysctl -q -w net.ipv4.tcp_ecn='$tcp_ecn
 }
 
 configure_clients_edge_aqm_node() {
@@ -93,7 +93,7 @@ configure_clients_node() {
         hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT)
         ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB)
         for i in ${!hosts[@]}; do
-            ssh ${hosts[$i]} "
+            ssh root@${hosts[$i]} "
                 tc qdisc  del dev ${ifaces[$i]} root 2>/dev/null || true
                 tc qdisc  add dev ${ifaces[$i]} root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1;
                 tc qdisc  add dev ${ifaces[$i]} parent 1:2 handle 12: netem delay ${delay}ms;
@@ -104,7 +104,7 @@ configure_clients_node() {
         hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT)
         ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB)
         for i in ${!hosts[@]}; do
-            ssh ${hosts[$i]} "
+            ssh root@${hosts[$i]} "
                 tc qdisc del dev ${ifaces[$i]} root 2>/dev/null || true
                 tc qdisc add dev ${ifaces[$i]} root handle 1: pfifo_fast 2>/dev/null || true"
         done
@@ -138,11 +138,11 @@ configure_server_edge() {
     tc qdisc  add dev $iface_server parent 1:2 handle 12: netem delay ${delay}ms # todo: put "limit" ?
     tc filter add dev $iface_server parent 1:0 protocol ip prio 1 u32 match ip src $ip_aqm_s flowid 1:1
 
-    ssh $ip_server_mgmt "
-        sudo tc qdisc  del dev $iface_on_server root 2>/dev/null || true
-        sudo tc qdisc  add dev $iface_on_server root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1;
-        sudo tc qdisc  add dev $iface_on_server parent 1:2 handle 12: netem delay ${delay}ms;
-        sudo tc filter add dev $iface_on_server parent 1:0 protocol ip prio 1 u32 match ip dst $ip_aqm_s flowid 1:1"
+    ssh root@$ip_server_mgmt "
+        tc qdisc  del dev $iface_on_server root 2>/dev/null || true
+        tc qdisc  add dev $iface_on_server root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1;
+        tc qdisc  add dev $iface_on_server parent 1:2 handle 12: netem delay ${delay}ms;
+        tc filter add dev $iface_on_server parent 1:0 protocol ip prio 1 u32 match ip dst $ip_aqm_s flowid 1:1"
 }
 
 reset_aqm_client_edge() {
@@ -163,7 +163,7 @@ reset_host() {
     local host=$1
     local iface=$2 # the iface is the one that test traffic to aqm is going on
                    # e.g. $IFACE_ON_CLIENTA
-    ssh $host "
+    ssh root@$host "
         tc qdisc del dev $iface root 2>/dev/null || true
         tc qdisc add dev $iface root handle 1: pfifo_fast 2>/dev/null || true"
 }
