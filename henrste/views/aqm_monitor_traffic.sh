@@ -1,10 +1,12 @@
 #!/bin/bash
 
+# run this on the aqm-machine
+
 # this script opens three panes and monitor the three interfaces
 # showing their current bandwidth
 
 # example:
-# ./monitor.sh 0.05 $((1024*1024*5))
+# ./aqm_monitor_traffic.sh 0.05 $((1024*1024*5))
 
 delay=0.05
 max=$((1024*1024*2))
