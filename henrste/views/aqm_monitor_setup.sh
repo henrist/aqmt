@@ -3,6 +3,7 @@
 # run this on the aqm-machine
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../common.sh
 
 cmds=()
 cmds[0]="watch -n .2 ../show_setup.sh -vir $IFACE_CLIENTS"

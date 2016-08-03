@@ -8,6 +8,9 @@
 # example:
 # ./aqm_monitor_traffic.sh 0.05 $((1024*1024*5))
 
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../common.sh
+
 delay=0.05
 max=$((1024*1024*2))
 

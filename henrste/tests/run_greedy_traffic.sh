@@ -4,6 +4,9 @@
 # from servera to clienta and
 # from serverb to clientb
 
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../common.sh
+
 cmds=()
 cmds+=("sleep 0.2; ssh -t $IP_CLIENTA_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERA 1234; read")
 cmds+=("ssh -t $IP_SERVERA_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1234; read")
