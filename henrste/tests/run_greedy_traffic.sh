@@ -5,10 +5,12 @@
 # from serverb to clientb
 
 cmds=()
-cmds[0]="sleep 0.2; ssh -t $IP_CLIENTA_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERA 1234; read"
-cmds[1]="ssh -t $IP_SERVERA_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1234; read"
-#cmds[2]="sleep 0.2; ssh -t $IP_CLIENTB_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERB 1234; read"
-#cmds[3]="ssh -t $IP_SERVERB_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1234; read"
+cmds+=("sleep 0.2; ssh -t $IP_CLIENTA_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERA 1234; read")
+cmds+=("ssh -t $IP_SERVERA_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1234; read")
+#cmds+=("sleep 0.2; ssh -t $IP_CLIENTB_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERB 1234; read")
+#cmds+=("ssh -t $IP_SERVERB_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1234; read")
+#cmds+=("sleep 0.2; ssh -t $IP_CLIENTB_MGMT /opt/testbed/greedy_generator/greedy -vv $IP_SERVERB 1235; read")
+#cmds+=("ssh -t $IP_SERVERB_MGMT /opt/testbed/greedy_generator/greedy -vv -s 1235; read")
 
 sn="greedy-$(date +%s)"
 for i in ${!cmds[@]}; do
@@ -23,6 +25,8 @@ for i in ${!cmds[@]}; do
     else
         tmux split-window -t $sn "$cmd"
     fi
+
+    tmux select-layout -t $sn tiled
 done
 
 tmux select-layout -t $sn tiled
