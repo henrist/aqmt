@@ -183,3 +183,27 @@ reset_all_hosts_cc() {
         configure_host_cc ${!name} cubic 2
     done
 }
+
+get_host_cc() {
+    local host=$1
+
+    # see configure_host_cc for more details on setup
+
+    ssh root@$host '
+        if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
+            sysctl -n net.ipv4.tcp_congestion_control
+            sysctl -n net.ipv4.tcp_ecn
+        else
+            # we are on docker
+            . /tmp/testbed-vars-local.sh
+            if ip a show $IFACE_AQM | grep -q 10.25.1.; then
+                # on client
+                route=10.25.2.0/24
+            else
+                route=10.25.1.0/24
+            fi
+
+            ip route show $route | awk -F"congctl " "{print \$2}" | cut -d" " -f1
+            ip route show $route | grep -q "ecn" && echo "1" || echo "2"
+        fi'
+}
