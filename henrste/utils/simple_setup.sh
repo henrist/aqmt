@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 # this scripts configures the network for a manual test
@@ -26,27 +25,18 @@ aqm_params=
 #aqm_params="l_thresh_us 1000 offset 0 l_slope 5 c_slope 4 l_smooth 0 c_smooth 5 l_power 1 c_power 2 l_shift 50"
 
 configure_clients_edge $testrate $rtt_clients $aqm_name "$aqm_params"
-
-
-cc=dctcp
-if [ $cc == "reno" ]; then
-    configure_host_cc $IP_CLIENTA_MGMT reno 2
-    configure_host_cc $IP_SERVERA_MGMT reno 2
-    configure_host_cc $IP_CLIENTB_MGMT reno 2
-    configure_host_cc $IP_SERVERB_MGMT reno 2
-elif [ $cc == "dctcp" ]; then
-    configure_host_cc $IP_CLIENTA_MGMT dctcp 1
-    configure_host_cc $IP_SERVERA_MGMT dctcp 1
-    configure_host_cc $IP_CLIENTB_MGMT dctcp 1
-    configure_host_cc $IP_SERVERB_MGMT dctcp 1
-elif [ $cc == "cubic" ]; then
-    :
-    # no need to do anything, it is the default after reset
-fi
-
-
 configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA $rtt_servera
 configure_server_edge $IP_SERVERB_MGMT $IP_AQM_SB $IFACE_SERVERB $IFACE_ON_SERVERB $rtt_serverb
+
+# congestion control
+#   example configurations:
+#     reno 2
+#     dctcp 1
+#     cubic 1 (set as default when reset)
+configure_host_cc $IP_CLIENTA_MGMT dctcp 1
+configure_host_cc $IP_SERVERA_MGMT dctcp 1
+configure_host_cc $IP_CLIENTB_MGMT dctcp 1
+configure_host_cc $IP_SERVERB_MGMT dctcp 1
 
 clear
 echo "Configured testbed:"
