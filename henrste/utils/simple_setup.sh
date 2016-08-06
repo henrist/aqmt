@@ -6,8 +6,12 @@ set -e
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . ../common.sh
 
-# reset everything just in case
-./reset.sh
+# reset if this is the first run
+# (check by seeing if we have a htb)
+if ! tc qdisc show dev $IFACE_CLIENTS | grep -q "qdisc htb"; then
+    echo "Resetting testbed before configuring"
+    ./reset.sh
+fi
 
 testrate=10mbit
 
