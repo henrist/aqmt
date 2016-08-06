@@ -239,3 +239,9 @@ get_host_cc() {
             ip route show $route | grep -q "ecn" && echo "1" || echo "2"
         fi'
 }
+
+get_aqm_options() {
+    local aqm_name=$1
+
+    tc qdisc show dev $IFACE_CLIENTS | grep "$aqm_name" | sed 's/.*parent [0-9:]\+ //'
+}

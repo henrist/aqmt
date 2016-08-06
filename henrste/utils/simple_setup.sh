@@ -54,6 +54,7 @@ if [ -n "$aqm_name" ]; then
     params=""
     if [ -n "$aqm_params" ]; then params=" ($aqm_params)"; fi
     echo "  aqm: $aqm_name$params"
+    echo "       ($(get_aqm_options $aqm_name))"
 else
     echo "  no aqm"
 fi
