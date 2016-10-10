@@ -2,6 +2,14 @@
 
 # arp config is done to avoid arp lookups that causes loss
 
+disable_so() {
+    iface=$1
+    # disable segmentation offload
+    # see http://rtodto.net/generic_segmentation_offload_and_wireshark/
+    (set -x && ethtool -K $iface gso off)
+    (set -x && ethtool -K $iface tso off)
+}
+
 setup_client() {
     local iface=$(ip route show to 10.25.1.0/24 | awk '{print $3}')
     echo "Adding route to servers through aqm-machine"
@@ -10,6 +18,8 @@ setup_client() {
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.1.2 02:42:0a:19:01:02)
+
+    disable_so $iface
 
     echo "export IFACE_AQM=$iface" >/tmp/testbed-vars-local.sh
 }
@@ -21,6 +31,8 @@ setup_server() {
     (set -x && ip route add 10.25.1.0/24 via ${1}.2 dev $iface)
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
+
+    disable_so $iface
 
     (set -x && arp -i $iface -s ${1}.2 02:42:0a:19:0${1/*.}:02)
 
@@ -46,17 +58,23 @@ setup_aqm() {
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.1.11 02:42:0a:19:01:0b)
 
+    disable_so $iface
+
     local iface=$(ip route show to 10.25.2.0/24 | awk '{print $3}')
     echo "export IFACE_SERVERA=$iface" >>/tmp/testbed-vars-local.sh
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.2.21 02:42:0a:19:02:15)
 
+    disable_so $iface
+
     local iface=$(ip route show to 10.25.3.0/24 | awk '{print $3}')
     echo "export IFACE_SERVERB=$iface" >>/tmp/testbed-vars-local.sh
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.2.31 02:42:0a:19:03:1f)
+
+    disable_so $iface
 
     names=(CLIENTA CLIENTB SERVERA SERVERB)
     nets=(10.25.1.0/24 10.25.1.0/24 10.25.2.0/24 10.25.3.0/24)
