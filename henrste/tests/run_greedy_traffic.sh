@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# this script opens four tmux panes and generates greedy traffic
+# this script opens four tmux panes and generates greedy tcp traffic
 # from servera to clienta and
 # from serverb to clientb
 
