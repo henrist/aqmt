@@ -6,13 +6,13 @@
 # showing their current bandwidth
 
 # example:
-# ./aqm_monitor_traffic.sh 0.05 $((1024*1024*5))
+# ./aqm_monitor_traffic.sh 0.05 $((1000*1000*5))
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . ../common.sh
 
 delay=0.05
-max=$((1024*1024*2))
+max=$((1000*1000*25/8))
 
 ifaces=($IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB)
 
@@ -33,7 +33,7 @@ sn="monitor-$(date +%s)"
 
 i=0
 for iface in ${ifaces[@]}; do
-    cmd="speedometer -i $delay -l -r $iface -t $iface -m $max"
+    cmd="speedometer -s -i $delay -l -r $iface -t $iface -m $max"
 
     i=$(($i+1))
     if [ $i -eq 1 ]; then
