@@ -35,13 +35,16 @@ RUN chmod 600 /root/.ssh/* \
     && apt-get install -y --no-install-recommends \
          bc \
          ca-certificates \
+         ethtool \
          git \
          iputils-ping \
          netcat-openbsd \
+         iperf \
          iperf3 \
          iptraf \
          less \
          net-tools \
+         nmap \
          openssh-server \
          psmisc \
          speedometer \
@@ -59,6 +62,7 @@ RUN chmod 600 /root/.ssh/* \
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     \
     && echo ". /tmp/testbed-vars.sh" >>/etc/bash.bashrc \
+    && echo "cd /opt/testbed" >>/etc/bash.bashrc \
     && echo ". /tmp/testbed-vars.sh" >>/etc/profile.d/testbed.sh
 
 ADD container/entrypoint.sh /entrypoint.sh
