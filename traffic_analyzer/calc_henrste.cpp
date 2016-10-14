@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sstream>
 #include <string>
+#include <map>
 #include <unistd.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -50,67 +51,34 @@ struct Parameters {
     }
 };
 
+struct Statistics {
+    double avg;
+    double cv;
+    double var;
+    std::map<double, double> p; // percentile and its value
+    std::vector<double> *samples;
+
+    Statistics() {
+        avg = -1;
+        cv = -1;
+        var = -1;
+        samples = new std::vector<double>();
+    }
+};
+
 struct Results {
-    double avgrate_ecn;
-    double avgrate_nonecn;
-    double p99rate_ecn;
-    double p99rate_nonecn;
-    double p1rate_ecn;
-    double p1rate_nonecn;
-    double cvrate_ecn;
-    double cvrate_nonecn;
+    struct Statistics *rate_ecn;
+    struct Statistics *rate_nonecn;
+    struct Statistics *win_ecn;
+    struct Statistics *win_nonecn;
+    struct Statistics *qs_ecn;
+    struct Statistics *qs_nonecn;
+    struct Statistics *drops_qs_ecn;
+    struct Statistics *drops_qs_nonecn;
+    struct Statistics *marks_ecn;
+
     double rr_static;
     double wr_static;
-
-    double avgwin_ecn;
-    double avgwin_nonecn;
-    double p99win_ecn;
-    double p99win_nonecn;
-    double p1win_ecn;
-    double p1win_nonecn;
-    double cvwin_ecn;
-    double cvwin_nonecn;
-
-    double avgqs_ecn;
-    double avgqs_nonecn;
-    double cvqs_ecn;
-    double cvqs_nonecn;
-    double p99qs_ecn;
-    double p99qs_nonecn;
-    double p1qs_ecn;
-    double p1qs_nonecn;
-    double p25qs_ecn;
-    double p25qs_nonecn;
-    double p75qs_ecn;
-    double p75qs_nonecn;
-
-    double avgdrops_qs_ecn;
-    double avgdrops_qs_nonecn;
-    double vardrops_qs_ecn;
-    double vardrops_qs_nonecn;
-
-    double avgmarks_ecn;
-    double varmarks_ecn;
-
-    double p99drops_qs_ecn;
-    double p1drops_qs_ecn;
-
-    double p99marks_ecn;
-    double p1marks_ecn;
-
-    double p99drops_qs_nonecn;
-    double p1drops_qs_nonecn;
-
-    std::vector<double> *samples_rate_ecn;
-    std::vector<double> *samples_rate_nonecn;
-    std::vector<double> *samples_win_ecn;
-    std::vector<double> *samples_win_nonecn;
-    std::vector<double> *samples_qs_ecn;
-    std::vector<double> *samples_qs_nonecn;
-    std::vector<double> *samples_marks_ecn;
-
-    std::vector<double> *samples_drops_qs_ecn;
-    std::vector<double> *samples_drops_qs_nonecn;
 
     double ecn_avg;
     double nonecn_avg;
@@ -119,62 +87,22 @@ struct Results {
     uint64_t tot_sent_dropped_nonecn;
 
     Results() {
-        samples_rate_ecn = new std::vector<double>();
-        samples_rate_nonecn = new std::vector<double>();
-        samples_win_ecn = new std::vector<double>();
-        samples_win_nonecn = new std::vector<double>();
-        samples_qs_ecn = new std::vector<double>();
-        samples_qs_nonecn = new std::vector<double>();
-        samples_marks_ecn = new std::vector<double>();
+        rate_ecn = new Statistics();
+        rate_nonecn = new Statistics();
+        win_ecn = new Statistics();
+        win_nonecn = new Statistics();
+        qs_ecn = new Statistics();
+        qs_nonecn = new Statistics();
+        drops_qs_ecn = new Statistics();
+        drops_qs_nonecn = new Statistics();
+        marks_ecn = new Statistics();
 
-        samples_drops_qs_ecn = new std::vector<double>();
-        samples_drops_qs_nonecn = new std::vector<double>();
-
-        avgrate_ecn = 0;
-        avgrate_nonecn = 0;
-        p99rate_ecn = 0;
-        p99rate_nonecn = 0;
-        p1rate_ecn = 0;
-        p1rate_nonecn = 0;
-        cvrate_ecn = 0;
-        cvrate_nonecn = 0;
         rr_static = 0;
         wr_static = 0;
-        avgwin_ecn = 0;
-        avgwin_nonecn = 0;
-        p99win_ecn = 0;
-        p99win_nonecn = 0;
-        p1win_ecn = 0;
-        p1win_nonecn = 0;
-        cvwin_ecn = 0;
-        cvwin_nonecn = 0;
 
-        avgqs_ecn = 0;
-        avgqs_nonecn = 0;
-        cvqs_ecn = 0;
-        cvqs_nonecn = 0;
-        p99qs_ecn = 0;
-        p99qs_nonecn = 0;
-        p1qs_ecn = 0;
-        p1qs_nonecn = 0;
-        p25qs_ecn = 0;
-        p25qs_nonecn = 0;
-        p75qs_ecn = 0;
-        p75qs_nonecn = 0;
-        avgdrops_qs_ecn = 0;
-        avgdrops_qs_nonecn = 0;
-        vardrops_qs_ecn = 0;
-        vardrops_qs_nonecn = 0;
-        avgmarks_ecn = 0;
-        varmarks_ecn = 0;
-        p99drops_qs_ecn = 0;
-        p1drops_qs_ecn = 0;
-        p99marks_ecn = 0;
-        p1marks_ecn = 0;
-        p99drops_qs_nonecn = 0;
-        p1drops_qs_nonecn = 0;
         ecn_avg = 0;
         nonecn_avg = 0;
+
         tot_sent_dropped_ecn = 0;
         tot_sent_dropped_nonecn = 0;
     }
@@ -317,20 +245,18 @@ void rPDF(std::vector<double> *samples_rate_ecn, std::vector<double> *samples_ra
 }
 */
 
-double variance(std::vector<double> *samples, double *avg_res, double *p99_res, double *p1_res, double *p25_res, double *p75_res) {
+void variance(struct Statistics *stats) {
     double tot = 0;
     long double sumsq = 0;
     double var = 0;
     double avg = 0;
+    std::vector<double> *samples = stats->samples;
     uint32_t flowsamples = samples->size();
-    *p99_res = 0;
 
-    if (p1_res != NULL)
-        *p1_res = 0;
-    if (p25_res != NULL)
-        *p25_res = 0;
-    if (p75_res != NULL)
-        *p75_res = 0;
+    stats->p[1] = 0;
+    stats->p[25] = 0;
+    stats->p[75] = 0;
+    stats->p[99] = 0;
 
     if (flowsamples > 0) {
         std::sort(samples->begin(), samples->end());
@@ -341,14 +267,10 @@ double variance(std::vector<double> *samples, double *avg_res, double *p99_res, 
             exit(1);
         }
 
-        *p99_res = samples->at(index_p99);
-
-        if (p1_res != NULL)
-            *p1_res = samples->at(percentile(1, samples->size())-1);
-        if (p25_res != NULL)
-            *p25_res = samples->at(percentile(25, samples->size())-1);
-        if (p75_res != NULL)
-            *p75_res = samples->at(percentile(75, samples->size())-1);
+        stats->p[99] = samples->at(index_p99);
+        stats->p[1] = samples->at(percentile(1, samples->size())-1);
+        stats->p[25] = samples->at(percentile(25, samples->size())-1);
+        stats->p[75] = samples->at(percentile(75, samples->size())-1);
     }
 
     for (std::vector<double>::iterator it = samples->begin(); it != samples->end(); ++it) {
@@ -361,40 +283,38 @@ double variance(std::vector<double> *samples, double *avg_res, double *p99_res, 
     }
 
     avg = tot/flowsamples;
-    *avg_res = avg;
-
-    return var;
+    stats->avg = avg;
+    stats->var = var;
 }
 
-double coeffVar(std::vector<double> *samples, double *avg_res, double *p99_res, double *p1_res, double *p25_res, double *p75_res) {
-    double var = variance(samples, avg_res, p99_res, p1_res, p25_res, p75_res);
-    double cv = 0;
+void coeffVar(struct Statistics *stats) {
+    variance(stats);
 
-    if (var > 0 && *avg_res > 0) {
-        cv = sqrt(var)/ *avg_res;
+    if (stats->var > 0 && stats->avg > 0) {
+        stats->cv = sqrt(stats->var) / stats->avg;
+    } else {
+        stats->cv = 0;
     }
-
-    return cv;
 }
 
 void QSStat(Results *res, Parameters *params) {
     if (params->n_dctcp > 0) {
-        res->cvqs_ecn = coeffVar(res->samples_qs_ecn, &res->avgqs_ecn, &res->p99qs_ecn, &res->p1qs_ecn, &res->p25qs_ecn, &res->p75qs_ecn);
+        coeffVar(res->qs_ecn);
     }
 
     if (params->n_reno > 0) {
-        res->cvqs_nonecn = coeffVar(res->samples_qs_nonecn, &res->avgqs_nonecn, &res->p99qs_nonecn, &res->p1qs_nonecn, &res->p25qs_nonecn, &res->p75qs_nonecn);
+        coeffVar(res->qs_nonecn);
     }
 }
 
 void DropsMarksStat(Results *res, Parameters *params) {
     if (params->n_dctcp > 0) {
-        res->vardrops_qs_ecn = variance(res->samples_drops_qs_ecn, &res->avgdrops_qs_ecn, &res->p99drops_qs_ecn, &res->p1drops_qs_ecn, NULL, NULL);
-        res->varmarks_ecn = variance(res->samples_marks_ecn, &res->avgmarks_ecn, &res->p99marks_ecn, &res->p1marks_ecn, NULL, NULL);
+        variance(res->drops_qs_ecn); // TODO: ignore p25 and p75 ?
+        variance(res->marks_ecn); // TODO: ignore p25 and p75 ?
     }
 
     if (params->n_reno > 0) {
-        res->vardrops_qs_nonecn = variance(res->samples_drops_qs_nonecn, &res->avgdrops_qs_nonecn, &res->p99drops_qs_nonecn, &res->p1drops_qs_nonecn, NULL, NULL);
+        variance(res->drops_qs_nonecn); // TODO: ignore p25 and p75 ?
     }
 }
 
@@ -519,7 +439,6 @@ void calcUtilization(std::string filename_ecn, std::string filename_nonecn, doub
             samples.push_back(util);
             util_sum += util;
         }
-
     }
 
     infile_ecn.close();
@@ -563,31 +482,31 @@ void readFileQS(std::string filename, std::vector<double> *samples_qs, uint64_t 
 void getSamplesRateMarksDrops(Results* res, Parameters *params) {
     if (params->n_dctcp > 0) {
         std::string fn_ecn = params->folder + "/r_tot_ecn";
-        readFileRate(fn_ecn, params->n_dctcp, res->samples_rate_ecn, res->samples_win_ecn, res->avgqs_ecn, params->rtt_d);
+        readFileRate(fn_ecn, params->n_dctcp, res->rate_ecn->samples, res->win_ecn->samples, res->qs_ecn->avg, params->rtt_d);
 
         std::string fn_ecn_marks = params->folder + "/m_tot_ecn";
         std::string fn_ecn_tot = params->folder + "/tot_packets_ecn";
-        readFileMarks(fn_ecn_marks, res->samples_marks_ecn, fn_ecn_tot);
+        readFileMarks(fn_ecn_marks, res->marks_ecn->samples, fn_ecn_tot);
     }
 
     if (params->n_reno > 0) {
         std::string fn_nonecn = params->folder + "/r_tot_nonecn";
-        readFileRate(fn_nonecn, params->n_reno, res->samples_rate_nonecn, res->samples_win_nonecn, res->avgqs_nonecn, params->rtt_r);
+        readFileRate(fn_nonecn, params->n_reno, res->rate_nonecn->samples, res->win_nonecn->samples, res->qs_nonecn->avg, params->rtt_r);
 
         std::string fn_nonecn_drops = params->folder + "/d_tot_nonecn";
         std::string fn_nonecn_tot = params->folder + "/tot_packets_nonecn";
-        readFileDrops(fn_nonecn_drops, res->samples_drops_qs_nonecn, fn_nonecn_tot);
+        readFileDrops(fn_nonecn_drops, res->drops_qs_nonecn->samples, fn_nonecn_tot);
     }
 }
 void getSamplesQS(Results *res, Parameters *params) {
     if (params->n_dctcp > 0) {
         std::string fn_ecn = params->folder + "/qs_drops_ecn_pdf";
-        readFileQS(fn_ecn, res->samples_qs_ecn, &res->tot_sent_dropped_ecn);
+        readFileQS(fn_ecn, res->qs_ecn->samples, &res->tot_sent_dropped_ecn);
     }
 
     if (params->n_reno > 0) {
         std::string fn_nonecn = params->folder + "/qs_drops_nonecn_pdf";
-        readFileQS(fn_nonecn, res->samples_qs_nonecn, &res->tot_sent_dropped_nonecn);
+        readFileQS(fn_nonecn, res->qs_nonecn->samples, &res->tot_sent_dropped_nonecn);
     }
 }
 
@@ -621,38 +540,38 @@ int main(int argc, char **argv) {
     getSamplesRateMarksDrops(res, params);
 
     if (params->n_dctcp > 0) {
-        res->cvrate_ecn = coeffVar(res->samples_rate_ecn, &res->avgrate_ecn, &res->p99rate_ecn, &res->p1rate_ecn, NULL, NULL);
-        res->cvwin_ecn = coeffVar(res->samples_win_ecn, &res->avgwin_ecn, &res->p99win_ecn, &res->p1win_ecn, NULL, NULL);
+        coeffVar(res->rate_ecn); // TODO: ignore p25 and p75 ?
+        coeffVar(res->win_ecn); // TODO: ignore p25 and p75 ?
     }
 
     if (params->n_reno > 0) {
-        res->cvrate_nonecn = coeffVar(res->samples_rate_nonecn, &res->avgrate_nonecn, &res->p99rate_nonecn, &res->p1rate_nonecn, NULL, NULL);
-        res->cvwin_nonecn = coeffVar(res->samples_win_nonecn, &res->avgwin_nonecn, &res->p99win_nonecn, &res->p1win_nonecn, NULL, NULL);
+        coeffVar(res->rate_nonecn); // TODO: ignore p25 and p75 ?
+        coeffVar(res->win_nonecn); // TODO: ignore p25 and p75 ?
     }
 
     if (params->n_dctcp > 0) {
-        res->rr_static = res->avgrate_nonecn/res->avgrate_ecn;
-        res->wr_static = res->avgwin_nonecn/res->avgwin_ecn;
+        res->rr_static = res->rate_nonecn->avg/res->rate_ecn->avg;
+        res->wr_static = res->win_nonecn->avg/res->win_ecn->avg;
     }
 
     std::ofstream *f_avgrate_ecn = openFileW("/avgrate_ecn", params->folder);
     if (f_avgrate_ecn->is_open()) {
-        *f_avgrate_ecn << res->avgrate_ecn;
+        *f_avgrate_ecn << res->rate_ecn->avg;
         f_avgrate_ecn->close();
     }
 
     std::ofstream *f_avgrate_nonecn = openFileW("/avgrate_nonecn", params->folder);
     if (f_avgrate_nonecn->is_open()) {
-        *f_avgrate_nonecn << res->avgrate_nonecn;
+        *f_avgrate_nonecn << res->rate_nonecn->avg;
         f_avgrate_nonecn->close();
     }
 
-    //rPDF(res->samples_rate_ecn, res->samples_rate_nonecn, params->folder.str(), params->fairness[0], params->n_dctcp, params->n_reno, params->nbrf);
-    //dmPDF(res->samples_drops_qs_ecn, res->samples_drops_qs_nonecn, res->samples_marks_ecn, params->folder.str(), i);
+    //rPDF(res->rate_ecn->samples, res->rate_nonecn->samples, params->folder.str(), params->fairness[0], params->n_dctcp, params->n_reno, params->nbrf);
+    //dmPDF(res->drops_qs_ecn->samples, res->drops_qs_nonecn->samples, res->marks_ecn->samples, params->folder.str(), i);
 
     DropsMarksStat(res, params);
-    if (res->p99drops_qs_nonecn > 100) {
-        std::cerr << "too high drops p99: " << res->p99drops_qs_nonecn << std::endl;
+    if (res->drops_qs_nonecn->p[99] > 100) {
+        std::cerr << "too high drops p99: " << res->drops_qs_nonecn->p[99] << std::endl;
         exit(1);
     }
 
@@ -675,19 +594,19 @@ int main(int argc, char **argv) {
     std::ofstream *f_rr_2d = openFileW("/rr_2d", params->folder);
     std::ofstream *f_wr_2d = openFileW("/wr_2d", params->folder);
 
-    *f_avg99pqs_ecn_2d << "s" << params->n_dctcp  << " " << res->avgqs_ecn << " " << res->p99qs_ecn << " " << res->p1qs_ecn << " " << res->p25qs_ecn << " " << res->p75qs_ecn << " " << (res->cvrate_ecn*res->avgqs_ecn) << std::endl;
-    *f_avg99pqs_nonecn_2d << "s" << params->n_reno <<  " " << res->avgqs_nonecn << " " << res->p99qs_nonecn << " " << res->p1qs_nonecn << " " << res->p25qs_nonecn << " " << res->p75qs_nonecn << " " << (res->cvrate_nonecn*res->avgqs_nonecn) << std::endl;
+    *f_avg99pqs_ecn_2d << "s" << params->n_dctcp  << " " << res->qs_ecn->avg << " " << res->qs_ecn->p[99] << " " << res->qs_ecn->p[1] << " " << res->qs_ecn->p[25] << " " << res->qs_ecn->p[75] << " " << (res->rate_ecn->cv*res->qs_ecn->avg) << std::endl;
+    *f_avg99pqs_nonecn_2d << "s" << params->n_reno <<  " " << res->qs_nonecn->avg << " " << res->qs_nonecn->p[99] << " " << res->qs_nonecn->p[1] << " " << res->qs_nonecn->p[25] << " " << res->qs_nonecn->p[75] << " " << (res->rate_nonecn->cv*res->qs_nonecn->avg) << std::endl;
 
-    *f_avgstddevrate_ecn_2d << "s" << params->n_dctcp <<  " " << res->avgrate_ecn << " " << res->p99rate_ecn << " " << res->p1rate_ecn << " " <<(res->cvrate_ecn*res->avgrate_ecn) << std::endl;
-    *f_avgstddevrate_nonecn_2d << "s" << params->n_reno << " " << res->avgrate_nonecn << " " << res->p99rate_nonecn << " " << res->p1rate_nonecn << " " << (res->cvrate_ecn*res->avgrate_nonecn) << std::endl;
+    *f_avgstddevrate_ecn_2d << "s" << params->n_dctcp <<  " " << res->rate_ecn->avg << " " << res->rate_ecn->p[99] << " " << res->rate_ecn->p[1] << " " <<(res->rate_ecn->cv*res->rate_ecn->avg) << std::endl;
+    *f_avgstddevrate_nonecn_2d << "s" << params->n_reno << " " << res->rate_nonecn->avg << " " << res->rate_nonecn->p[99] << " " << res->rate_nonecn->p[1] << " " << (res->rate_ecn->cv*res->rate_nonecn->avg) << std::endl;
 
-    *f_avgstddevwin_ecn_2d << "s" << params->n_dctcp <<  " " << res->avgwin_ecn << " " << res->p99win_ecn << " " << res->p1win_ecn << " " <<(res->cvwin_ecn*res->avgwin_ecn) << std::endl;
-    *f_avgstddevwin_nonecn_2d << "s" << params->n_reno <<  " " << res->avgwin_nonecn << " " << res->p99win_nonecn << " " << res->p1win_nonecn << " " <<(res->cvwin_nonecn*res->avgwin_nonecn) << std::endl;
+    *f_avgstddevwin_ecn_2d << "s" << params->n_dctcp <<  " " << res->win_ecn->avg << " " << res->win_ecn->p[99] << " " << res->win_ecn->p[1] << " " <<(res->win_ecn->cv*res->win_ecn->avg) << std::endl;
+    *f_avgstddevwin_nonecn_2d << "s" << params->n_reno <<  " " << res->win_nonecn->avg << " " << res->win_nonecn->p[99] << " " << res->win_nonecn->p[1] << " " <<(res->win_nonecn->cv*res->win_nonecn->avg) << std::endl;
 
-    *f_avg99pdrop_ecn_2d << "s" << params->n_dctcp <<  " " << res->avgdrops_qs_ecn << " " << res->p99drops_qs_ecn << " " << res->p1drops_qs_ecn << " " << sqrt(res->vardrops_qs_ecn) << std::endl;
-    *f_avg99pdrop_nonecn_2d << "s" << params->n_reno << " " << res->avgdrops_qs_nonecn << " " << res->p99drops_qs_nonecn << " " << res->p1drops_qs_nonecn << " " << sqrt(res->vardrops_qs_nonecn) << std::endl;
+    *f_avg99pdrop_ecn_2d << "s" << params->n_dctcp <<  " " << res->drops_qs_ecn->avg << " " << res->drops_qs_ecn->p[99] << " " << res->drops_qs_ecn->p[1] << " " << sqrt(res->drops_qs_ecn->var) << std::endl;
+    *f_avg99pdrop_nonecn_2d << "s" << params->n_reno << " " << res->drops_qs_nonecn->avg << " " << res->drops_qs_nonecn->p[99] << " " << res->drops_qs_nonecn->p[1] << " " << sqrt(res->drops_qs_nonecn->var) << std::endl;
 
-    *f_avg99pmark_ecn_2d << "s" << params->n_dctcp <<  " " << res->avgmarks_ecn << " " << res->p99marks_ecn << " " << res->p1marks_ecn << " " << sqrt(res->varmarks_ecn) << std::endl;
+    *f_avg99pmark_ecn_2d << "s" << params->n_dctcp <<  " " << res->marks_ecn->avg << " " << res->marks_ecn->p[99] << " " << res->marks_ecn->p[1] << " " << sqrt(res->marks_ecn->var) << std::endl;
 
     *f_rr_2d << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->rr_static << std::endl;
     *f_wr_2d << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->wr_static << std::endl;
