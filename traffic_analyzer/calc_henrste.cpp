@@ -323,7 +323,7 @@ double variance(std::vector<double> *samples, double *avg_res, double *p99_res, 
    		}
     	*p99_res = samples->at(index_p99);
     	if (p1_res != NULL) 
-    		*p1_res = samples->at(percentile(25, samples->size())-1);
+    		*p1_res = samples->at(percentile(1, samples->size())-1);
     	if (p25_res != NULL) 
     		*p25_res = samples->at(percentile(25, samples->size())-1);
     	if (p75_res != NULL) 
@@ -491,7 +491,7 @@ void calcUtil(std::string filename_ecn, std::string filename_nonecn, double *uti
     int nrs = samples.size();
     *util_avg = util_sum/nrs;
     *util_p99 = samples.at(percentile(99,nrs) - 1); 
-    *util_p1 = samples.at(percentile(15,nrs) - 1); 
+    *util_p1 = samples.at(percentile(1,nrs) - 1); 
 
 }
 
