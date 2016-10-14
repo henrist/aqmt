@@ -62,7 +62,7 @@ struct Statistics {
         avg = -1;
         cv = -1;
         var = -1;
-        samples = new std::vector<double>();
+        samples = new std::vector<double>(); // should be sorted after insertion
     }
 };
 
@@ -76,6 +76,7 @@ struct Results {
     struct Statistics *drops_qs_ecn;
     struct Statistics *drops_qs_nonecn;
     struct Statistics *marks_ecn;
+    struct Statistics *util; // utilization
 
     double rr_static;
     double wr_static;
@@ -259,9 +260,7 @@ void variance(struct Statistics *stats) {
     stats->p[99] = 0;
 
     if (flowsamples > 0) {
-        std::sort(samples->begin(), samples->end());
         int index_p99 = percentile(99, samples->size())-1;
-
         if (index_p99 > samples->size()-1) {
             std::cerr << "wrong p99 index: " << index_p99 << " samples: " << samples->size();
             exit(1);
@@ -348,6 +347,8 @@ void readFileMarks(std::string filename_marks, std::vector<double> *samples_mark
 
     infile_marks.close();
     infile_tot.close();
+
+    std::sort(samples_marks->begin(), samples_marks->end());
 }
 
 void readFileDrops(std::string filename_drops, std::vector<double> *samples_drops, std::string filename_tot) {
@@ -382,6 +383,8 @@ void readFileDrops(std::string filename_drops, std::vector<double> *samples_drop
 
     infile_drops.close();
     infile_tot.close();
+
+    std::sort(samples_drops->begin(), samples_drops->end());
 }
 
 void readFileRate(std::string filename, int nrflows, std::vector<double> *samples_rate, std::vector<double> *samples_win, double avg_qs, double rtt) {
@@ -414,6 +417,9 @@ void readFileRate(std::string filename, int nrflows, std::vector<double> *sample
     }
 
     infile.close();
+
+    std::sort(samples_rate->begin(), samples_rate->end());
+    std::sort(samples_win->begin(), samples_win->end());
 }
 
 void calcUtilization(std::string filename_ecn, std::string filename_nonecn, double *util_avg, double *util_p99, double *util_p1, double link_bytes_ps) {
@@ -477,6 +483,8 @@ void readFileQS(std::string filename, std::vector<double> *samples_qs, uint64_t 
     infile.close();
     double tot_packets = tot_sent + tot_dropped;
     *tot_sent_dropped = (uint64_t)(tot_sent + tot_dropped);
+
+    std::sort(samples_qs->begin(), samples_qs->end());
 }
 
 void getSamplesRateMarksDrops(Results* res, Parameters *params) {
