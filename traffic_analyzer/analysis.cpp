@@ -528,6 +528,12 @@ void *printInfo(void *param)
 
         tp->swapDB();
 
+        printf("\n--- SAMPLE # %d", (int) sample_id + 1);
+        if (tp->m_nrs != 0) {
+            printf(" of %d", tp->m_nrs);
+        }
+        printf(" ---\n");
+
         printf("       ECN 00 qsize: ");
         printf("       ECN 01 qsize: ");
         printf("       ECN 10 qsize: ");
