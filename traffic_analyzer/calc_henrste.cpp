@@ -18,7 +18,7 @@
 #define PDF_BINS 50
 #define MAX_QS 100
 
-#define percentile(p, n) (round(float(p)/100*float(n) + float(1)/2))
+#define percentile(p, n) (ceil(float(p)/100*float(n)))
 
 struct QSDrops {
     uint32_t qs;
@@ -260,13 +260,7 @@ void variance(struct Statistics *stats) {
     stats->p[99] = 0;
 
     if (flowsamples > 0) {
-        int index_p99 = percentile(99, samples->size())-1;
-        if (index_p99 > samples->size()-1) {
-            std::cerr << "wrong p99 index: " << index_p99 << " samples: " << samples->size();
-            exit(1);
-        }
-
-        stats->p[99] = samples->at(index_p99);
+        stats->p[99] = samples->at(percentile(99, samples->size())-1);
         stats->p[1] = samples->at(percentile(1, samples->size())-1);
         stats->p[25] = samples->at(percentile(25, samples->size())-1);
         stats->p[75] = samples->at(percentile(75, samples->size())-1);
