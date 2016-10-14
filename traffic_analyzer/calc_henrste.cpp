@@ -23,8 +23,7 @@
 struct Parameters {
     double rtt_d;
     double rtt_r;
-    std::string in_folder;
-    std::string out_folder;
+    std::string folder;
     uint32_t n_dctcp;
     uint32_t n_reno;
     std::string fairness;
@@ -34,8 +33,7 @@ struct Parameters {
     Parameters() {
         rtt_d = 0;
         rtt_r = 0;
-        in_folder = "";
-        out_folder = "";
+        folder = "";
         n_dctcp = 0;
         n_reno = 0;
         fairness = "";
@@ -187,7 +185,7 @@ void usage(int argc, char* argv[]) {
 }
 
 std::ofstream* openFileW(std::string filename) {
-    std::string filename_out = params->out_folder + "/" + filename;
+    std::string filename_out = params->folder + "/" + filename;
     std::ofstream *f;
     f = new std::ofstream(filename_out.c_str());
 
@@ -417,8 +415,8 @@ void readFileRate(std::string filename, int nrflows, Statistics *stats_rate, Sta
 void getSamplesUtilization() {
     double link_bytes_ps = (double) params->link * 125000;
 
-    std::string filename_ecn = params->in_folder + "/r_tot_ecn";
-    std::string filename_nonecn = params->in_folder + "/r_tot_nonecn";
+    std::string filename_ecn = params->folder + "/r_tot_ecn";
+    std::string filename_nonecn = params->folder + "/r_tot_nonecn";
 
     std::ifstream infile_ecn(filename_ecn.c_str());
     std::ifstream infile_nonecn(filename_nonecn.c_str());
@@ -480,23 +478,23 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 
 void getSamplesRateMarksDrops() {
     if (params->n_dctcp > 0) {
-        readFileRate(params->in_folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
-        readFileMarks(params->in_folder + "/m_tot_ecn", res->marks_ecn, params->in_folder + "/tot_packets_ecn");
+        readFileRate(params->folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
+        readFileMarks(params->folder + "/m_tot_ecn", res->marks_ecn, params->folder + "/tot_packets_ecn");
     }
 
     if (params->n_reno > 0) {
-        readFileRate(params->in_folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
-        readFileDrops(params->in_folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->in_folder + "/tot_packets_nonecn");
+        readFileRate(params->folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
+        readFileDrops(params->folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->folder + "/tot_packets_nonecn");
     }
 }
 
 void getSamplesQS() {
     if (params->n_dctcp > 0) {
-        readFileQS(params->in_folder + "/qs_drops_ecn_pdf", res->qs_ecn, &res->tot_sent_dropped_ecn);
+        readFileQS(params->folder + "/qs_drops_ecn_pdf", res->qs_ecn, &res->tot_sent_dropped_ecn);
     }
 
     if (params->n_reno > 0) {
-        readFileQS(params->in_folder + "/qs_drops_nonecn_pdf", res->qs_nonecn, &res->tot_sent_dropped_nonecn);
+        readFileQS(params->folder + "/qs_drops_nonecn_pdf", res->qs_nonecn, &res->tot_sent_dropped_nonecn);
     }
 }
 
@@ -505,8 +503,7 @@ void loadParameters(int argc, char **argv) {
         usage(argc, argv);
     }
 
-    params->in_folder = argv[1];
-    params->out_folder = argv[1];
+    params->folder = argv[1];
     params->fairness = argv[2];
     params->nbrf = atoi(argv[3]);
     params->link = atoi(argv[4]);
