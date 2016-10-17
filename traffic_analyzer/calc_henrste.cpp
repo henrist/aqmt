@@ -122,7 +122,7 @@ class Statistics {
             sumsq += (long double) val * val;
         }
 
-        _variance = 0;
+        _variance = NAN;
         if (n_samples > 1) {
             _variance = ((double(n_samples) * sumsq) - (tot * tot)) / (double(n_samples) * double(n_samples - 1));
         }
@@ -165,11 +165,11 @@ struct Results {
         marks_ecn = new Statistics();
         util = new Statistics();
 
-        rr_static = 0;
-        wr_static = 0;
+        rr_static = NAN;
+        wr_static = NAN;
 
-        ecn_avg = 0;
-        nonecn_avg = 0;
+        ecn_avg = NAN;
+        nonecn_avg = NAN;
 
         tot_sent_dropped_ecn = 0;
         tot_sent_dropped_nonecn = 0;
@@ -477,25 +477,15 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 }
 
 void getSamplesRateMarksDrops() {
-    if (params->n_dctcp > 0) {
-        readFileRate(params->folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
-        readFileMarks(params->folder + "/m_tot_ecn", res->marks_ecn, params->folder + "/tot_packets_ecn");
-    }
-
-    if (params->n_reno > 0) {
-        readFileRate(params->folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
-        readFileDrops(params->folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->folder + "/tot_packets_nonecn");
-    }
+    readFileRate(params->folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
+    readFileMarks(params->folder + "/m_tot_ecn", res->marks_ecn, params->folder + "/tot_packets_ecn");
+    readFileRate(params->folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
+    readFileDrops(params->folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->folder + "/tot_packets_nonecn");
 }
 
 void getSamplesQS() {
-    if (params->n_dctcp > 0) {
-        readFileQS(params->folder + "/qs_drops_ecn_pdf", res->qs_ecn, &res->tot_sent_dropped_ecn);
-    }
-
-    if (params->n_reno > 0) {
-        readFileQS(params->folder + "/qs_drops_nonecn_pdf", res->qs_nonecn, &res->tot_sent_dropped_nonecn);
-    }
+    readFileQS(params->folder + "/qs_drops_ecn_pdf", res->qs_ecn, &res->tot_sent_dropped_ecn);
+    readFileQS(params->folder + "/qs_drops_nonecn_pdf", res->qs_nonecn, &res->tot_sent_dropped_nonecn);
 }
 
 void loadParameters(int argc, char **argv) {
