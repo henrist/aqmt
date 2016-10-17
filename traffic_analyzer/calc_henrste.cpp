@@ -479,6 +479,7 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 void getSamplesRateMarksDrops() {
     readFileRate(params->folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
     readFileMarks(params->folder + "/m_tot_ecn", res->marks_ecn, params->folder + "/tot_packets_ecn");
+    readFileDrops(params->folder + "/d_tot_ecn", res->drops_qs_ecn, params->folder + "/tot_packets_ecn");
     readFileRate(params->folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
     readFileDrops(params->folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->folder + "/tot_packets_nonecn");
 }
