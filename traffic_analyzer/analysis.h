@@ -164,6 +164,7 @@ public:
 struct ThreadParam {
 public:
     uint64_t packets_captured;
+    uint64_t packets_processed;
     uint64_t start;
     pthread_mutex_t m_mutex;
     DataBlock *db1; // used by ProcessPacket

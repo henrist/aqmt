@@ -133,6 +133,7 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
     fd_pf_nonecn = new std::array<FlowData, MAX_FLOWS>();
 
     packets_captured = 0;
+    packets_processed = 0;
 }
 
 void ThreadParam::swapDB(){ // called by printInfo or demo
@@ -687,6 +688,8 @@ void *printInfo(void *param)
         *f_tot_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
         *f_tot_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
 
+        tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
+
         if (tp->m_nrs != 0 && sample_id >= (tp->m_nrs - 1)) {
 
             f_qs_ecn_pdf00s->close();
@@ -714,6 +717,7 @@ void *printInfo(void *param)
             printf("Obtained given number of samples (%d), exiting.\n", tp->m_nrs);
             pthread_mutex_lock(&tp->m_mutex);
             std::cout << "Packets captured: " << tp->packets_captured << std::endl;
+            std::cout << "Packets processed: " << tp->packets_processed << std::endl;
 
             exit(0);
         }
