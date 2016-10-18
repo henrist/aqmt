@@ -234,13 +234,13 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
         break;
     }
 
-    std::pair<std::map<SrcDst,FlowData>::iterator,bool> ret;
     uint32_t idport;
     if (dport == 22 || (dport > 5000 && dport <= 5050))
         idport = dport;
     else
         idport = sport;
 
+    std::pair<std::map<SrcDst,FlowData>::iterator,bool> ret;
     ret = fmap->insert(std::pair<SrcDst,FlowData>(sd, FlowData((uint64_t)iplen, (uint32_t)drops, mark, idport)));
     if (ret.second == false)
         fmap->at(sd).update(iplen, drops, mark);
@@ -384,41 +384,46 @@ void processFD()
         tp->nr_nonecn_flows = 0;
     }
 
-    for (std::map<SrcDst,FlowData>::iterator it = tp->db2->fm.ecn_rate.begin();
-        it != tp->db2->fm.ecn_rate.end(); ++it) {
-        uint32_t r = (uint32_t) (it->second.rate * 1000000 / samplelen);
+    for (auto& kv: tp->db2->fm.ecn_rate) {
+        const SrcDst& srcdst = kv.first;
+        FlowData& fd = kv.second;
+
+        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
+
         if (!tp->m_demomode) {
-            printStreamInfo(it->first);
+            printStreamInfo(srcdst);
             printf(" %d bits/sec\n", r * 8);
         }
-        if (it->first.m_proto == IPPROTO_TCP || it->first.m_proto == IPPROTO_UDP) {
+
+        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
             if (tp->m_demomode) {
-                if (it->first.m_proto == IPPROTO_UDP)
+                if (srcdst.m_proto == IPPROTO_UDP)
                     tp->demo_data->cbrrate_ecn = r;
-                else if (it->first.m_srcport == 11000 || it->first.m_srcport == 80 || it->first.m_srcport == 9999)
+                else if (srcdst.m_srcport == 11000 || srcdst.m_srcport == 80 || srcdst.m_srcport == 9999)
                     tp->demo_data->alrate_ecn += r;
-                else if (it->first.m_dstport == 22) {
+                else if (srcdst.m_dstport == 22) {
                     if (tp->nr_ecn_flows < 10)
                         tp->demo_data->ecn_th.at(tp->nr_ecn_flows) = r;
                     tp->nr_ecn_flows++;
                 }
+
                 tp->demo_data->util += r;
-                tp->demo_data->drop_ecn += it->second.drops;
-                tp->demo_data->mark_ecn += it->second.marks;
+                tp->demo_data->drop_ecn += fd.drops;
+                tp->demo_data->mark_ecn += fd.marks;
             } else {
                 std::pair<std::map<SrcDst,uint32_t>::iterator,bool> ret;
                 uint32_t findex = tp->nr_ecn_flows;
-                ret = tp->ecn_flows_map.insert(std::pair<SrcDst,uint32_t>(it->first, findex));
+
+                ret = tp->ecn_flows_map.insert(std::pair<SrcDst,uint32_t>(srcdst, findex));
                 if (ret.second == false)
-                    findex = tp->ecn_flows_map.at(it->first);
+                    findex = tp->ecn_flows_map.at(srcdst);
                 else
                     tp->nr_ecn_flows++;
-                if (!tp->m_demomode) {
-                    tp->fd_pf_ecn->at(findex).rate = r;
-                    tp->fd_pf_ecn->at(findex).drops = it->second.drops;
-                    tp->fd_pf_ecn->at(findex).marks = it->second.marks;
-                    tp->fd_pf_ecn->at(findex).port = it->second.port;
-                }
+
+                tp->fd_pf_ecn->at(findex).rate = r;
+                tp->fd_pf_ecn->at(findex).drops = fd.drops;
+                tp->fd_pf_ecn->at(findex).marks = fd.marks;
+                tp->fd_pf_ecn->at(findex).port = fd.port;
             }
         }
     }
@@ -426,42 +431,46 @@ void processFD()
     if (!tp->m_demomode)
         printf("Throughput per stream (non-ECN queue): \n");
 
-    for (std::map<SrcDst,FlowData>::iterator it = tp->db2->fm.nonecn_rate.begin();
-         it != tp->db2->fm.nonecn_rate.end(); ++it) {
-        uint32_t r = (uint32_t) (it->second.rate * 1000000 / samplelen);
+    for (auto& kv: tp->db2->fm.nonecn_rate) {
+        const SrcDst& srcdst = kv.first;
+        FlowData& fd = kv.second;
+
+        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
+
         if (!tp->m_demomode) {
-            printStreamInfo(it->first);
+            printStreamInfo(srcdst);
             printf(" %d bits/sec\n", r * 8);
         }
-        if (it->first.m_proto == IPPROTO_TCP || it->first.m_proto == IPPROTO_UDP) {
+
+        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
             if (tp->m_demomode) {
-                if (it->first.m_proto == IPPROTO_UDP)
+                if (srcdst.m_proto == IPPROTO_UDP)
                     tp->demo_data->cbrrate_nonecn = r;
-                else if (it->first.m_srcport == 11000 || it->first.m_srcport == 80 || it->first.m_srcport == 9999)
+                else if (srcdst.m_srcport == 11000 || srcdst.m_srcport == 80 || srcdst.m_srcport == 9999)
                     tp->demo_data->alrate_nonecn += r;
-                else if (it->first.m_dstport == 22) {
+                else if (srcdst.m_dstport == 22) {
                     if (tp->nr_nonecn_flows < 10)
                         tp->demo_data->nonecn_th.at(tp->nr_nonecn_flows) = r;
                     tp->nr_nonecn_flows++;
                 }
+
                 tp->demo_data->util += r;
                 //std::cout << "util: " << tp->demo_data->util << std::endl;
-                tp->demo_data->drop_nonecn += it->second.drops;
-                tp->demo_data->mark_nonecn += it->second.marks;
+                tp->demo_data->drop_nonecn += fd.drops;
+                tp->demo_data->mark_nonecn += fd.marks;
             } else {
                 std::pair<std::map<SrcDst,uint32_t>::iterator,bool> ret;
                 uint32_t findex = tp->nr_nonecn_flows;
-                ret = tp->nonecn_flows_map.insert(std::pair<SrcDst,uint32_t>(it->first, findex));
+
+                ret = tp->nonecn_flows_map.insert(std::pair<SrcDst,uint32_t>(srcdst, findex));
                 if (ret.second == false)
-                    findex = tp->nonecn_flows_map.at(it->first);
+                    findex = tp->nonecn_flows_map.at(srcdst);
                 else
                     tp->nr_nonecn_flows++;
-                if (!tp->m_demomode) {
-                    tp->fd_pf_nonecn->at(findex).rate = r;
-                    tp->fd_pf_nonecn->at(findex).drops = it->second.drops;
-                    tp->fd_pf_nonecn->at(findex).port = it->second.port;
 
-                }
+                tp->fd_pf_nonecn->at(findex).rate = r;
+                tp->fd_pf_nonecn->at(findex).drops = fd.drops;
+                tp->fd_pf_nonecn->at(findex).port = fd.port;
             }
         }
     }
