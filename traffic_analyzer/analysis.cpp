@@ -360,7 +360,7 @@ void processFD(ThreadParam *tp)
         uint32_t r = (uint32_t)(it->second.rate*1000000/(samplelen.tv_sec*1000000+samplelen.tv_usec));
         if (!tp->m_demomode) {
             printStreamInfo(it->first);
-            printf(" %d Bps\n", r);
+            printf(" %d bits/sec\n", r * 8);
         }
         if (it->first.m_proto == IPPROTO_TCP || it->first.m_proto == IPPROTO_UDP) {
             if (tp->m_demomode) {
@@ -402,7 +402,7 @@ void processFD(ThreadParam *tp)
         uint32_t r = (uint32_t)(it->second.rate*1000000/(samplelen.tv_sec*1000000+samplelen.tv_usec));
         if (!tp->m_demomode) {
             printStreamInfo(it->first);
-            printf(" %d Bps\n", r);
+            printf(" %d bits/sec\n", r * 8);
         }
         if (it->first.m_proto == IPPROTO_TCP || it->first.m_proto == IPPROTO_UDP) {
             if (tp->m_demomode) {
