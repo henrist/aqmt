@@ -704,11 +704,9 @@ void *printInfo(void *)
         uint64_t m_ecn_tot = 0;
 
         for (int i = 0; i < tp->nr_ecn_flows; ++i) {
-            if (tp->fd_pf_ecn->at(i).port == 22 || (tp->fd_pf_ecn->at(i).port > 5000 && tp->fd_pf_ecn->at(i).port <= 5050)) {
-                *f_r_pf_ecn << " " << tp->fd_pf_ecn->at(i).rate;
-                *f_d_pf_ecn << " " << tp->fd_pf_ecn->at(i).drops;
-                *f_m_pf_ecn << " " << tp->fd_pf_ecn->at(i).marks;
-            }
+            *f_r_pf_ecn << " " << tp->fd_pf_ecn->at(i).rate;
+            *f_d_pf_ecn << " " << tp->fd_pf_ecn->at(i).drops;
+            *f_m_pf_ecn << " " << tp->fd_pf_ecn->at(i).marks;
             r_ecn_tot += tp->fd_pf_ecn->at(i).rate;
             d_ecn_tot += tp->fd_pf_ecn->at(i).drops;
             m_ecn_tot += tp->fd_pf_ecn->at(i).marks;
@@ -719,10 +717,8 @@ void *printInfo(void *)
         *f_m_tot_ecn << " " << m_ecn_tot;
 
         for (int i = 0; i < tp->nr_nonecn_flows; ++i) {
-            if (tp->fd_pf_nonecn->at(i).port == 22 || (tp->fd_pf_nonecn->at(i).port > 5000 && tp->fd_pf_nonecn->at(i).port <= 5050)) {
-                *f_r_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).rate;
-                *f_d_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).drops;
-            }
+            *f_r_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).rate;
+            *f_d_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).drops;
             r_nonecn_tot += tp->fd_pf_nonecn->at(i).rate;
             d_nonecn_tot += tp->fd_pf_nonecn->at(i).drops;
         }
