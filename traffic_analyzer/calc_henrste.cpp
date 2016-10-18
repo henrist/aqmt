@@ -426,7 +426,7 @@ void getSamplesUtilization() {
     double rate_nonecn;
     double util;
 
-    // TODO: why *3 ?
+    // each line consists of three numbers, and we only want the last number
     for (int s = 0; s < NRSAMPLES*3; ++s) {
         if (infile_ecn.eof() || infile_nonecn.eof()) {
             break;
