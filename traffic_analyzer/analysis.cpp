@@ -25,7 +25,7 @@
 #define DEMO_QLIM 140
 #define DEMO_RTT 0.007
 
-#define percentile(p, n) (round(float(p)/100*float(n) + float(1)/2))
+#define percentile(p, n) (ceil(float(p)/100*float(n)))
 
 struct RateVar {
 public:
