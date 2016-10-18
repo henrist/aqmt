@@ -6,9 +6,24 @@ Prerequirements:
 
 ## Starting the services
 
-`docker-compose up`
+`docker-compose up -d --build`
 
-This will bring up all the containers and network configuration
+This will bring up all the containers and network configuration.
+
+## Loading kernel modules (the schedulers)
+
+We do not allow kernel modules to be loaded inside the Docker containers,
+so they have to be compiled and loaded on the host before trying to use
+them inside the container.
+
+```bash
+# on host os, not inside Docker
+cd sch_pi2
+make
+sudo make load
+```
+
+Now the scheduler can be used inside a Docker container.
 
 ## Generating patch for iproute2
 
