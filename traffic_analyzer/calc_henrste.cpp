@@ -28,7 +28,7 @@ struct Parameters {
     uint32_t n_reno;
     std::string fairness;
     int nbrf;
-    int link;
+    double link;
 
     Parameters() {
         rtt_d = 0;
@@ -180,7 +180,7 @@ struct Parameters *params = new Parameters();
 struct Results *res = new Results();
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <folder> <e=rate_equal|d=dc_unequal> <nbr of flows per row/col> <link> <rtt_d> <rtt_r> <nr dctcp flows> <nr reno flows>\n", argv[0]);
+    printf("Usage: %s <folder> <e=rate_equal|d=dc_unequal> <nbr of flows per row/col> <link b/s> <rtt_d> <rtt_r> <nr dctcp flows> <nr reno flows>\n", argv[0]);
     exit(1);
 }
 
@@ -413,7 +413,7 @@ void readFileRate(std::string filename, int nrflows, Statistics *stats_rate, Sta
 }
 
 void getSamplesUtilization() {
-    double link_bytes_ps = (double) params->link * 125000;
+    double link_bytes_ps = (double) params->link / 8;
 
     std::string filename_ecn = params->folder + "/r_tot_ecn";
     std::string filename_nonecn = params->folder + "/r_tot_nonecn";
