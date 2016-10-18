@@ -245,3 +245,11 @@ get_aqm_options() {
 
     tc qdisc show dev $IFACE_CLIENTS | grep "$aqm_name" | sed 's/.*parent [0-9:]\+ //'
 }
+
+# method that will abort the script if we are not on the aqm-machine
+require_on_aqm_node() {
+    if ! [[ $(ip addr show to $IP_AQM_C) ]]; then
+        echo "The program must be run on the AQM-machine"
+        exit 1
+    fi
+}
