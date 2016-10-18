@@ -16,7 +16,7 @@
 
 #define NRSAMPLES 250
 #define PDF_BINS 50
-#define MAX_QS 100
+#define MAX_QS 2048
 
 #define percentile(p, n) (ceil(float(p)/100*float(n)))
 
