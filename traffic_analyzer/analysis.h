@@ -109,8 +109,8 @@ public:
     struct QueueSize qs;
     struct QueueSize d_qs; // total number of drops for each queue size
     struct FlowMap fm;
-    struct timeval start;
-    struct timeval last;
+    uint64_t start; // time in us
+    uint64_t last;  // time in us
     uint64_t tot_packets_ecn;
     uint64_t tot_packets_nonecn;
 
@@ -120,10 +120,6 @@ public:
         fm.init();
         tot_packets_ecn = 0;
         tot_packets_nonecn = 0;
-    }
-
-    void timeStampStart() {
-        gettimeofday(&start, NULL);
     }
 };
 
@@ -168,6 +164,7 @@ public:
 struct ThreadParam {
 public:
     uint64_t packets_captured;
+    uint64_t start;
     pthread_mutex_t m_mutex;
     DataBlock *db1; // used by ProcessPacket
     DataBlock *db2; // used by printInfo
@@ -188,7 +185,7 @@ public:
     void swapDB();
 };
 
-int64_t getStamp();
+uint64_t getStamp();
 int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs, DemoData *demodata);
 
 #endif // ANALYSIS_H

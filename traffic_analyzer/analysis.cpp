@@ -24,6 +24,10 @@
 
 #define DEMO_QLIM 140
 #define DEMO_RTT 0.007
+#define NSEC_PER_SEC 1000000000UL
+#define NSEC_PER_MS 1000000UL
+#define US_PER_S 1000000UL
+#define NSEC_PER_US 1000UL
 
 #define percentile(p, n) (ceil(float(p)/100*float(n)))
 
@@ -41,11 +45,12 @@ static void *pcapLoop(void *param);
 static void *printInfo(void *param);
 static void *demo(void *param);
 
-int64_t getStamp()
+uint64_t getStamp()
 {
+    // returns us
     struct timespec monotime;
     clock_gettime(CLOCK_MONOTONIC, &monotime);
-    return ((int64_t)monotime.tv_sec) * 1000000 + monotime.tv_nsec / 1000;
+    return ((uint64_t)monotime.tv_sec) * US_PER_S + monotime.tv_nsec / NSEC_PER_US;
 }
 
 DemoData::DemoData()
@@ -103,7 +108,7 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
     db1 = new DataBlock();
     db2 = new DataBlock();
     db1->init();
-    db1->timeStampStart();
+    db1->start = getStamp();
 
     m_descr = descr;
 
@@ -135,7 +140,7 @@ void ThreadParam::swapDB(){ // called by printInfo or demo
     pthread_mutex_lock(&m_mutex);
     DataBlock *tmp = db1;
     db1 = db2;
-    db2->timeStampStart();
+    db2->start = getStamp();
     tmp->last = db1->start;
     pthread_mutex_unlock(&m_mutex);
     db2 = tmp;
@@ -344,8 +349,7 @@ void *pcapLoop(void *param)
 
 void processFD(ThreadParam *tp)
 {
-    struct timeval samplelen;
-    timersub(&tp->db2->last, &tp->db2->start, &samplelen);
+    uint64_t samplelen = tp->db2->last - tp->db2->start;
 
     if (!tp->m_demomode)
         printf("Throughput per stream (ECN queue): \n");
@@ -357,7 +361,7 @@ void processFD(ThreadParam *tp)
 
     for (std::map<SrcDst,FlowData>::iterator it = tp->db2->fm.ecn_rate.begin();
         it != tp->db2->fm.ecn_rate.end(); ++it) {
-        uint32_t r = (uint32_t)(it->second.rate*1000000/(samplelen.tv_sec*1000000+samplelen.tv_usec));
+        uint32_t r = (uint32_t) (it->second.rate * 1000000 / samplelen);
         if (!tp->m_demomode) {
             printStreamInfo(it->first);
             printf(" %d bits/sec\n", r * 8);
@@ -399,7 +403,7 @@ void processFD(ThreadParam *tp)
 
     for (std::map<SrcDst,FlowData>::iterator it = tp->db2->fm.nonecn_rate.begin();
          it != tp->db2->fm.nonecn_rate.end(); ++it) {
-        uint32_t r = (uint32_t)(it->second.rate*1000000/(samplelen.tv_sec*1000000+samplelen.tv_usec));
+        uint32_t r = (uint32_t) (it->second.rate * 1000000 / samplelen);
         if (!tp->m_demomode) {
             printStreamInfo(it->first);
             printf(" %d bits/sec\n", r * 8);
@@ -454,7 +458,7 @@ void *printInfo(void *param)
     bzero(drops_pdf_ecn, sizeof(uint64_t)*QS_LIMIT);
     bzero(drops_pdf_nonecn, sizeof(uint64_t)*QS_LIMIT);
 
-    uint64_t time_ms = 0;
+    uint64_t time_ms;
     uint64_t sample_id = 0;
 
     /* queue size */
@@ -505,10 +509,20 @@ void *printInfo(void *param)
     *f_qs_ecn_pdf11s << std::endl;
     *f_qs_ecn_pdfsums << std::endl;
 
+    // first run
+    // to get accurate results we swap the database and initialize timers here
+    // (this way we don't time wrong and gets packets outside our time area)
+    tp->db2->init();
+    tp->swapDB();
+    tp->start = tp->db1->start;
+
     usleep(tp->m_sinterval*1000);
-    uint64_t s, e, diff;
-    s = getStamp();
+
+    uint64_t elapsed, next, sleeptime;
+
     while (1) {
+        tp->swapDB();
+
         tp->fd_pf_ecn->fill(FlowData(0, 0, 0, 0));
         tp->fd_pf_nonecn->fill(FlowData(0, 0, 0, 0));
 
@@ -526,13 +540,14 @@ void *printInfo(void *param)
         std::ofstream *f_qs_drops_ecn_cdf = openFileW(tp->m_folder,  "/qs_drops_ecn_cdf");
         std::ofstream *f_qs_drops_nonecn_cdf = openFileW(tp->m_folder,  "/qs_drops_nonecn_cdf");
 
-        tp->swapDB();
+        // time since we started processing
+        time_ms = (tp->db2->last - tp->start) / 1000;
 
         printf("\n--- SAMPLE # %d", (int) sample_id + 1);
         if (tp->m_nrs != 0) {
             printf(" of %d", tp->m_nrs);
         }
-        printf(" ---\n");
+        printf(" -- total run time %d ms ---\n", (int) time_ms);
 
         printf("       ECN 00 qsize: ");
         printf("       ECN 01 qsize: ");
@@ -549,7 +564,6 @@ void *printInfo(void *param)
         uint64_t cdf_qs_nonecn = 0;
         uint64_t cdf_drops_ecn = 0;
         uint64_t cdf_drops_nonecn = 0;
-
 
         double qs_ecn_sum = 0;
         double qs_nonecn_sum = 0;
@@ -705,19 +719,17 @@ void *printInfo(void *param)
         }
 
         sample_id++;
-        //time_ms += tp->m_sinterval;
         tp->db2->init(); // init outside the critical area to save time
 
-        e = getStamp();
-        diff = e - s;
-        if (sample_id*tp->m_sinterval*1000 > diff) {
-            uint64_t sleeptime = (uint64_t)sample_id*tp->m_sinterval*1000 - diff;
-            printf("sleeping for %d us\n", (int)sleeptime);
+        elapsed = getStamp() - tp->start;
+        next = ((uint64_t) sample_id + 1) * tp->m_sinterval * 1000; // convert ms to us
+
+        int process_time = getStamp() - tp->db2->last;
+        if (elapsed < next) {
+            uint64_t sleeptime = next - elapsed;
+            printf("Processed data in approx. %d us - sleeping for %d us\n", (int) process_time, (int) sleeptime);
             usleep(sleeptime);
         }
-
-        time_ms = diff/1000;
-
     }
 
     return 0;
