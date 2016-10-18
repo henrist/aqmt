@@ -184,6 +184,9 @@ public:
     DemoData *demo_data;
     ThreadParam(pcap_t* descr, uint32_t sinterval, char* folder, uint32_t nrs, bool ipc, DemoData *demodata);
     void swapDB();
+    volatile bool quit;
+    pthread_cond_t quit_cond;
+    pthread_mutex_t quit_lock;
 };
 
 uint64_t getStamp();

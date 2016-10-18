@@ -40,6 +40,6 @@ int main(int argc, char **argv)
 
     start_analysis(dev, folder, sinterval, pcapfilter, ipclass, nrs, 0);
 
-    fprintf(stderr,"main exiting..\n");
+    //fprintf(stderr,"main exiting..\n");
     return 0;
 }

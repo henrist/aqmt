@@ -1,5 +1,6 @@
 #include "analysis.h"
 
+#include <csignal>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -134,6 +135,8 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
 
     packets_captured = 0;
     packets_processed = 0;
+
+    quit = false;
 }
 
 void ThreadParam::swapDB(){ // called by printInfo or demo
@@ -147,6 +150,14 @@ void ThreadParam::swapDB(){ // called by printInfo or demo
     db2 = tmp;
 }
 
+// we need ThreadParam global to use it in the signal handler
+ThreadParam *tp;
+
+void signalHandler(int signum) {
+    tp->quit = true;
+    pthread_cond_broadcast(&tp->quit_cond);
+}
+
 void IPtoString (in_addr_t ip)
 {
     char *an_addr;
@@ -156,9 +167,8 @@ void IPtoString (in_addr_t ip)
     printf("%s", an_addr);
 }
 
-void processPacket(u_char *args, const struct pcap_pkthdr *header, const u_char *buffer)
+void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
 {
-    ThreadParam *tp = (ThreadParam*) args;
     IPHDR *iph = (IPHDR*)(buffer + 14); // ethernet header is 14 bytes
 
     uint8_t proto = PCOL(iph);
@@ -248,7 +258,7 @@ std::ofstream *openFileW(std::string folder, std::string filename)
     return f;
 }
 
-void printProto (uint8_t proto)
+void printProto(uint8_t proto)
 {
     if (proto == IPPROTO_TCP)
         printf("TCP ");
@@ -311,10 +321,17 @@ int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pca
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_JOINABLE);
     int res;
-    ThreadParam tp(descr, sinterval, folder, nrs, ipclass, demodata);
+    tp = new ThreadParam(descr, sinterval, folder, nrs, ipclass, demodata);
+
+    // initialize pthread condition used to quit threads on interrupts
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init(&tp->quit_cond, &attr);
+    pthread_mutex_init(&tp->quit_lock, NULL);
 
     thread_id[0] = 0;
-    res = pthread_create(&thread_id[0], &attrs, &pcapLoop, (void*)&tp);
+    res = pthread_create(&thread_id[0], &attrs, &pcapLoop, NULL);
 
     if (res != 0) {
         fprintf(stderr, "Error while creating thread, exiting...\n");
@@ -323,32 +340,39 @@ int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pca
 
     thread_id[1] = 0;
     if (demodata != 0)
-        res = pthread_create(&thread_id[1], &attrs, &demo, (void*)&tp);
+        res = pthread_create(&thread_id[1], &attrs, &demo, NULL);
     else
-        res = pthread_create(&thread_id[1], &attrs, &printInfo, (void*)&tp);
+        res = pthread_create(&thread_id[1], &attrs, &printInfo, NULL);
 
     if (res != 0) {
         fprintf(stderr, "Error while creating thread, exiting...\n");
         exit(1);
     }
 
-    for (i = 0; i < 2; i++)
-        res = pthread_join(thread_id[i], NULL);
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+
+    pthread_join(thread_id[1], NULL);
+    pcap_breakloop(tp->m_descr);
+    pthread_join(thread_id[0], NULL);
+
+    std::cout << "Packets captured: " << tp->packets_captured << std::endl;
+    std::cout << "Packets processed: " << tp->packets_processed << std::endl;
 
     return 0;
 }
 
-void *pcapLoop(void *param)
+void *pcapLoop(void *)
 {
-    ThreadParam *tp = (ThreadParam*) param;
     // Put the device in sniff loop
-    fprintf(stderr, "starting capture\n");
-    pcap_loop(tp->m_descr , -1 , processPacket , (u_char*)param);
-    fprintf(stderr, "pcap_loop returned\n");
+    //fprintf(stderr, "starting capture\n");
+    pcap_loop(tp->m_descr, -1, processPacket, NULL);
+    pcap_close(tp->m_descr);
+    //fprintf(stderr, "pcap_loop returned\n");
     return 0;
 }
 
-void processFD(ThreadParam *tp)
+void processFD()
 {
     uint64_t samplelen = tp->db2->last - tp->db2->start;
 
@@ -443,10 +467,29 @@ void processFD(ThreadParam *tp)
     }
 }
 
-void *printInfo(void *param)
-{
-    ThreadParam *tp = (ThreadParam*) param;
+void wait(uint64_t sleep_ns) {
+    struct timespec target;
+    clock_gettime(CLOCK_MONOTONIC, &target);
 
+    uint64_t nsec = target.tv_nsec + sleep_ns;
+    while (nsec > NSEC_PER_SEC) {
+        target.tv_sec++;
+        nsec -= NSEC_PER_SEC;
+    }
+
+    target.tv_nsec = nsec;
+
+    pthread_mutex_lock(&tp->quit_lock);
+    int ret = 0;
+
+    while (ret == 0 && !tp->quit)
+        ret = pthread_cond_timedwait(&tp->quit_cond, &tp->quit_lock, &target);
+
+    pthread_mutex_unlock(&tp->quit_lock);
+}
+
+void *printInfo(void *)
+{
     uint16_t qsize_reno;
     uint16_t qsize_dctcp;
 
@@ -517,11 +560,15 @@ void *printInfo(void *param)
     tp->swapDB();
     tp->start = tp->db1->start;
 
-    usleep(tp->m_sinterval*1000);
+    wait(tp->m_sinterval * NSEC_PER_MS);
 
     uint64_t elapsed, next, sleeptime;
 
     while (1) {
+        if (tp->quit) {
+            return 0;
+        }
+
         tp->swapDB();
 
         tp->fd_pf_ecn->fill(FlowData(0, 0, 0, 0));
@@ -640,7 +687,7 @@ void *printInfo(void *param)
         *f_m_pf_ecn << sample_id << " " << time_ms;
         *f_m_tot_ecn << sample_id << " " << time_ms;
 
-        processFD(tp);
+        processFD();
         uint64_t r_ecn_tot = 0;
         uint64_t r_nonecn_tot = 0;
         uint64_t d_ecn_tot = 0;
@@ -714,12 +761,8 @@ void *printInfo(void *param)
             f_qs_ecn_avg->close();
             f_qs_nonecn_avg->close();
 
-            printf("Obtained given number of samples (%d), exiting.\n", tp->m_nrs);
-            pthread_mutex_lock(&tp->m_mutex);
-            std::cout << "Packets captured: " << tp->packets_captured << std::endl;
-            std::cout << "Packets processed: " << tp->packets_processed << std::endl;
-
-            exit(0);
+            printf("Obtained given number of samples (%d)\n", tp->m_nrs);
+            return 0;
         }
 
         sample_id++;
@@ -732,16 +775,15 @@ void *printInfo(void *param)
         if (elapsed < next) {
             uint64_t sleeptime = next - elapsed;
             printf("Processed data in approx. %d us - sleeping for %d us\n", (int) process_time, (int) sleeptime);
-            usleep(sleeptime);
+            wait(sleeptime * NSEC_PER_US);
         }
     }
 
     return 0;
 }
 
-void *demo(void *param)
+void *demo(void *)
 {
-    ThreadParam *tp = (ThreadParam*) param;
     // init
     usleep(tp->m_sinterval*1000);
     while (1) {
@@ -749,7 +791,7 @@ void *demo(void *param)
         uint64_t s, e, diff;
         s = getStamp();
         tp->demo_data->init();
-        processFD(tp);
+        processFD();
         // prepare data for demo
         pthread_mutex_lock(&tp->demo_data->mutex);
         // process qsizes first
