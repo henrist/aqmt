@@ -30,6 +30,7 @@ RUN apt-get update \
 ADD container/id_rsa /root/.ssh/
 ADD container/id_rsa.pub /root/.ssh/
 ADD container/id_rsa.pub /root/.ssh/authorized_keys
+ADD container/speedometer.patch /opt/
 RUN chmod 600 /root/.ssh/* \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -38,22 +39,29 @@ RUN chmod 600 /root/.ssh/* \
          ethtool \
          git \
          iputils-ping \
-         netcat-openbsd \
          iperf \
          iperf3 \
          iptraf \
          less \
          net-tools \
+         netcat-openbsd \
          nmap \
          openssh-server \
+         patch \
          psmisc \
-         speedometer \
+         python \
+         python-urwid \
          sudo \
          tcpdump \
          tmux \
          vim \
+         wget \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /var/run/sshd \
+    \
+    && wget -O /usr/bin/speedometer https://raw.githubusercontent.com/wardi/speedometer/9211116e8df11fc6458489b209de2900ab2e3e84/speedometer.py \
+    && (cd /usr/bin; patch </opt/speedometer.patch) \
+    && chmod +x /usr/bin/speedometer \
     \
     # dont check host keys when connecting
     && sed -i 's/#   StrictHostKeyChecking .*/    StrictHostKeyChecking no/' /etc/ssh/ssh_config \

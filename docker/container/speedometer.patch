@@ -1,0 +1,34 @@
+--- speedometer	2016-10-17 21:34:35.504788207 +0200
++++ speedometer	2016-10-17 21:38:25.646224507 +0200
+@@ -520,23 +520,23 @@
+     if speed == None or speed < 0: speed = 0
+
+     speed = speed * 8
+-    units = "b/s  ", "Kib/s", "Mib/s", "Gib/s", "Tib/s"
++    units = "b/s  ", "Kb/s", "Mb/s", "Gb/s", "Tb/s"
+     step = 1L
+
+     for u in units:
+
+         if step > 1:
++            s = "%4.3f " %(float(speed)/step)
++            if len(s) <= 6: return s + u
+             s = "%4.2f " %(float(speed)/step)
+-            if len(s) <= 5: return s + u
+-            s = "%4.1f " %(float(speed)/step)
+-            if len(s) <= 5: return s + u
++            if len(s) <= 6: return s + u
+
+-        if speed/step < 1024:
++        if speed/step < 1000:
+-            return "%4d " %(speed/step) + u
++            return "%5d " %(speed/step) + u
+
+-        step = step * 1024L
++        step = step * 1000L
+
+-    return "%4d " % (speed/(step/1024)) + units[-1]
++    return "%5d " % (speed/(step/1000)) + units[-1]
+
+
+
