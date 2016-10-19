@@ -535,37 +535,37 @@ int main(int argc, char **argv) {
     std::stringstream out;
 
     out << res->rate_ecn->average() << std::endl;
-    writeToFile("avgrate_ecn", out.str()); out.str("");
+    writeToFile("r_tot_ecn_avg", out.str()); out.str("");
 
     out << res->rate_nonecn->average() << std::endl;
-    writeToFile("avgrate_nonecn", out.str()); out.str("");
+    writeToFile("r_tot_nonecn_avg", out.str()); out.str("");
 
     out << "s" << params->n_dctcp << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
-    writeToFile("avg99pqs_ecn_2d", out.str()); out.str("");
+    writeToFile("qs_ecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_reno <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
-    writeToFile("avg99pqs_nonecn_2d", out.str()); out.str("");
+    writeToFile("qs_nonecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_dctcp <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
-    writeToFile("avgstddevrate_ecn_2d", out.str()); out.str("");
+    writeToFile("r_tot_ecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_reno << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
-    writeToFile("avgstddevrate_nonecn_2d", out.str()); out.str("");
+    writeToFile("r_tot_nonecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_dctcp <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
-    writeToFile("avgstddevwin_ecn_2d", out.str()); out.str("");
+    writeToFile("win_ecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_reno <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
-    writeToFile("avgstddevwin_nonecn_2d", out.str()); out.str("");
+    writeToFile("win_nonecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_dctcp <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->stddev() << std::endl;
-    writeToFile("avg99pdrop_ecn_2d", out.str()); out.str("");
+    writeToFile("d_percent_ecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_reno << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->stddev() << std::endl;
-    writeToFile("avg99pdrop_nonecn_2d", out.str()); out.str("");
+    writeToFile("d_percent_nonecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_dctcp <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->stddev() << std::endl;
-    writeToFile("avg99pmark_ecn_2d", out.str()); out.str("");
+    writeToFile("m_percent_ecn_stats", out.str()); out.str("");
 
     out << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->rr_static << std::endl;
     writeToFile("rr_2d", out.str()); out.str("");
@@ -574,7 +574,7 @@ int main(int argc, char **argv) {
     writeToFile("wr_2d", out.str()); out.str("");
 
     out << "s" << params->n_dctcp  << ":" << "s" << params->n_reno <<  " " << res->util->average() << " " << res->util->p(99) << " " << res->util->p(1) << std::endl;
-    writeToFile("util_2d", out.str()); out.str("");
+    writeToFile("util_stats", out.str()); out.str("");
 
     return 0;
 }
