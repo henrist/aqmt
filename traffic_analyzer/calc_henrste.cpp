@@ -94,6 +94,10 @@ class Statistics {
         return _coeffVar;
     }
 
+    double stddev() {
+        return sqrt(variance());
+    }
+
   private:
     bool calculated_variance;
     bool calculated_coeffVar;
@@ -104,7 +108,7 @@ class Statistics {
 
     void calculate_coeffVar() {
         if (variance() > 0 && average() > 0) {
-            _coeffVar = sqrt(variance()) / average();
+            _coeffVar = stddev() / average();
         } else {
             _coeffVar = 0;
         }
@@ -536,31 +540,31 @@ int main(int argc, char **argv) {
     out << res->rate_nonecn->average() << std::endl;
     writeToFile("avgrate_nonecn", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << (res->rate_ecn->coeffVar()*res->qs_ecn->average()) << std::endl;
+    out << "s" << params->n_dctcp << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
     writeToFile("avg99pqs_ecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_reno <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << (res->rate_nonecn->coeffVar()*res->qs_nonecn->average()) << std::endl;
+    out << "s" << params->n_reno <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
     writeToFile("avg99pqs_nonecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " <<(res->rate_ecn->coeffVar()*res->rate_ecn->average()) << std::endl;
+    out << "s" << params->n_dctcp <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
     writeToFile("avgstddevrate_ecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_reno << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << (res->rate_ecn->coeffVar()*res->rate_nonecn->average()) << std::endl;
+    out << "s" << params->n_reno << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
     writeToFile("avgstddevrate_nonecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " <<(res->win_ecn->coeffVar()*res->win_ecn->average()) << std::endl;
+    out << "s" << params->n_dctcp <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
     writeToFile("avgstddevwin_ecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_reno <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " <<(res->win_nonecn->coeffVar()*res->win_nonecn->average()) << std::endl;
+    out << "s" << params->n_reno <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
     writeToFile("avgstddevwin_nonecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << sqrt(res->drops_qs_ecn->variance()) << std::endl;
+    out << "s" << params->n_dctcp <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->stddev() << std::endl;
     writeToFile("avg99pdrop_ecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_reno << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << sqrt(res->drops_qs_nonecn->variance()) << std::endl;
+    out << "s" << params->n_reno << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->stddev() << std::endl;
     writeToFile("avg99pdrop_nonecn_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << sqrt(res->marks_ecn->variance()) << std::endl;
+    out << "s" << params->n_dctcp <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->stddev() << std::endl;
     writeToFile("avg99pmark_ecn_2d", out.str()); out.str("");
 
     out << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->rr_static << std::endl;
