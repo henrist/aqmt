@@ -742,6 +742,8 @@ void *printInfo(void *)
 
         tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
 
+        printf("Total throughput: %lu bits/sec\n", (r_nonecn_tot + r_ecn_tot) * 8);
+
         if (tp->m_nrs != 0 && sample_id >= (tp->m_nrs - 1)) {
 
             f_qs_ecn_pdf00s->close();
