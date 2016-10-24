@@ -417,8 +417,6 @@ void readFileRate(std::string filename, int nrflows, Statistics *stats_rate, Sta
 }
 
 void getSamplesUtilization() {
-    double link_bytes_ps = (double) params->link / 8;
-
     std::string filename_ecn = params->folder + "/r_tot_ecn";
     std::string filename_nonecn = params->folder + "/r_tot_nonecn";
 
@@ -440,7 +438,7 @@ void getSamplesUtilization() {
         infile_nonecn >> rate_nonecn;
 
         if ((s+1)%3 == 0) {
-            util = (rate_ecn+rate_nonecn)*100/link_bytes_ps;
+            util = (rate_ecn+rate_nonecn) * 100 / params->link;
             samples->push_back(util);
         }
     }
