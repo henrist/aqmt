@@ -38,10 +38,13 @@ RUN chmod 600 /root/.ssh/* \
          ca-certificates \
          ethtool \
          git \
+         gnuplot \
+         inotify-tools \
          iputils-ping \
          iperf \
          iperf3 \
          iptraf \
+         ipython3 \
          less \
          net-tools \
          netcat-openbsd \
@@ -51,6 +54,7 @@ RUN chmod 600 /root/.ssh/* \
          psmisc \
          python \
          python-urwid \
+         python3-plumbum \
          sudo \
          tcpdump \
          tmux \
