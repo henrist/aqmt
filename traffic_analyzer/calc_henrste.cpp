@@ -146,7 +146,9 @@ struct Results {
     Statistics *drops_qs_ecn;
     Statistics *drops_qs_nonecn;
     Statistics *marks_ecn;
-    Statistics *util; // utilization
+    Statistics *util_ecn;
+    Statistics *util_nonecn;
+    Statistics *util; // total utilization
 
     double rr_static;
     double wr_static;
@@ -167,6 +169,8 @@ struct Results {
         drops_qs_ecn = new Statistics();
         drops_qs_nonecn = new Statistics();
         marks_ecn = new Statistics();
+        util_ecn = new Statistics();
+        util_nonecn = new Statistics();
         util = new Statistics();
 
         rr_static = NAN;
@@ -423,9 +427,13 @@ void getSamplesUtilization() {
     std::ifstream infile_ecn(filename_ecn.c_str());
     std::ifstream infile_nonecn(filename_nonecn.c_str());
 
+    std::vector<double> *samples_ecn = new std::vector<double>();
+    std::vector<double> *samples_nonecn = new std::vector<double>();
     std::vector<double> *samples = new std::vector<double>();
     double rate_ecn;
     double rate_nonecn;
+    double util_ecn;
+    double util_nonecn;
     double util;
 
     // each line consists of three numbers, and we only want the last number
@@ -438,13 +446,19 @@ void getSamplesUtilization() {
         infile_nonecn >> rate_nonecn;
 
         if ((s+1)%3 == 0) {
+            util_ecn = rate_ecn * 100 / params->link;
+            util_nonecn = rate_nonecn * 100 / params->link;
             util = (rate_ecn+rate_nonecn) * 100 / params->link;
+            samples_ecn->push_back(util_ecn);
+            samples_nonecn->push_back(util_nonecn);
             samples->push_back(util);
         }
     }
 
     infile_ecn.close();
     infile_nonecn.close();
+    res->util_ecn->samples(samples_ecn);
+    res->util_nonecn->samples(samples_nonecn);
     res->util->samples(samples);
 }
 
@@ -571,7 +585,9 @@ int main(int argc, char **argv) {
     out << "s" << params->n_ecn << ":" << "s" << params->n_nonecn << " " << res->wr_static << std::endl;
     writeToFile("wr_2d", out.str()); out.str("");
 
-    out << "s" << params->n_ecn  << ":" << "s" << params->n_nonecn <<  " " << res->util->average() << " " << res->util->p(99) << " " << res->util->p(1) << std::endl;
+    out << "s" << params->n_ecn  << ":" << "s" << params->n_nonecn << " " << res->util->average() << " " << res->util->p(99) << " " << res->util->p(1)
+                    << " " << res->util_ecn->average() << " " << res->util_ecn->p(99) << " " << res->util_ecn->p(1)
+                    << " " << res->util_nonecn->average() << " " << res->util_nonecn->p(99) << " " << res->util_nonecn->p(1) << std::endl;
     writeToFile("util_stats", out.str()); out.str("");
 
     return 0;
