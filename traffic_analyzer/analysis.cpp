@@ -191,7 +191,8 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     }
 
     SrcDst sd(proto, SADDR(iph), sport, DADDR(iph), dport);
-    uint16_t iplen = (IP_LEN(iph));
+    uint16_t iplen = IP_LEN(iph) + 14; // include the 14 bytes in ethernet header
+                                       // the link bandwidth includes it
     std::map<SrcDst,FlowData> *fmap;
     uint32_t mark = 0;
 
