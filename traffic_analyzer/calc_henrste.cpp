@@ -24,8 +24,8 @@ struct Parameters {
     double rtt_d;
     double rtt_r;
     std::string folder;
-    uint32_t n_dctcp;
-    uint32_t n_reno;
+    uint32_t n_ecn;
+    uint32_t n_nonecn;
     std::string fairness;
     int nbrf;
     double link;
@@ -34,8 +34,8 @@ struct Parameters {
         rtt_d = 0;
         rtt_r = 0;
         folder = "";
-        n_dctcp = 0;
-        n_reno = 0;
+        n_ecn = 0;
+        n_nonecn = 0;
         fairness = "";
         nbrf = 0;
         link = 0;
@@ -184,7 +184,7 @@ struct Parameters *params = new Parameters();
 struct Results *res = new Results();
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <folder> <e=rate_equal|d=dc_unequal> <nbr of flows per row/col> <link b/s> <rtt_d> <rtt_r> <nr dctcp flows> <nr reno flows>\n", argv[0]);
+    printf("Usage: %s <folder> <e=rate_equal|d=dc_unequal> <nbr of flows per row/col> <link b/s> <rtt_d> <rtt_r> <nr ecn flows> <nr nonecn flows>\n", argv[0]);
     exit(1);
 }
 
@@ -269,7 +269,7 @@ void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ec
     f_dnonecn_pdf->close();
 }
 
-void rPDF(Statistics *rate_ecn, Statistics *rate_nonecn, char fairness, int dctcp, int reno, int nbrf) {
+void rPDF(Statistics *rate_ecn, Statistics *rate_nonecn, char fairness, int n_ecn, int n_nonecn, int nbrf) {
     std::ofstream *f_recn_pdf = openFileW("r_pf_ecn_pdf");
     std::ofstream *f_rnonecn_pdf = openFileW("r_pf_nonecn_pdf");
     uint32_t recn_pdf[PDF_BINS];
@@ -280,7 +280,7 @@ void rPDF(Statistics *rate_ecn, Statistics *rate_nonecn, char fairness, int dctc
     std::vector<double> *samples_rate_ecn = rate_ecn->samples();
     std::vector<double> *samples_rate_nonecn = rate_nonecn->samples();
 
-    uint32_t max = fairness == 'e' ? dctcp + reno : (dctcp ? dctcp : reno);
+    uint32_t max = fairness == 'e' ? n_ecn + n_nonecn : (n_ecn ? n_ecn : n_nonecn);
     if (max == 0)
         max = 1;
 
@@ -481,10 +481,10 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 }
 
 void getSamplesRateMarksDrops() {
-    readFileRate(params->folder + "/r_tot_ecn", params->n_dctcp, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
+    readFileRate(params->folder + "/r_tot_ecn", params->n_ecn, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
     readFileMarks(params->folder + "/m_tot_ecn", res->marks_ecn, params->folder + "/tot_packets_ecn");
     readFileDrops(params->folder + "/d_tot_ecn", res->drops_qs_ecn, params->folder + "/tot_packets_ecn");
-    readFileRate(params->folder + "/r_tot_nonecn", params->n_reno, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
+    readFileRate(params->folder + "/r_tot_nonecn", params->n_nonecn, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
     readFileDrops(params->folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->folder + "/tot_packets_nonecn");
 }
 
@@ -504,8 +504,8 @@ void loadParameters(int argc, char **argv) {
     params->link = atoi(argv[4]);
     params->rtt_d = (double) atoi(argv[5]);
     params->rtt_r = (double) atoi(argv[6]);
-    params->n_dctcp = atoi(argv[7]);
-    params->n_reno = atoi(argv[8]);
+    params->n_ecn = atoi(argv[7]);
+    params->n_nonecn = atoi(argv[8]);
 
     if (params->fairness.length() != 1) {
         usage(argc, argv);
@@ -519,12 +519,12 @@ int main(int argc, char **argv) {
     getSamplesRateMarksDrops();
     getSamplesUtilization();
 
-    if (params->n_dctcp > 0) {
+    if (params->n_ecn > 0) {
         res->rr_static = res->rate_nonecn->average() / res->rate_ecn->average();
         res->wr_static = res->win_nonecn->average() / res->win_ecn->average();
     }
 
-    //rPDF(res->rate_ecn, res->rate_nonecn, params->fairness[0], params->n_dctcp, params->n_reno, params->nbrf);
+    //rPDF(res->rate_ecn, res->rate_nonecn, params->fairness[0], params->n_ecn, params->n_nonecn, params->nbrf);
     //dmPDF(res->drops_qs_ecn, res->drops_qs_nonecn, res->marks_ecn, i);
 
     if (res->drops_qs_nonecn->p(99) > 100) {
@@ -540,40 +540,40 @@ int main(int argc, char **argv) {
     out << res->rate_nonecn->average() << std::endl;
     writeToFile("r_tot_nonecn_avg", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
+    out << "s" << params->n_ecn << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
     writeToFile("qs_ecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_reno <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
+    out << "s" << params->n_nonecn <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
     writeToFile("qs_nonecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
+    out << "s" << params->n_ecn <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
     writeToFile("r_tot_ecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_reno << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
+    out << "s" << params->n_nonecn << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
     writeToFile("r_tot_nonecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
+    out << "s" << params->n_ecn <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
     writeToFile("win_ecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_reno <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
+    out << "s" << params->n_nonecn <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
     writeToFile("win_nonecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->stddev() << std::endl;
+    out << "s" << params->n_ecn <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->stddev() << std::endl;
     writeToFile("d_percent_ecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_reno << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->stddev() << std::endl;
+    out << "s" << params->n_nonecn << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->stddev() << std::endl;
     writeToFile("d_percent_nonecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->stddev() << std::endl;
+    out << "s" << params->n_ecn <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->stddev() << std::endl;
     writeToFile("m_percent_ecn_stats", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->rr_static << std::endl;
+    out << "s" << params->n_ecn << ":" << "s" << params->n_nonecn << " " << res->rr_static << std::endl;
     writeToFile("rr_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp << ":" << "s" << params->n_reno << " " << res->wr_static << std::endl;
+    out << "s" << params->n_ecn << ":" << "s" << params->n_nonecn << " " << res->wr_static << std::endl;
     writeToFile("wr_2d", out.str()); out.str("");
 
-    out << "s" << params->n_dctcp  << ":" << "s" << params->n_reno <<  " " << res->util->average() << " " << res->util->p(99) << " " << res->util->p(1) << std::endl;
+    out << "s" << params->n_ecn  << ":" << "s" << params->n_nonecn <<  " " << res->util->average() << " " << res->util->p(99) << " " << res->util->p(1) << std::endl;
     writeToFile("util_stats", out.str()); out.str("");
 
     return 0;
