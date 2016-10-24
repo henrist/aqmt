@@ -130,13 +130,12 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
 
     nr_ecn_flows = 0;
     nr_nonecn_flows = 0;
-    fd_pf_ecn = new std::array<FlowData, MAX_FLOWS>();
-    fd_pf_nonecn = new std::array<FlowData, MAX_FLOWS>();
 
     packets_captured = 0;
     packets_processed = 0;
 
     quit = false;
+    sample_id = 0;
 }
 
 void ThreadParam::swapDB(){ // called by printInfo or demo
@@ -158,13 +157,10 @@ void signalHandler(int signum) {
     pthread_cond_broadcast(&tp->quit_cond);
 }
 
-void IPtoString (in_addr_t ip)
-{
-    char *an_addr;
+char *IPtoString(in_addr_t ip) {
     struct sockaddr_in ipip;
     ipip.sin_addr.s_addr = ip;
-    an_addr = inet_ntoa(ipip.sin_addr);
-    printf("%s", an_addr);
+    return inet_ntoa(ipip.sin_addr);
 }
 
 void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
@@ -260,23 +256,20 @@ std::ofstream *openFileW(std::string folder, std::string filename)
     return f;
 }
 
-void printProto(uint8_t proto)
-{
+std::string getProtoRepr(uint8_t proto) {
     if (proto == IPPROTO_TCP)
-        printf("TCP ");
+        return "TCP";
     else if (proto == IPPROTO_UDP)
-        printf("UDP ");
+        return "UDP";
     else if (proto == IPPROTO_ICMP)
-        printf("ICMP ");
+        return "ICMP";
+    return "UNKNOWN";
 }
 
 void printStreamInfo(SrcDst sd)
 {
-    printProto(sd.m_proto);
-    IPtoString(sd.m_srcip);
-    printf(":%d -> ", sd.m_srcport);
-    IPtoString(sd.m_dstip);
-    printf(":%d ", sd.m_dstport);
+    std::cout << getProtoRepr(sd.m_proto) << " " << IPtoString(sd.m_srcip) << ":" << sd.m_srcport << " -> ";
+    std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
 int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs, DemoData *demodata)
@@ -374,62 +367,58 @@ void *pcapLoop(void *)
     return 0;
 }
 
+void addFlow(std::map<SrcDst,std::vector<FlowData>> *fd_pf, SrcDst srcdst, FlowData fd) {
+    uint64_t samplelen = tp->db2->last - tp->db2->start;
+    uint64_t r = fd.rate * 1000000 / samplelen;
+
+    printStreamInfo(srcdst);
+    printf(" %lu bits/sec\n", r);
+
+    if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP || srcdst.m_proto == IPPROTO_ICMP) {
+        if (fd_pf->count(srcdst) == 0) {
+            std::vector<FlowData> data;
+            data.resize(tp->sample_id);
+            fd_pf->insert(std::pair<SrcDst,std::vector<FlowData>>(srcdst, data));
+        }
+
+        if (fd_pf->at(srcdst).size() != tp->sample_id) {
+            throw "Sample ID not equal to flow map size";
+        }
+
+        fd.rate = r;
+        fd_pf->at(srcdst).push_back(fd);
+    }
+}
+
 void processFD()
 {
-    uint64_t samplelen = tp->db2->last - tp->db2->start;
-
-    printf("Throughput per stream (ECN queue): \n");
+    printf("Throughput per stream (ECN queue):\n");
 
     for (auto& kv: tp->db2->fm.ecn_rate) {
         const SrcDst& srcdst = kv.first;
         FlowData& fd = kv.second;
 
-        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
-
-        printStreamInfo(srcdst);
-        printf(" %d bits/sec\n", r * 8);
-
-        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
-            std::pair<std::map<SrcDst,uint32_t>::iterator,bool> ret;
-            uint32_t findex = tp->nr_ecn_flows;
-
-            ret = tp->ecn_flows_map.insert(std::pair<SrcDst,uint32_t>(srcdst, findex));
-            if (ret.second == false)
-                findex = tp->ecn_flows_map.at(srcdst);
-            else
-                tp->nr_ecn_flows++;
-
-            tp->fd_pf_ecn->at(findex).rate = r;
-            tp->fd_pf_ecn->at(findex).drops = fd.drops;
-            tp->fd_pf_ecn->at(findex).marks = fd.marks;
-            tp->fd_pf_ecn->at(findex).port = fd.port;
-        }
+        addFlow(&tp->fd_pf_ecn, srcdst, fd);
     }
 
-    printf("Throughput per stream (non-ECN queue): \n");
+    printf("Throughput per stream (non-ECN queue):\n");
 
     for (auto& kv: tp->db2->fm.nonecn_rate) {
         const SrcDst& srcdst = kv.first;
         FlowData& fd = kv.second;
 
-        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
+        addFlow(&tp->fd_pf_nonecn, srcdst, fd);
+    }
 
-        printStreamInfo(srcdst);
-        printf(" %d bits/sec\n", r * 8);
-
-        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
-            std::pair<std::map<SrcDst,uint32_t>::iterator,bool> ret;
-            uint32_t findex = tp->nr_nonecn_flows;
-
-            ret = tp->nonecn_flows_map.insert(std::pair<SrcDst,uint32_t>(srcdst, findex));
-            if (ret.second == false)
-                findex = tp->nonecn_flows_map.at(srcdst);
-            else
-                tp->nr_nonecn_flows++;
-
-            tp->fd_pf_nonecn->at(findex).rate = r;
-            tp->fd_pf_nonecn->at(findex).drops = fd.drops;
-            tp->fd_pf_nonecn->at(findex).port = fd.port;
+    // make sure all lists are filled
+    for (auto& kv: tp->fd_pf_ecn) {
+        if (kv.second.size() != tp->sample_id + 1) {
+            kv.second.resize(tp->sample_id + 1);
+        }
+    }
+    for (auto& kv: tp->fd_pf_nonecn) {
+        if (kv.second.size() != tp->sample_id + 1) {
+            kv.second.resize(tp->sample_id + 1);
         }
     }
 }
@@ -470,7 +459,6 @@ void *printInfo(void *)
     bzero(drops_pdf_nonecn, sizeof(uint64_t)*QS_LIMIT);
 
     uint64_t time_ms;
-    uint64_t sample_id = 0;
 
     /* queue size */
     // per sample
@@ -487,18 +475,13 @@ void *printInfo(void *)
     std::ofstream *f_qs_ecn_avg = openFileW(tp->m_folder, "/qs_ecn_avg");
     std::ofstream *f_qs_nonecn_avg = openFileW(tp->m_folder, "/qs_nonecn_avg");
 
-    /* rate, drops, marks*/
-    // per sample
-    std::ofstream *f_r_pf_ecn =  openFileW(tp->m_folder, "/r_pf_ecn"); // per flow
-    std::ofstream *f_r_tot_ecn =  openFileW(tp->m_folder, "/r_tot_ecn"); // total for all flows
-    std::ofstream *f_r_pf_nonecn =  openFileW(tp->m_folder, "/r_pf_nonecn"); // per flow
-    std::ofstream *f_r_tot_nonecn =  openFileW(tp->m_folder, "/r_tot_nonecn"); // total for all flows
-    std::ofstream *f_d_pf_ecn =  openFileW(tp->m_folder, "/d_pf_ecn"); // per flow
-    std::ofstream *f_d_tot_ecn =  openFileW(tp->m_folder, "/d_tot_ecn"); // total for all flows
-    std::ofstream *f_d_pf_nonecn =  openFileW(tp->m_folder, "/d_pf_nonecn"); // per flow
-    std::ofstream *f_d_tot_nonecn =  openFileW(tp->m_folder, "/d_tot_nonecn"); // total for all flows
-    std::ofstream *f_m_pf_ecn =  openFileW(tp->m_folder, "/m_pf_ecn"); // per flow
-    std::ofstream *f_m_tot_ecn =  openFileW(tp->m_folder, "/m_tot_ecn"); // total for all flows
+    /* per sample total of rate, drops, marks */
+    std::ofstream *f_r_tot_ecn =  openFileW(tp->m_folder, "/r_tot_ecn");
+    std::ofstream *f_r_tot_nonecn =  openFileW(tp->m_folder, "/r_tot_nonecn");
+    std::ofstream *f_d_tot_ecn =  openFileW(tp->m_folder, "/d_tot_ecn");
+    std::ofstream *f_d_tot_nonecn =  openFileW(tp->m_folder, "/d_tot_nonecn");
+    std::ofstream *f_m_tot_ecn =  openFileW(tp->m_folder, "/m_tot_ecn");
+    std::ofstream *f_r_tot =  openFileW(tp->m_folder, "/r_tot");
 
     *f_qs_ecn_pdf00s << PLOT_MATRIX_DIM;
     *f_qs_ecn_pdf01s << PLOT_MATRIX_DIM;
@@ -532,14 +515,7 @@ void *printInfo(void *)
     uint64_t elapsed, next, sleeptime;
 
     while (1) {
-        if (tp->quit) {
-            return 0;
-        }
-
         tp->swapDB();
-
-        tp->fd_pf_ecn->fill(FlowData(0, 0, 0, 0));
-        tp->fd_pf_nonecn->fill(FlowData(0, 0, 0, 0));
 
         std::vector<uint32_t> rvec_ecn;
         std::vector<uint32_t> rvec_nonecn;
@@ -557,8 +533,9 @@ void *printInfo(void *)
 
         // time since we started processing
         time_ms = (tp->db2->last - tp->start) / 1000;
+        tp->sample_times.push_back(time_ms);
 
-        printf("\n--- SAMPLE # %d", (int) sample_id + 1);
+        printf("\n--- SAMPLE # %d", (int) tp->sample_id + 1);
         if (tp->m_nrs != 0) {
             printf(" of %d", tp->m_nrs);
         }
@@ -603,7 +580,7 @@ void *printInfo(void *)
                 drops_pdf_nonecn[i] += tp->db2->d_qs.ecn00[i];
             }
 
-            if (sample_id < PLOT_MATRIX_DIM) {
+            if (tp->sample_id < PLOT_MATRIX_DIM) {
                 *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
                 *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
                 *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
@@ -643,16 +620,12 @@ void *printInfo(void *)
         *f_qs_ecn_pdf11s << std::endl;
         *f_qs_ecn_pdfsums << std::endl;
 
-        *f_r_pf_ecn << sample_id << " " << time_ms;
-        *f_r_tot_ecn << sample_id << " " << time_ms;
-        *f_r_pf_nonecn << sample_id << " " << time_ms;
-        *f_r_tot_nonecn << sample_id << " " << time_ms;
-        *f_d_pf_ecn << sample_id << " " << time_ms;
-        *f_d_tot_ecn << sample_id << " " << time_ms;
-        *f_d_pf_nonecn << sample_id << " " << time_ms;
-        *f_d_tot_nonecn << sample_id << " " << time_ms;
-        *f_m_pf_ecn << sample_id << " " << time_ms;
-        *f_m_tot_ecn << sample_id << " " << time_ms;
+        *f_r_tot_ecn << tp->sample_id << " " << time_ms;
+        *f_r_tot_nonecn << tp->sample_id << " " << time_ms;
+        *f_d_tot_ecn << tp->sample_id << " " << time_ms;
+        *f_d_tot_nonecn << tp->sample_id << " " << time_ms;
+        *f_m_tot_ecn << tp->sample_id << " " << time_ms;
+        *f_r_tot << tp->sample_id << " " << time_ms;
 
         processFD();
         uint64_t r_ecn_tot = 0;
@@ -661,38 +634,31 @@ void *printInfo(void *)
         uint64_t d_nonecn_tot = 0;
         uint64_t m_ecn_tot = 0;
 
-        for (int i = 0; i < tp->nr_ecn_flows; ++i) {
-            *f_r_pf_ecn << " " << tp->fd_pf_ecn->at(i).rate;
-            *f_d_pf_ecn << " " << tp->fd_pf_ecn->at(i).drops;
-            *f_m_pf_ecn << " " << tp->fd_pf_ecn->at(i).marks;
-            r_ecn_tot += tp->fd_pf_ecn->at(i).rate;
-            d_ecn_tot += tp->fd_pf_ecn->at(i).drops;
-            m_ecn_tot += tp->fd_pf_ecn->at(i).marks;
+        for (auto const& val: tp->fd_pf_ecn) {
+            r_ecn_tot += val.second.at(tp->sample_id).rate;
+            d_ecn_tot += val.second.at(tp->sample_id).drops;
+            m_ecn_tot += val.second.at(tp->sample_id).marks;
         }
 
         *f_r_tot_ecn << " " << r_ecn_tot;
         *f_d_tot_ecn << " " << d_ecn_tot;
         *f_m_tot_ecn << " " << m_ecn_tot;
 
-        for (int i = 0; i < tp->nr_nonecn_flows; ++i) {
-            *f_r_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).rate;
-            *f_d_pf_nonecn << " " << tp->fd_pf_nonecn->at(i).drops;
-            r_nonecn_tot += tp->fd_pf_nonecn->at(i).rate;
-            d_nonecn_tot += tp->fd_pf_nonecn->at(i).drops;
+        for (auto const& val: tp->fd_pf_nonecn) {
+            r_nonecn_tot += val.second.at(tp->sample_id).rate;
+            d_nonecn_tot += val.second.at(tp->sample_id).drops;
         }
 
         *f_r_tot_nonecn << " " << r_nonecn_tot;
         *f_d_tot_nonecn << " " << d_nonecn_tot;
 
-        *f_r_pf_ecn << std::endl;
+        *f_r_tot << " " << (r_ecn_tot + r_nonecn_tot);
+
+        *f_r_tot << std::endl;
         *f_r_tot_ecn << std::endl;
-        *f_r_pf_nonecn << std::endl;
         *f_r_tot_nonecn << std::endl;
-        *f_d_pf_ecn << std::endl;
         *f_d_tot_ecn << std::endl;
-        *f_d_pf_nonecn << std::endl;
         *f_d_tot_nonecn << std::endl;
-        *f_m_pf_ecn << std::endl;
         *f_m_tot_ecn << std::endl;
 
         *f_tot_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
@@ -700,41 +666,17 @@ void *printInfo(void *)
 
         tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
 
-        printf("Total throughput: %lu bits/sec\n", (r_nonecn_tot + r_ecn_tot) * 8);
+        printf("Total throughput: %lu bits/sec\n", (r_nonecn_tot + r_ecn_tot));
 
-        if (tp->m_nrs != 0 && sample_id >= (tp->m_nrs - 1)) {
-
-            f_qs_ecn_pdf00s->close();
-            f_qs_ecn_pdf01s->close();
-            f_qs_ecn_pdf10s->close();
-            f_qs_ecn_pdf11s->close();
-            f_qs_ecn_pdfsums->close();
-            f_tot_packets_ecn->close();
-            f_tot_packets_nonecn->close();
-
-            f_r_pf_ecn->close();
-            f_r_tot_ecn->close();
-            f_r_pf_nonecn->close();
-            f_r_tot_nonecn->close();
-            f_d_pf_ecn->close();
-            f_d_tot_ecn->close();
-            f_d_pf_nonecn->close();
-            f_d_tot_nonecn->close();
-            f_m_pf_ecn->close();
-            f_m_tot_ecn->close();
-
-            f_qs_ecn_avg->close();
-            f_qs_nonecn_avg->close();
-
+        if (tp->m_nrs != 0 && tp->sample_id >= (tp->m_nrs - 1)) {
             printf("Obtained given number of samples (%d)\n", tp->m_nrs);
-            return 0;
+            break;
         }
 
-        sample_id++;
         tp->db2->init(); // init outside the critical area to save time
 
         elapsed = getStamp() - tp->start;
-        next = ((uint64_t) sample_id + 1) * tp->m_sinterval * 1000; // convert ms to us
+        next = ((uint64_t) tp->sample_id + 2) * tp->m_sinterval * 1000; // convert ms to us
 
         int process_time = getStamp() - tp->db2->last;
         if (elapsed < next) {
@@ -742,7 +684,93 @@ void *printInfo(void *)
             printf("Processed data in approx. %d us - sleeping for %d us\n", (int) process_time, (int) sleeptime);
             wait(sleeptime * NSEC_PER_US);
         }
+
+        if (tp->quit) {
+            break;
+        }
+
+        tp->sample_id++;
     }
+
+    f_qs_ecn_pdf00s->close();
+    f_qs_ecn_pdf01s->close();
+    f_qs_ecn_pdf10s->close();
+    f_qs_ecn_pdf11s->close();
+    f_qs_ecn_pdfsums->close();
+    f_tot_packets_ecn->close();
+    f_tot_packets_nonecn->close();
+
+    f_r_tot_ecn->close();
+    f_r_tot_nonecn->close();
+    f_d_tot_ecn->close();
+    f_d_tot_nonecn->close();
+    f_m_tot_ecn->close();
+    f_r_tot->close();
+
+    f_qs_ecn_avg->close();
+    f_qs_nonecn_avg->close();
+
+    // write per flow stats
+    // (we wait till here because we don't know how many
+    //  flows there are before the test is finished)
+    std::ofstream *f_r_pf_ecn    =  openFileW(tp->m_folder, "/r_pf_ecn");
+    std::ofstream *f_r_pf_nonecn =  openFileW(tp->m_folder, "/r_pf_nonecn");
+    std::ofstream *f_d_pf_ecn    =  openFileW(tp->m_folder, "/d_pf_ecn");
+    std::ofstream *f_d_pf_nonecn =  openFileW(tp->m_folder, "/d_pf_nonecn");
+    std::ofstream *f_m_pf_ecn    =  openFileW(tp->m_folder, "/m_pf_ecn");
+
+    // note: drop and mark numbers per flow don't really tell us much, as
+    //       the numbers include whichever packet was handled before this
+    //       in the same queue
+    //       e.g. a drop might be for another flow
+
+    for (int i = 0; i < tp->sample_times.size(); i++) {
+        *f_r_pf_ecn << i << " " << tp->sample_times[i];
+        *f_d_pf_ecn << i << " " << tp->sample_times[i];
+        *f_m_pf_ecn << i << " " << tp->sample_times[i];
+
+        *f_r_pf_nonecn << i << " " << tp->sample_times[i];
+        *f_d_pf_nonecn << i << " " << tp->sample_times[i];
+
+        for (auto const& kv: tp->fd_pf_ecn) {
+            *f_r_pf_ecn << " " << kv.second.at(i).rate;
+            *f_d_pf_ecn << " " << kv.second.at(i).drops;
+            *f_m_pf_ecn << " " << kv.second.at(i).marks;
+        }
+
+        for (auto const& kv: tp->fd_pf_nonecn) {
+            *f_r_pf_nonecn << " " << kv.second.at(i).rate;
+            *f_d_pf_nonecn << " " << kv.second.at(i).drops;
+        }
+
+        *f_r_pf_ecn << std::endl;
+        *f_d_pf_ecn << std::endl;
+        *f_m_pf_ecn << std::endl;
+
+        *f_r_pf_nonecn << std::endl;
+        *f_d_pf_nonecn << std::endl;
+    }
+
+    f_r_pf_ecn->close();
+    f_r_pf_nonecn->close();
+    f_d_pf_ecn->close();
+    f_d_pf_nonecn->close();
+    f_m_pf_ecn->close();
+
+    // save flow details
+    std::ofstream *f_flows_ecn    =  openFileW(tp->m_folder, "/flows_ecn");
+    std::ofstream *f_flows_nonecn =  openFileW(tp->m_folder, "/flows_nonecn");
+
+    for (auto const& kv: tp->fd_pf_ecn) {
+        *f_flows_ecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+    }
+
+    for (auto const& kv: tp->fd_pf_nonecn) {
+        *f_flows_nonecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+    }
+
+    f_flows_ecn->close();
+    f_flows_nonecn->close();
 
     return 0;
 }

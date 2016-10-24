@@ -13,7 +13,6 @@
 #define QS_LIMIT 2048
 #define PLOT_MATRIX_DIM QS_LIMIT
 #define PDF_UPPERLIM 500
-#define MAX_FLOWS 1000000
 
 struct SrcDst {
 public:
@@ -53,7 +52,7 @@ public:
         port = p;
     }
 
-    FlowData(){}
+    FlowData() : rate(0), drops(0), marks(0), port(0) {}
 
     void update(uint32_t r, uint32_t d, uint32_t m) {
         rate += r;
@@ -175,10 +174,8 @@ public:
     uint32_t m_nrs;
     bool m_demomode;
     bool ipclass;
-    std::array<FlowData, MAX_FLOWS> *fd_pf_ecn;
-    std::array<FlowData, MAX_FLOWS> *fd_pf_nonecn;
-    std::map<SrcDst,uint32_t> ecn_flows_map;
-    std::map<SrcDst,uint32_t> nonecn_flows_map;
+    std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
+    std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
     uint32_t nr_ecn_flows;
     uint32_t nr_nonecn_flows;
     DemoData *demo_data;
@@ -187,6 +184,8 @@ public:
     volatile bool quit;
     pthread_cond_t quit_cond;
     pthread_mutex_t quit_lock;
+    int sample_id;
+    std::vector<uint64_t> sample_times;
 };
 
 uint64_t getStamp();
