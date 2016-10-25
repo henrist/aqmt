@@ -3,6 +3,7 @@ from plumbum import local
 import os.path
 import os
 import re
+import sys
 from pprint import pprint
 import unittest
 
@@ -51,7 +52,8 @@ class HierarchyPlot():
         traverse(testmeta)
         return (sets, tests, depth)
 
-    def walk_tree_leaf_set(self, testmeta, fn):
+    @staticmethod
+    def walk_tree_leaf_set(testmeta, fn):
         """Walks the tree and calls fn for every leaf set"""
 
         first_set = True
@@ -80,7 +82,8 @@ class HierarchyPlot():
 
         walk(testmeta)
 
-    def walk_tree_set(self, testmeta, fn):
+    @staticmethod
+    def walk_tree_set(testmeta, fn):
         """Walks the tree and calls fn for every set in reverse order"""
         x = 0
 
@@ -106,6 +109,10 @@ class HierarchyPlot():
             x += 1
 
         walk(testmeta, 0)
+
+    def get_testcases(testmeta):
+        """Get list of testcases of a test set"""
+        return [item['testcase'] for item in testmeta['children']]
 
     def plot(self, outfile, testmeta):
         """Plot the test cases provided"""
@@ -144,7 +151,7 @@ class HierarchyPlot():
             #set xtic offset first .3
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
-        self.walk_tree_set(testmeta, plot_labels)
+        HierarchyPlot.walk_tree_set(testmeta, plot_labels)
 
         plot = ''
         def data_util(testmeta, is_first_set, x):
@@ -152,7 +159,7 @@ class HierarchyPlot():
 
             self.plotutils.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'util_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'util_stats') + """
                 EOD"""
 
             plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):3:5:4       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
@@ -162,7 +169,7 @@ class HierarchyPlot():
             plot += "                      '' using ($0+" + str(x) + "+0.2):9:10:11  with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($0+" + str(x) + "+0.2):9  with lines lc rgb 'gray'         title '', "
 
-        self.walk_tree_leaf_set(testmeta, data_util)
+        HierarchyPlot.walk_tree_leaf_set(testmeta, data_util)
         self.plotutils.gpi += """
             plot """ + plot + """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
@@ -174,10 +181,10 @@ class HierarchyPlot():
 
             self.plotutils.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'qs_ecn_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_ecn_stats') + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'qs_nonecn_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN queue' if is_first_set else '') + "', "
@@ -185,7 +192,7 @@ class HierarchyPlot():
             plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 5 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN queue' if is_first_set else '') + "', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):3  with lines lc rgb 'gray'         title '', "
 
-        self.walk_tree_leaf_set(testmeta, data_rate)
+        HierarchyPlot.walk_tree_leaf_set(testmeta, data_rate)
         self.plotutils.gpi += """
             plot """ + plot + """
             #set xtic offset first .10
@@ -201,13 +208,13 @@ class HierarchyPlot():
 
             self.plotutils.gpi += """
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'd_percent_nonecn_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_nonecn_stats') + """
                 EOD
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'd_percent_ecn_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_ecn_stats') + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + self.plotutils.mergeTestcaseData(testmeta['children'], 'm_percent_ecn_stats') + """
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'm_percent_ecn_stats') + """
                 EOD"""
 
             plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($0+" + str(x) + "+0.0):3:5:4 with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
@@ -217,7 +224,7 @@ class HierarchyPlot():
             plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.20):3:5:4 with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
             plot += "                                         '' using ($0+" + str(x) + "+0.20):3     with lines lc rgb 'gray'         title '', "
 
-        self.walk_tree_leaf_set(testmeta, data_drops)
+        HierarchyPlot.walk_tree_leaf_set(testmeta, data_drops)
         self.plotutils.gpi += """
             plot """ + plot + """
             unset multiplot"""
@@ -308,7 +315,7 @@ class Plot():
 
         self.size = '21cm,30cm'
 
-        n = 0
+        n_flows = 0
         flows = {
             'ecn': [],
             'nonecn': []
@@ -318,7 +325,7 @@ class Plot():
             with open(testfolder + '/flows_' + type, 'r') as f:
                 for line in f:
                     items.append(line.strip())
-                    n += 1
+                    n_flows += 1
 
         self.header()
 
@@ -342,7 +349,10 @@ class Plot():
             set format y "%.0f"
             set ylabel 'Rate [b/s]'
             set key right center inside
-            plot 0 title '', """
+            plot """
+
+        if n_flows == 0:
+            self.gpi += "0 title '',"
 
         for (type, items) in flows.items():
             j = 0
@@ -387,21 +397,24 @@ class Plot():
         if generate:
             self.generate(testfolder + '/analysis')
 
-    def getTag(self, testcase):
-        with open(testcase['testcase'] + '/details', 'r') as f:
+    @staticmethod
+    def get_xtic_value(testcase_folder):
+        with open(testcase_folder + '/details', 'r') as f:
             for line in f:
-                if line.startswith('x_udp_rate'):
-                    return str(int(int(line.split()[1]) / 1000))
-                elif line.startswith('xlabel '):
+                # TODO: remove old x_udp_rate
+                #if line.startswith('x_udp_rate'):
+                #    return str(int(int(line.split()[1]) / 1000))
+                if line.startswith('xticlabel '):
                     return line.split(maxsplit=1)[1].strip()
 
         return 'n/a'
 
-    def mergeTestcaseData(self, testcases, statsname):
+    @staticmethod
+    def merge_testcase_data(testcases, statsname):
         out = []
-        for testcase in testcases:
-            with open(testcase['testcase'] + '/' + statsname, 'r') as f:
-                tag = self.getTag(testcase)
+        for testcase_folder in testcases:
+            with open(testcase_folder + '/' + statsname, 'r') as f:
+                tag = Plot.get_xtic_value(testcase_folder)
 
                 for line in f:
                     if line.startswith('#'):
@@ -445,21 +458,123 @@ def generateHierarchyData(folderspec, title, xlabel=''):
     add_level(root, folderspec)
     return root
 
+def readMetadata(file):
+    if not os.path.isfile(file):
+        raise Exception('Missing metadata file: ' + file)
+
+    metadata = {}
+    lines = []
+
+    with open(file, 'r') as f:
+        for line in f:
+            key, value = line.split(maxsplit=1)
+            value = value.strip()
+            metadata[key.strip()] = value
+            lines.append((key, value))
+
+    return (metadata, lines)
+
+def generateHierarchyDataFromFolder(folder):
+    """Generate a dict that can be sent to HierarchyPlot by analyzing the directory
+
+    It will look in all the metadata stored while running test
+    to generate the final result
+    """
+
+    xlabel = None
+
+    def parse_folder(folder):
+        nonlocal xlabel
+
+        if not os.path.isdir(folder):
+            raise Exception('Non-existing directory: %s' % folder)
+
+        metadata_kv, metadata_lines = readMetadata(folder + '/details')
+
+        if 'type' not in metadata_kv:
+            raise Exception('Missing type in metadata for %s' % folder)
+
+        if metadata_kv['type'] in ['collection', 'set']:
+            node = {
+                'title': metadata_kv['title'] if 'title' in metadata_kv else '',
+                'children': []
+            }
+
+            for metadata in metadata_lines:
+                if metadata[0] == 'sub':
+                    node['children'].append(parse_folder(folder + '/' + metadata[1]))
+
+        elif metadata_kv['type'] == 'test':
+            node = {'testcase': folder}
+
+            if xlabel is None and 'xaxislabel' in metadata_kv:
+                xlabel = metadata_kv['xaxislabel']
+
+        else:
+            raise Exception('Unknown metadata type %s' % metadata_kv['type'])
+
+        return node
+
+    root = parse_folder(folder)
+    root['xlabel'] = xlabel
+
+    return root
+
+
+def plotFolderCompare(folder):
+    data = generateHierarchyDataFromFolder(folder)
+    hp = HierarchyPlot()
+    hp.plot(folder + '/comparison', data)
+
+def plotFolderFlows(folder):
+    data = generateHierarchyDataFromFolder(folder)
+
+    def parse_set(testmeta, first_set, x):
+        if len(testmeta['children']) == 0:
+            return
+
+        testcases = [item['testcase'] for item in testmeta['children']]
+
+        # assume all tests referred to is in the same folder, so use the parent folder
+        set_folder = os.path.dirname(testcases[0].rstrip('/'))
+        if set_folder == '':
+            set_folder = '.'
+
+        plot = Plot()
+        plot.plot_multiple_flows(testcases, output_path='%s/analysis_merged' % set_folder)
+
+    HierarchyPlot.walk_tree_leaf_set(data, parse_set)
 
 class TestPlots(unittest.TestCase):
 
     def testGenerateHierarchyData():
         data = generateHierarchyData({
-            'traffic both machines': 'testset-plot-testdata/traffic-ab',
-            'traffic only a': 'testset-plot-testdata/traffic-a',
-            'traffic only b': 'testset-plot-testdata/traffic-b',
+            'traffic both machines': 'testsets/plot-testdata/traffic-ab',
+            'traffic only a': 'testsets/plot-testdata/traffic-a',
+            'traffic only b': 'testsets/plot-testdata/traffic-b',
         }, title='Plot testing', xlabel='RTT')
 
         hp = HierarchyPlot()
-        hp.plot('testset-plot-testdata/analysis', data)
+        hp.plot('testsets/plot-testdata/analysis', data)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and len(sys.argv) >= 2:
+    if sys.argv[1] == 'test':
+        unittest.main()
+
+    elif len(sys.argv) >= 3 and sys.argv[1] == 'collection':
+        folder = sys.argv[2]
+        plotFolderCompare(folder)
+
+    elif len(sys.argv) >= 3 and sys.argv[1] == 'flows':
+        folder = sys.argv[2]
+        plotFolderFlows(folder)
+
+    else:
+        print('Unknown operation')
+
+elif __name__ == '__main__':
+
     plot = Plot()
 
     if False:
@@ -467,27 +582,27 @@ if __name__ == '__main__':
             '1 flow each': {
                 'cubic vs cubic': 'testset-simple/flows-1/cubic',
                 'cubic vs cubic-ecn': 'testset-simple/flows-1/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-1/cubic-dctcp',
+                'cubic vs dctcp': 'testset-simple/flows-1/dctcp',
             },
             '2 flow each': {
                 'cubic vs cubic': 'testset-simple/flows-2/cubic',
                 'cubic vs cubic-ecn': 'testset-simple/flows-2/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-2/cubic-dctcp',
+                'cubic vs dctcp': 'testset-simple/flows-2/dctcp',
             },
             '3 flow each': {
                 'cubic vs cubic': 'testset-simple/flows-3/cubic',
                 'cubic vs cubic-ecn': 'testset-simple/flows-3/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-3/cubic-dctcp',
+                'cubic vs dctcp': 'testset-simple/flows-3/dctcp',
             },
         }, title='Testing cubic vs different flows', xlabel='RTT')
 
         hp = HierarchyPlot()
-        hp.plot('testset-simple/test1', data)
+        hp.plot('testset-simple/comparison', data)
 
     if False:
         plot.plot_flow('testset-speeds/nonect/test-001')
 
-    if True:
+    if False:
         data = generateHierarchyData({
             'UDP with Non-ECT': 'testset-speeds/nonect',
             'UDP with ECT(1)': 'testset-speeds/ect1'
@@ -496,7 +611,10 @@ if __name__ == '__main__':
         hp = HierarchyPlot()
         hp.plot('testset-speeds/analysis', data)
 
-    if True:
+    if False:
         for subfolder in ['nonect', 'ect1']:
             folder = 'testset-speeds/' + subfolder
-            plot.plot_multiple_flows(getTestcasesInFolder(folder), folder + '/analysis_combined')
+            plot.plot_multiple_flows(getTestcasesInFolder(folder), folder + '/analysis_merged')
+
+    if True:
+        plotFolder('testsets/plot-testdata')
