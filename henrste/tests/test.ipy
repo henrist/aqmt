@@ -120,11 +120,11 @@ class Tmux(Terminal):
             res = tmux['new-window', '-dP', '-F', '#{window_id} #{pane_pid}', cmd]().strip().split()
             self.win_bg_id = res[0]
             pane_pid = res[1]
-            !tmux set-window-option -t $self.win_bg_id remain-on-exit on
+            tmux['set-window-option', '-t', self.win_bg_id, 'remain-on-exit', 'on'] & FG
 
         else:
             pane_pid = tmux['split-window', '-dP', '-t', self.win_bg_id, '-F', '#{pane_pid}', cmd]().strip()
-            tmux['select-layout', '-t', self.win_bg_id, 'tiled']()
+            tmux['select-layout', '-t', self.win_bg_id, 'tiled'] & FG
 
         return int(pane_pid)
 
@@ -148,12 +148,6 @@ class Testbed():
     ecn_a = 2  # 2 = allow ecn, 1 = force ecn, 0 = no ecn
     cc_b = 'cubic'
     ecn_b = 2
-
-    traffic_port = 5500
-    def get_next_traffic_port(self):
-        tmp = self.traffic_port
-        self.traffic_port += 1
-        return tmp
 
     def aqm_default(self):
         self.aqm_name = ''
@@ -277,16 +271,15 @@ class TestUtils():
     testnum = 0
 
     common = None
-    testbed = None
     terminal = None
     is_interactive = False  # run in tmux or not
     ta_idle = 3  # time to wait before collecting traffic
     ta_delay = 1000
     ta_samples = 60
+    traffic_port = 5500
 
-    def __init__(self, common, testbed):
+    def __init__(self, common):
         self.common = common
-        self.testbed = testbed
 
         Common.require_on_aqm_node()
 
@@ -297,6 +290,11 @@ class TestUtils():
 
         signal.signal(signal.SIGINT, exit_gracefully)
         signal.signal(signal.SIGTERM, exit_gracefully)
+
+    def get_next_traffic_port(self):
+        tmp = self.traffic_port
+        self.traffic_port += 1
+        return tmp
 
     def get_terminal(self):
         if self.terminal == None:
@@ -319,11 +317,11 @@ class TestUtils():
 
         Returns a lambda to stop the traffic
         """
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
-        #self.save_hint_test('traffic=tcp type=greedy node=%s%s server=%s' % (node, node, server_port))
+        self.save_hint('traffic=tcp type=greedy node=%s%s server=%s' % (node, node, server_port))
 
         pid_server = self.run(ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], '/opt/testbed/greedy_generator/greedy -vv -s %d' % server_port], bg=True, verbose=True)
         self.common.pids_to_kill.append(pid_server)
@@ -354,11 +352,11 @@ class TestUtils():
         else:
             ect = 'nonect'
 
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
-        self.save_hint_test('traffic=udp node=%s%s client=%s rate=%d ect=%s' % (node, node, server_port, bitrate, ect))
+        self.save_hint('traffic=udp node=%s%s client=%s rate=%d ect=%s' % (node, node, server_port, bitrate, ect))
 
         pid = self.run(ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'iperf -s -p %d' % server_port], bg=True, verbose=True)
         self.common.pids_to_kill.append(pid)
@@ -407,17 +405,24 @@ class TestUtils():
         with open(self.folder_collection + '/details', 'a') as f:
             f.write(text + '\n')
 
-    def save_hint_test(self, text):
-        with open(self.get_testfolder() + '/details', 'a') as f:
+    def save_hint(self, text):
+        TestUtils.save_hint_to_file(self.get_testfolder(), text)
+
+    @staticmethod
+    def save_hint_to_folder(folder, text):
+        with open(folder + '/details', 'a') as f:
             f.write(text + '\n')
 
     def get_testfolder(self):
-        return self.folder_collection + '/' + self.foldername_test + '-' + self.get_testnum()
+        tag = '' if self.testtag is None else '-%s' % self.testtag
+        return self.folder_collection + '/' + self.foldername_test + '-' + self.get_testnum() + tag
 
     def get_testnum(self):
         return '%03d' % self.testnum
 
-    def run_test(self, the_test):
+    def run_test(self, the_test, testbed, tag=None):
+        self.testtag = tag
+
         self.testnum += 1
         testfolder = self.get_testfolder()
 
@@ -429,8 +434,8 @@ class TestUtils():
 
         start = time.time()
 
-        self.testbed.reset()
-        self.testbed.setup()
+        testbed.reset()
+        testbed.setup()
 
         print('%.2f s: Testbed initialized, starting test' % (time.time()-start))
         print()
@@ -438,16 +443,16 @@ class TestUtils():
         !rm -R $testfolder
         !mkdir -p $testfolder
 
-        self.testbed.save_hint(testfolder + '/details')
+        testbed.save_hint(testfolder + '/details')
 
         if self.is_interactive:
             pid_ta = self.run_ta()
             self.run_monitor_setup()
-            self.run_speedometer(self.testbed.bitrate * 1.1, delay=0.05)
+            self.run_speedometer(testbed.bitrate * 1.1, delay=0.05)
         else:
             pid_ta = self.run_ta(bg=True)
 
-        the_test()
+        the_test(self, testbed)
 
         Common.waitpid(pid_ta)  # wait until 'ta' quits
         self.common.kill_known_pids()
@@ -473,15 +478,15 @@ class TestbedTesting():
         testbed.ecn_b = 1
         return testbed
 
-    def set_up(self, testbed):
+    def set_up(self):
         common = Common()
-        self.testutils = TestUtils(common, testbed)
+        self.testutils = TestUtils(common)
 
     def tear_down(self):
         self.generate_set_plots()
 
     def run_set(self, method_set, testbed):
-        self.set_up(testbed)
+        self.set_up()
 
         method_set(self.testutils)
 
@@ -501,18 +506,30 @@ class OverloadTesting(TestbedTesting):
     def test_simple(self):
         testbed = self.testbed()
 
-        def my_set(testenv):
-            testenv.folder_collection = 'testset-simple'
-            testenv.ta_samples = 10
+        for numflows in [1,2,3]:
+            for type in [('cubic', 2, 'cubic'),
+                         ('cubic-ecn', 1, 'cubic'),
+                         ('dctcp', 1, 'dctcp')]:
+                testbed.cc_b = type[2]
+                testbed.ecn_b = type[1]
 
-            for x in [1,2]:
-                def my_test():
-                    print("run test")
-                    testenv.run_greedy(node='a')
-                    testenv.run_greedy(node='b')
-                testenv.run_test(my_test)
+                def my_set(testenv):
+                    testenv.folder_collection = 'testset-simple/flows-%d/%s' % (numflows, type[0])
 
-        self.run_set(my_set, testbed)
+                    for rtt in [2, 5, 10, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400]:
+                        testbed.rtt_servera = rtt
+                        testbed.rtt_serverb = rtt
+                        testenv.ta_idle = (rtt / 1000) * 20 + 4
+
+                        def my_test(testenv, testbed):
+                            testenv.save_hint('xlabel %d' % rtt)
+                            for i in range(numflows):
+                                testenv.run_greedy(node='a')
+                                testenv.run_greedy(node='b')
+
+                        testenv.run_test(my_test, testbed)
+
+                self.run_set(my_set, testbed)
 
     def test_increasing_udp_traffic(self):
         """Test UDP-traffic in both queues with increasing bandwidth"""
@@ -521,15 +538,15 @@ class OverloadTesting(TestbedTesting):
         def my_set(testenv):
             testenv.folder_collection = 'testset-a'
 
-            def my_test():
+            def my_test(testenv, testbed):
                 for x in range(10):
                     testenv.run_udp(node='a', bitrate=1250000, ect='nonect')
                     testenv.run_udp(node='b', bitrate=1250000, ect='ect0')
                     time.sleep(2)
 
-            testenv.run_test(my_test)
-            testenv.run_test(my_test)
-            testenv.run_test(my_test)
+            testenv.run_test(my_test, testbed)
+            testenv.run_test(my_test, testbed)
+            testenv.run_test(my_test, testbed)
 
         self.run_set(my_set, testbed)
 
@@ -548,12 +565,12 @@ class OverloadTesting(TestbedTesting):
                           13000, 13100, 13200, 13400, 13500, 14000, 28000, 50000, 500000]
 
                 for speed in speeds:
-                    def my_test():
-                        testenv.save_hint_test('x_udp_rate %d' % (speed * 1000))
+                    def my_test(testenv, testbed):
+                        testenv.save_hint('x_udp_rate %d' % (speed * 1000))
                         testenv.run_greedy(node='b')
                         testenv.run_udp(node='a', bitrate=speed*1000, ect=ect)
 
-                    testenv.run_test(my_test)
+                    testenv.run_test(my_test, testbed)
 
             self.run_set(my_set, testbed)
 
@@ -568,13 +585,44 @@ class OverloadTesting(TestbedTesting):
         def my_set(testenv):
             testenv.folder_collection = 'testset-competing'
 
-            def my_test():
+            def my_test(testenv, testbed):
                 testenv.run_greedy(node='a')
                 testenv.run_greedy(node='b')
 
-            testenv.run_test(my_test)
+            testenv.run_test(my_test, testbed)
 
         self.run_set(my_set, testbed)
+
+    def test_plot_test_data(self):
+        testbed = self.testbed()
+        testbed.aqm_pi2()
+
+        def my_test1(testenv, testbed):
+            testenv.run_greedy(node='a')
+            testenv.run_greedy(node='b')
+
+        def my_test2(testenv, testbed):
+            testenv.run_greedy(node='a')
+
+        def my_test3(testenv, testbed):
+            testenv.run_greedy(node='b')
+
+        for name, my_test, title in [('traffic-ab', my_test1, 'traffic both machines'),
+                                     ('traffic-a',  my_test2, 'traffic only a'),
+                                     ('traffic-b',  my_test3, 'traffic only b')]:
+            def my_set(testenv):
+                testenv.folder_collection = 'testset-plot-testdata/' + name
+                testenv.ta_samples = 5
+                testenv.ta_idle = .5
+                testenv.ta_delay = 500
+
+                #for rtt in [2, 5, 10, 20, 50]:
+                for rtt in [10, 20, 50]:
+                    testbed.rtt_servera = testbed.rtt_serverb = rtt
+                    testenv.run_test(my_test, testbed, tag='rtt-%s' % rtt)
+
+            self.run_set(my_set, testbed)
+
 
 if __name__ == '__main__':
 
@@ -591,4 +639,8 @@ if __name__ == '__main__':
 
     if False:
         t = OverloadTesting()
-        t.test_speeds()
+        t.test_simple()
+
+    if True:
+        t = OverloadTesting()
+        t.test_plot_test_data()

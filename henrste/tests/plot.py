@@ -3,6 +3,8 @@ from plumbum import local
 import os.path
 import os
 import re
+from pprint import pprint
+import unittest
 
 color_cubic = "#FC6C6C"
 color_dctcp = "blue"
@@ -116,20 +118,20 @@ class HierarchyPlot():
 
         def plot_labels(testmeta, x, depth, width):
             self.plotutils.gpi += """
-                set label '""" + testmeta['title'] + """' at first """ + str(x+width/2) + """, graph """ + str(1.05 + 0.07 * (n_depth - depth - 1)) + """ font 'Times-Roman,10pt' tc rgb 'black' center"""
+                set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.07 * (n_depth - depth - 1)) + """ font 'Times-Roman,8pt' tc rgb 'black' center"""
 
         self.plotutils.gpi += """
             set multiplot layout 3,1 title '""" + testmeta['title'] + """'
 
             unset bars
-            set xtic rotate by -65 font ',10pt'
-            set key right center
+            set xtic rotate by -65 font ',8pt'
+            set key above
 
             #set title '""" + testmeta['title'] + """'
             set xrange [-.6:""" + str(num-2) + """.9]
             set yrange [0:]
             set boxwidth 0.2
-            set tmargin """ + str(1 * n_depth + 1) + """
+            set tmargin """ + str(1 * n_depth + 2) + """
             set lmargin 13"""
 
 
@@ -391,7 +393,7 @@ class Plot():
                 if line.startswith('x_udp_rate'):
                     return str(int(int(line.split()[1]) / 1000))
                 elif line.startswith('xlabel '):
-                    return line.split()[1:]
+                    return line.split(maxsplit=1)[1].strip()
 
         return 'n/a'
 
@@ -420,37 +422,81 @@ def getTestcasesInFolder(folder):
     return sorted(testcases)
 
 
+def generateHierarchyData(folderspec, title, xlabel=''):
+    """Generate a dict that can be sent to HierarchyPlot"""
+
+    root = {
+        'title': title,
+        'xlabel': xlabel,
+        'children': []
+    }
+
+    def add_level(root, spec):
+        for key, value in spec.items():
+            node = {'title': key, 'children': []}
+            root['children'].append(node)
+
+            if isinstance(value, dict):
+                add_level(node, value)
+
+            else:
+                node['children'] = [{'testcase': x} for x in getTestcasesInFolder(value)]
+
+    add_level(root, folderspec)
+    return root
+
+
+class TestPlots(unittest.TestCase):
+
+    def testGenerateHierarchyData():
+        data = generateHierarchyData({
+            'traffic both machines': 'testset-plot-testdata/traffic-ab',
+            'traffic only a': 'testset-plot-testdata/traffic-a',
+            'traffic only b': 'testset-plot-testdata/traffic-b',
+        }, title='Plot testing', xlabel='RTT')
+
+        hp = HierarchyPlot()
+        hp.plot('testset-plot-testdata/analysis', data)
+
+
 if __name__ == '__main__':
     plot = Plot()
 
     if False:
+        data = generateHierarchyData({
+            '1 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-1/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-1/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-1/cubic-dctcp',
+            },
+            '2 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-2/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-2/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-2/cubic-dctcp',
+            },
+            '3 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-3/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-3/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-3/cubic-dctcp',
+            },
+        }, title='Testing cubic vs different flows', xlabel='RTT')
+
+        hp = HierarchyPlot()
+        hp.plot('testset-simple/test1', data)
+
+    if False:
         plot.plot_flow('testset-speeds/nonect/test-001')
 
-    if False:
-        plot.plot_flow('tesetset-a/test-001')
-        plot.plot_multiple_flows(
-            getTestcasesInFolder('testset-a'),
-            'testset-a/analysis'
-        )
+    if True:
+        data = generateHierarchyData({
+            'UDP with Non-ECT': 'testset-speeds/nonect',
+            'UDP with ECT(1)': 'testset-speeds/ect1'
+        }, title='Overload with UDP', xlabel='UDP bitrate [kbps]')
+
+        hp = HierarchyPlot()
+        hp.plot('testset-speeds/analysis', data)
 
     if True:
-        hp = HierarchyPlot()
-        hp.plot('testset-speeds/nonect/testgraph', {
-            'title': 'UDP with Non-ECT',
-            'xlabel': 'UDP bitrate [kbps]',
-            'children': [{'testcase': x} for x in getTestcasesInFolder('testset-speeds/nonect')]
-        })
-
-    if False:
-        hp = HierarchyPlot()
-        hp.plot('testset-speeds/analysis', {
-            'title': 'Speed testing',
-            'xlabel': 'UDP bitrate [kbps]',
-            'children': [{
-                'title': 'UDP with Non-ECT',
-                'children': [{'testcase': x} for x in getTestcasesInFolder('testset-speeds/nonect')]
-            }, {
-                'title': 'UDP with ECT(1)',
-                'children': [{'testcase': x} for x in getTestcasesInFolder('testset-speeds/ect1')]
-            }]
-        })
+        for subfolder in ['nonect', 'ect1']:
+            folder = 'testset-speeds/' + subfolder
+            plot.plot_multiple_flows(getTestcasesInFolder(folder), folder + '/analysis_combined')
