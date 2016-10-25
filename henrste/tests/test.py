@@ -1,4 +1,4 @@
-#!/usr/bin/env ipython3
+#!/usr/bin/env python3
 
 # Henrik's test framework
 
@@ -11,6 +11,9 @@ import sys
 import time
 import plumbum
 import io
+import types
+import re
+import shutil
 from plumbum import local, FG, BG
 from plumbum.cmd import bash, tmux, ssh
 import subprocess
@@ -23,42 +26,48 @@ def get_shell_cmd(cmd_object):
     """Convert a plumbum cmd to a shell expression"""
     return ' '.join(cmd_object.formulate(10))
 
-class Common():
-    pids_to_kill = []
+def require_on_aqm_node():
+    bash['-c', 'source ../common.sh; require_on_aqm_node'] & FG
 
-    @staticmethod
-    def require_on_aqm_node():
-        bash['-c', 'source ../common.sh; require_on_aqm_node'] & FG
+def kill_known_pids():
+    if not hasattr(kill_known_pids, 'pids'):
+        return
 
-    def kill_known_pids(self):
-        for pid in self.pids_to_kill:
-            Common.kill_pid(pid)
+    for pid in kill_known_pids.pids:
+        kill_pid(pid)
 
-        self.pids_to_kill = []
+    kill_known_pids.pids = []
 
-    @staticmethod
-    def kill_pid(pid):
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
+def add_known_pid(pid):
+    if not hasattr(kill_known_pids, 'pids'):
+        kill_known_pids.pids = []
 
-    @staticmethod
-    def is_running(pid):
-        try:
-            os.kill(pid, 0)
-        except OSError as err:
-            if err.errno == errno.ESRCH:
-                return False
-        return True
+    kill_known_pids.pids.append(pid)
 
-    @staticmethod
-    def waitpid(pid):
-        try:
-            os.waitpid(pid, 0)
-        except ChildProcessError:
-            pass
+def kill_pid(pid):
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
 
+def is_running(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            return False
+    return True
+
+def waitpid(pid):
+    # due to some issues when running child process vs tmux this is a bit more complex
+    # first use os.waitpid in case this is a child of current process
+    try:
+        os.waitpid(pid, 0)
+    except ChildProcessError:
+        pass
+
+    while is_running(pid):
+        time.sleep(0.3)
 
 class Terminal():
     def __init__(self):
@@ -143,16 +152,17 @@ class Tmux(Terminal):
 
 
 class Testbed():
-    bitrate = 1000000
-    rtt_clients = 0  # in ms
-    rtt_servera = 0  # in ms
-    rtt_serverb = 0  # in ms
-    aqm_name = ''
-    aqm_params = ''
-    cc_a = 'cubic'
-    ecn_a = 2  # 2 = allow ecn, 1 = force ecn, 0 = no ecn
-    cc_b = 'cubic'
-    ecn_b = 2
+    def __init__(self):
+        self.bitrate = 1000000
+        self.rtt_clients = 0  # in ms
+        self.rtt_servera = 0  # in ms
+        self.rtt_serverb = 0  # in ms
+        self.aqm_name = ''
+        self.aqm_params = ''
+        self.cc_a = 'cubic'
+        self.ecn_a = 2  # 2 = allow ecn, 1 = force ecn, 0 = no ecn
+        self.cc_b = 'cubic'
+        self.ecn_b = 2
 
     def aqm_default(self):
         self.aqm_name = ''
@@ -203,9 +213,10 @@ class Testbed():
         else:
             cmd & FG
 
-    def get_aqm_options(self, name):
-        res = !bash -c 'source ../common.sh; get_aqm_options $name'
-        return res.s.strip()
+    @staticmethod
+    def get_aqm_options(name):
+        res = bash['-c', 'source ../common.sh; get_aqm_options %s' % name]()
+        return res.strip()
 
     def print_setup(self):
         print("Configured testbed:")
@@ -232,8 +243,6 @@ class Testbed():
             print('  %s: ' % node.lower(), end='')
             res = (bash['-c', 'source ../common.sh; get_host_cc "%s"' % ip] | local['tr']['\\n', ' '])().strip()
             print(res)
-            #res = !bash -c "source ../common.sh; get_host_cc '$${{$ip}}' | tr '\n' ' '"
-            #print(res[0].strip())
 
     @staticmethod
     def analyze_results(testfolder, dry_run=False):
@@ -289,28 +298,27 @@ class Testbed():
         f.write("testbed_rate %s\n" % self.bitrate)
 
 
-class TestUtils():
-    set_folder = None
-    testnum = 0
-    testfolders = []  # list of completed tests
-
-    common = None
-    terminal = None
-    is_interactive = False  # run in tmux or not
-    ta_idle = 3  # time to wait before collecting traffic
-    ta_delay = 1000
-    ta_samples = 60
-    traffic_port = 5500
-    dry_run = False
-
-    def __init__(self, common, set_folder):
-        self.common = common
+class TestEnv():
+    def __init__(self, set_folder):
         self.set_folder = set_folder
 
-        Common.require_on_aqm_node()
+        self.skipped_last = False
+        self.testnum = 0
+        self.tags_used = []
+        self.testfolders = []  # list of completed tests
+
+        self.terminal = None
+        self.is_interactive = False  # run in tmux or not
+        self.ta_idle = 3  # time to wait before collecting traffic
+        self.ta_delay = 1000
+        self.ta_samples = 60
+        self.traffic_port = 5500
+        self.dry_run = False
+
+        require_on_aqm_node()
 
         def exit_gracefully(signum, frame):
-            self.common.kill_known_pids()
+            kill_known_pids()
             self.get_terminal().cleanup()
             sys.exit()
 
@@ -362,12 +370,12 @@ class TestUtils():
         else:
             pid_server = self.run(cmd1, bg=True, verbose=True)
             pid_client = self.run(cmd2, bg=True, verbose=True)
-            self.common.pids_to_kill.append(pid_server)
-            self.common.pids_to_kill.append(pid_client)
+            add_known_pid(pid_server)
+            add_known_pid(pid_client)
 
             def stopTest():
-                Common.kill_pid(pid_server)
-                Common.kill_pid(pid_client)
+                kill_pid(pid_server)
+                kill_pid(pid_client)
 
         return stopTest
 
@@ -416,12 +424,12 @@ class TestUtils():
             pid_server = self.run(cmd_server, bg=True, verbose=True)
             pid_client = self.run(cmd_client, bg=True, verbose=True)
 
-            self.common.pids_to_kill.append(pid_server)
-            self.common.pids_to_kill.append(pid_client)
+            add_known_pid(pid_server)
+            add_known_pid(pid_client)
 
             def stopTest():
-                Common.kill_pid(pid_client)
-                Common.kill_pid(pid_server)
+                kill_pid(pid_client)
+                kill_pid(pid_server)
 
         return stopTest
 
@@ -434,11 +442,10 @@ class TestUtils():
             print(get_shell_cmd(cmd))
         else:
             pid = self.run(cmd, verbose=True)
-            self.common.pids_to_kill.append(pid)
+            add_known_pid(pid)
 
     def run_ta(self, bg=False):
-        net = !echo $IP_AQM_C | sed 's/\.[0-9]\+$/.0/'
-        net = net[0]
+        net = re.sub(r'\.[0-9]+$', '.0', os.environ['IP_AQM_C'])
 
         pcapfilter = 'ip and dst net %s/24 and (tcp or udp)' % net
         ipclass = 'f'
@@ -453,7 +460,7 @@ class TestUtils():
             pid = self.run(cmd, verbose=True, bg=bg)
 
             # we add it to the kill list in case the script is terminated
-            self.common.pids_to_kill.append(pid)
+            add_known_pid(pid)
 
         return pid
 
@@ -464,25 +471,24 @@ class TestUtils():
             print(get_shell_cmd(cmd))
         else:
             pid = self.run(cmd, verbose=True)
-            self.common.pids_to_kill.append(pid)
+            add_known_pid(pid)
 
     def save_hint_set(self, text):
         if self.dry_run:
             print("hint(set): " + text)
         else:
-            TestUtils.save_hint_to_folder(self.set_folder, text)
+            TestEnv.save_hint_to_folder(self.set_folder, text)
 
     def save_hint(self, text):
         if self.dry_run:
             print("hint(test): " + text)
         else:
-            TestUtils.save_hint_to_folder(self.get_testfolder(), text)
+            TestEnv.save_hint_to_folder(self.get_testfolder(), text)
 
     @staticmethod
     def save_hint_to_folder(folder, text):
         os.makedirs(folder, exist_ok=True)
 
-        print("hint: ", text)
         with open(folder + '/details', 'a') as f:
             f.write(text + '\n')
 
@@ -493,8 +499,7 @@ class TestUtils():
             os.remove(file)
 
     def get_testfolder(self):
-        tag = '' if self.testtag is None else '-%s' % self.testtag
-        return self.set_folder + '/test-' + self.get_testnum() + tag
+        return self.set_folder + '/test-' + str(self.testtag if self.testtag is not None else self.get_testnum())
 
     def get_testnum(self):
         return '%03d' % self.testnum
@@ -508,20 +513,62 @@ class TestUtils():
         xaxislabel: Description of the xtic values
         """
 
-        self.testtag = tag
-
         self.testnum += 1
-        testfolder = self.get_testfolder()
+        self.testtag = tag
+        if tag is not None:
+            if tag in self.tags_used:
+                raise Exception("Tag must be unique inside a test set (tag: %s)" % tag)
 
+            self.tags_used.append(tag)
+
+        testfolder = self.get_testfolder()
+        self.testfolders.append(testfolder)
+
+        testcase = 'TESTCASE %s' % testfolder
         print()
         print()
-        print('-------- TESTCASE %s --------' % testfolder)
+        print('=' * len(testcase))
+        print(testcase)
+        print('=' * len(testcase))
         print(str(datetime.datetime.now()))
         print()
 
+        if os.path.exists(testfolder):
+            # don't skip if it is an incomplete test
+            if not os.path.isfile(testfolder + '/details'):
+                print('-----------------------------------------------------')
+                print('Skipping existing and UNRECOGNIZED testcase directory')
+                print('-----------------------------------------------------')
+                print()
+                self.skipped_last = True
+                return
+            else:
+                with open(testfolder + '/details') as f:
+                    for line in f:
+                        if line.strip() == 'completed':
+                            print('------------------------------------')
+                            print('Skipping testcase with existing data')
+                            print('------------------------------------')
+                            print()
+                            self.skipped_last = True
+                            return
+
+                # clean up previous run
+                print('-------------------------')
+                print('Rerunning incomplete test')
+                print('-------------------------')
+                print()
+                shutil.rmtree(testfolder)
+
+        if not self.dry_run:
+            os.makedirs(testfolder, exist_ok=True)
+
+        self.skipped_last = False
         start = time.time()
 
         testbed.reset(dry_run=self.dry_run)
+        print('%.2f s: Testbed reset' % (time.time()-start))
+
         testbed.setup(dry_run=self.dry_run)
 
         print('%.2f s: Testbed initialized, starting test' % (time.time()-start))
@@ -531,9 +578,6 @@ class TestUtils():
             f = io.StringIO()
             testbed.save_hint(f, dry_run=True)
             print(f.getvalue())
-        else:
-            !rm -R $testfolder
-            !mkdir -p $testfolder
 
         self.save_hint('type test')
         self.save_hint('xticlabel %s' % ('' if xticlabel is None else xticlabel))
@@ -553,9 +597,10 @@ class TestUtils():
         the_test(self, testbed)
 
         if not self.dry_run:
-            Common.waitpid(pid_ta)  # wait until 'ta' quits
+            print(pid_ta)
+            waitpid(pid_ta)  # wait until 'ta' quits
 
-        self.common.kill_known_pids()
+        kill_known_pids()
 
         print()
         print('%.2f s: Data collection finished' % (time.time()-start))
@@ -565,8 +610,7 @@ class TestUtils():
 
         print()
         print('%.2f s: Plotting complete, test ending' % (time.time()-start))
-
-        self.testfolders.append(testfolder)
+        self.save_hint('completed')
 
 
 class TestCollection():
@@ -578,31 +622,35 @@ class TestCollection():
     - collection of sets
     - collection of collections, and so on
     """
-    title = None
-    folder = None
-    parent = None
-    parent_called = False
 
     def __init__(self, folder, title=None, parent=None):
         self.title = title
-        self.folder = folder
+        if parent:
+            self.folder = parent.folder + '/' + folder
+        else:
+            self.folder = folder
         self.parent = parent
+        self.parent_called = False
 
-        TestUtils.remove_hint(folder)
-        TestUtils.save_hint_to_folder(folder, 'type collection')
+        TestEnv.remove_hint(self.folder)
+        TestEnv.save_hint_to_folder(self.folder, 'type collection')
 
         if title is not None:
-            TestUtils.save_hint_to_folder(folder, 'title %s' % title)
+            TestEnv.save_hint_to_folder(self.folder, 'title %s' % title)
 
     def add_set(self, testenv):
-        TestUtils.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(testenv.set_folder))
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(testenv.set_folder))
 
         if self.parent and not self.parent_called:
             self.parent_called = True
             self.parent.add_collection(self)
 
     def add_collection(self, collection):
-        TestUtils.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(collection.folder))
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(collection.folder))
+
+    def run_set(self, testobj, my_set, testbed, foldername, **kwargs):
+        testenv = testobj.run_set(my_set, testbed, self.folder + '/' + foldername, **kwargs)
+        self.add_set(testenv)
 
 
 class TestbedTesting():
@@ -617,54 +665,62 @@ class TestbedTesting():
         return testbed
 
     def run_set(self, method_set, testbed, set_folder, plot_only=False, title=None):
-        common = Common()
-        self.testutils = TestUtils(common, set_folder)
+        testenv = TestEnv(set_folder)
+
+        # overload run_test so we can hook into it
+        testenv.run_test_orig = testenv.run_test
+        testenv.run_test = types.MethodType(TestbedTesting.run_test_overload, testenv)
 
         if plot_only:
-            self.testutils.dry_run = True
+            testenv.dry_run = True
 
-        if not self.testutils.dry_run:
-            TestUtils.remove_hint(self.testutils.set_folder)
+        if not testenv.dry_run:
+            TestEnv.remove_hint(testenv.set_folder)
 
         if title is not None:
-            self.testutils.save_hint_set('title %s' % title)
+            testenv.save_hint_set('title %s' % title)
 
-        method_set(self.testutils)
+        method_set(testenv, testbed)
 
-        self.testutils.save_hint_set('type set')
+        testenv.save_hint_set('type set')
 
-        self.generate_set_plots()
+        self.generate_set_plots(testenv)
+        return testenv
 
-    def run_test(self, the_test, testbed, **kwargs):
-        self.testutils.run_test(the_test, testbed, **kwargs)
-        self.testutils.save_hint_set('sub %s' % os.path.basename(self.testutils.get_testfolder()))
+    @staticmethod
+    def run_test_overload(self, the_test, testbed, **kwargs):
+        self.run_test_orig(the_test, testbed, **kwargs)
+        self.save_hint_set('sub %s' % os.path.basename(self.get_testfolder()))
 
         # plot this single flow
-        p = Plot()
-        p.plot_flow(self.testutils.get_testfolder())
+        if not self.skipped_last:
+            p = Plot()
+            p.plot_flow(self.get_testfolder())
 
-    def generate_set_plots(self):
-        if self.testutils.dry_run:
+    def generate_set_plots(self, testenv):
+        if testenv.dry_run:
             return
 
-        testcases = self.testutils.testfolders
-
         p = Plot()
-        p.plot_multiple_flows(testcases, self.testutils.set_folder + '/analysis_merged')
+        p.plot_multiple_flows(testenv.testfolders, testenv.set_folder + '/analysis_merged')
 
 
 class OverloadTesting(TestbedTesting):
     def test_simple(self):
         testbed = self.testbed()
 
+        test_collection1 = TestCollection('testsets/cubic', title='Testing cubic vs other congestion controls')
+
         for numflows in [1,2,3]:
-            for cc, ecn, tag, title in [('cubic', 2, 'cubic',    'cubic vs cubic'),
-                                        ('cubic', 1, 'cubic-ecn','cubic vs cubic-ecn'),
-                                        ('dctcp', 1, 'dctcp',    'cubic vs dctcp')]:
+            test_collection2 = TestCollection('flows-%d' % numflows, title='%d flows each' % numflows, parent=test_collection1)
+
+            for cc, ecn, foldername, title in [('cubic', 2, 'cubic',    'cubic vs cubic'),
+                                               ('cubic', 1, 'cubic-ecn','cubic vs cubic-ecn'),
+                                               ('dctcp', 1, 'dctcp',    'cubic vs dctcp')]:
                 testbed.cc_b = cc
                 testbed.ecn_b = ecn
 
-                def my_set(testenv):
+                def my_set(testenv, testbed):
                     for rtt in [2, 5, 10, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400]:
                         testbed.rtt_servera = rtt
                         testbed.rtt_serverb = rtt
@@ -675,9 +731,9 @@ class OverloadTesting(TestbedTesting):
                                 testenv.run_greedy(node='a')
                                 testenv.run_greedy(node='b')
 
-                        testenv.run_test(my_test, testbed, tag=rtt, xticlabel=rtt)
+                        testenv.run_test(my_test, testbed, tag=rtt, xticlabel=rtt, xaxislabel='RTT')
 
-                self.run_set(my_set, testbed, 'testset-simple/flows-%d/%s' % (numflows, tag), title=title, xticlabel='RTT')
+                test_collection2.run_set(self, my_set, testbed, foldername=foldername, title=title)
 
     def test_increasing_udp_traffic(self):
         """Test UDP-traffic in both queues with increasing bandwidth"""
@@ -697,11 +753,14 @@ class OverloadTesting(TestbedTesting):
         self.run_set(my_set, testbed, 'testsets/increasing-udp')
 
     def test_speeds(self):
-        """Test one UDP-flow vs one TCP-greedy flow with different UDP speeds and UDP queue"""
+        """Test one UDP-flow vs one TCP-greedy flow with different UDP speeds and UDP ECT-flags"""
         testbed = self.testbed()
 
-        for ect in ['nonect', 'ect1']:
-            def my_set(testenv):
+        test_collection = TestCollection('testsets/speeds', title='Overload with UDP')
+
+        for ect, title in [('nonect', 'UDP with Non-ECT'),
+                           ('ect1', 'UDP with ECT(1)')]:
+            def my_set(testenv, testbed):
                 testenv.ta_samples = 250
                 testenv.ta_delay = 500
                 testenv.ta_idle = 5
@@ -711,13 +770,12 @@ class OverloadTesting(TestbedTesting):
 
                 for speed in speeds:
                     def my_test(testenv, testbed):
-                        testenv.save_hint('x_udp_rate %d' % (speed * 1000))
                         testenv.run_greedy(node='b')
                         testenv.run_udp(node='a', bitrate=speed*1000, ect=ect)
 
-                    testenv.run_test(my_test, testbed)
+                    testenv.run_test(my_test, testbed, tag=speed, xticlabel=speed, xaxislabel='UDP bitrate [kb/s]')
 
-            self.run_set(my_set, testbed, 'testsets/speeds/' + ect)
+            test_collection.run_set(self, my_set, testbed, foldername=ect, title=title)
 
     def test_tcp_competing(self):
         testbed = self.testbed()
@@ -727,7 +785,7 @@ class OverloadTesting(TestbedTesting):
         testbed.cc_b = 'cubic'
         testbed.ecn_b = 2
 
-        def my_set(testenv):
+        def my_set(testenv, testbed):
             def my_test(testenv, testbed):
                 testenv.run_greedy(node='a')
                 testenv.run_greedy(node='b')
@@ -742,33 +800,27 @@ class OverloadTesting(TestbedTesting):
 
         test_collection = TestCollection('testsets/plot-testdata', title='Testing cubic vs different flows')
 
-        def my_test1(testenv, testbed):
-            testenv.run_greedy(node='a')
-            testenv.run_greedy(node='b')
-
-        def my_test2(testenv, testbed):
-            testenv.run_greedy(node='a')
-
-        def my_test3(testenv, testbed):
-            testenv.run_greedy(node='b')
-
-        for name, my_test, title in [('traffic-ab', my_test1, 'traffic both machines'),
-                                     ('traffic-a',  my_test2, 'traffic only a'),
-                                     ('traffic-b',  my_test3, 'traffic only b')]:
-            def my_set(testenv):
+        for name, n_a, n_b, title in [('traffic-ab', 1, 1, 'traffic both machines'),
+                                     ('traffic-a',  1, 0, 'traffic only a'),
+                                     ('traffic-b',  0, 1, 'traffic only b')]:
+            def my_set(testenv, testbed):
                 testenv.ta_samples = 5
                 testenv.ta_idle = .5
                 testenv.ta_delay = 500
 
-                #for rtt in [2, 5, 10, 20, 50]:
-                for rtt in [10, 20, 50]:
+                def my_test(testenv, testbed):
+                    for n in range(n_a):
+                        testenv.run_greedy(node='a')
+                    for n in range(n_b):
+                        testenv.run_greedy(node='b')
+
+                for rtt in [2, 5, 10, 20, 50, 100]:
                     testbed.rtt_servera = testbed.rtt_serverb = rtt
-                    self.run_test(my_test, testbed, tag='rtt-%s' % rtt, xticlabel=rtt, xaxislabel='RTT')
-                    self.run_test(my_test, testbed, tag='rtt-%s' % rtt, xticlabel=rtt, xaxislabel='RTT')
 
-                test_collection.add_set(self.testutils)
+                    for i in range(1,6):
+                        testenv.run_test(my_test, testbed, tag='rtt-%s-%d' % (rtt, i), xticlabel=rtt, xaxislabel='RTT')
 
-            self.run_set(my_set, testbed, test_collection.folder + '/' + name, title=title)
+            test_collection.run_set(self, my_set, testbed, name, title=title)
 
 
 if __name__ == '__main__':
@@ -790,4 +842,5 @@ if __name__ == '__main__':
 
     if True:
         t = OverloadTesting()
-        t.test_plot_test_data()
+        #t.test_plot_test_data()
+        t.test_simple()

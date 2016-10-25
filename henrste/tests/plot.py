@@ -467,8 +467,9 @@ def readMetadata(file):
 
     with open(file, 'r') as f:
         for line in f:
-            key, value = line.split(maxsplit=1)
-            value = value.strip()
+            s = line.split(maxsplit=1)
+            key = s[0]
+            value = s[1].strip() if len(s) > 1 else ''
             metadata[key.strip()] = value
             lines.append((key, value))
 
