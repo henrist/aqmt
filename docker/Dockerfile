@@ -54,6 +54,7 @@ RUN chmod 600 /root/.ssh/* \
          psmisc \
          python \
          python-urwid \
+         python3-numpy \
          python3-plumbum \
          sudo \
          tcpdump \
