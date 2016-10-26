@@ -243,7 +243,11 @@ get_host_cc() {
 get_aqm_options() {
     local aqm_name=$1
 
-    tc qdisc show dev $IFACE_CLIENTS | grep "$aqm_name" | sed 's/.*parent [0-9:]\+ //'
+    if [ -n "$aqm_name" ]; then
+        tc qdisc show dev $IFACE_CLIENTS | grep "$aqm_name" | sed 's/.*parent [0-9:]\+ //'
+    else
+        echo '(no aqm)'
+    fi
 }
 
 # method that will abort the script if we are not on the aqm-machine
