@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-# Henrik's test framework
+"""Henrik's test framework
+
+For interactive tests (with live plots), run:
+$ TEST_INTERACTIVE=1 ./test.py
+
+"""
 
 import time
 import datetime
@@ -20,7 +25,7 @@ import subprocess
 
 from calc_queuedelay import QueueDelay
 from calc_utilization import Utilization
-from plot import Plot, getTestcasesInFolder
+from plot import Plot, plot_folder_compare, plot_folder_flows
 
 def get_shell_cmd(cmd_object):
     """Convert a plumbum cmd to a shell expression"""
@@ -180,6 +185,14 @@ class Testbed():
         self.aqm_name = 'dualq'
         self.aqm_params = 'l_thresh_us 1000 offset 0 l_slope 5 c_slope 4 l_smooth 0 c_smooth 5 l_power 1 c_power 2 l_shift 50'
 
+    def aqm_pie(self):
+        self.aqm_name = 'pie'
+        self.aqm_params = 'ecn'
+
+    def aqm_fq_codel(self):
+        self.aqm_name = 'fq_codel'
+        self.aqm_params = 'ecn'
+
     def setup(self, dry_run=False):
         cmd = bash['-c', """
             source ../common.sh
@@ -198,6 +211,7 @@ class Testbed():
             print(get_shell_cmd(cmd))
         else:
             cmd & FG
+
 
     def reset(self, dry_run=False):
         cmd = bash['-c', """
@@ -231,7 +245,6 @@ class Testbed():
             if self.aqm_params != '':
                 params = ' (%s)' % self.aqm_params
 
-
             print("  aqm: %s%s" % (self.aqm_name, params))
             print("       (%s)" % self.get_aqm_options(self.aqm_name))
         else:
@@ -241,7 +254,7 @@ class Testbed():
             ip = 'IP_%s_MGMT' % node
 
             print('  %s: ' % node.lower(), end='')
-            res = (bash['-c', 'source ../common.sh; get_host_cc "%s"' % ip] | local['tr']['\\n', ' '])().strip()
+            res = (bash['-c', 'source ../common.sh; get_host_cc "$%s"' % ip] | local['tr']['\n', ' '])().strip()
             print(res)
 
     @staticmethod
@@ -308,7 +321,7 @@ class TestEnv():
         self.testfolders = []  # list of completed tests
 
         self.terminal = None
-        self.is_interactive = False  # run in tmux or not
+        self.is_interactive = 'TEST_INTERACTIVE' in os.environ and os.environ['TEST_INTERACTIVE']  # run in tmux or not
         self.ta_idle = 3  # time to wait before collecting traffic
         self.ta_delay = 1000
         self.ta_samples = 60
@@ -597,7 +610,6 @@ class TestEnv():
         the_test(self, testbed)
 
         if not self.dry_run:
-            print(pid_ta)
             waitpid(pid_ta)  # wait until 'ta' quits
 
         kill_known_pids()
@@ -623,7 +635,7 @@ class TestCollection():
     - collection of collections, and so on
     """
 
-    def __init__(self, folder, title=None, parent=None):
+    def __init__(self, folder, title=None, subtitle=None, parent=None):
         self.title = title
         if parent:
             self.folder = parent.folder + '/' + folder
@@ -638,8 +650,11 @@ class TestCollection():
         if title is not None:
             TestEnv.save_hint_to_folder(self.folder, 'title %s' % title)
 
-    def add_set(self, testenv):
-        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(testenv.set_folder))
+        if subtitle is not None:
+            TestEnv.save_hint_to_folder(self.folder, 'subtitle %s' % subtitle)
+
+    def add_set(self, set_folder):
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(set_folder))
 
         if self.parent and not self.parent_called:
             self.parent_called = True
@@ -648,9 +663,16 @@ class TestCollection():
     def add_collection(self, collection):
         TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(collection.folder))
 
+        if self.parent and not self.parent_called:
+            self.parent_called = True
+            self.parent.add_collection(self)
+
     def run_set(self, testobj, my_set, testbed, foldername, **kwargs):
-        testenv = testobj.run_set(my_set, testbed, self.folder + '/' + foldername, **kwargs)
-        self.add_set(testenv)
+        set_folder = self.folder + '/' + foldername
+        self.add_set(set_folder)
+        testobj.run_set(my_set, testbed, set_folder, **kwargs)
+
+
 
 
 class TestbedTesting():
@@ -664,7 +686,7 @@ class TestbedTesting():
         testbed.ecn_b = 1
         return testbed
 
-    def run_set(self, method_set, testbed, set_folder, plot_only=False, title=None):
+    def run_set(self, method_set, testbed, set_folder, plot_only=False, title=None, subtitle=None):
         testenv = TestEnv(set_folder)
 
         # overload run_test so we can hook into it
@@ -677,12 +699,15 @@ class TestbedTesting():
         if not testenv.dry_run:
             TestEnv.remove_hint(testenv.set_folder)
 
+        testenv.save_hint_set('type set')
+
         if title is not None:
             testenv.save_hint_set('title %s' % title)
 
-        method_set(testenv, testbed)
+        if subtitle is not None:
+            testenv.save_hint_set('subtitle %s' % subtitle)
 
-        testenv.save_hint_set('type set')
+        method_set(testenv, testbed)
 
         self.generate_set_plots(testenv)
         return testenv
@@ -706,51 +731,77 @@ class TestbedTesting():
 
 
 class OverloadTesting(TestbedTesting):
-    def test_simple(self):
+    def test_testbed(self):
+        testbed = self.testbed()
+        testbed.rtt_servera = testbed.rtt_serverb = 100
+        testbed.cc_b = 'dctcp'
+        testbed.ecn_b = 1
+        testbed.aqm_pi2()
+
+        testbed.reset()
+        testbed.setup()
+        testbed.print_setup()
+
+    def test_cubic(self):
         testbed = self.testbed()
 
-        test_collection1 = TestCollection('testsets/cubic', title='Testing cubic vs other congestion controls')
+        test_collection1 = TestCollection('testsets/cubic', title='Testing cubic vs other congestion controls',
+                                          subtitle='Linkrate: 10 Mbit')
 
-        for numflows in [1,2,3]:
-            test_collection2 = TestCollection('flows-%d' % numflows, title='%d flows each' % numflows, parent=test_collection1)
+        for aqm, foldername, aqmtitle in [(testbed.aqm_pi2, 'pi2', 'AQM: pi2'),
+                                          (testbed.aqm_fq_codel, 'fq_codel', 'AQM: fq_codel'),
+                                          (testbed.aqm_red, 'red', 'AQM: RED'),
+                                          #(testbed.aqm_default, 'no-aqm', 'No AQM'),
+                                          ]:
 
-            for cc, ecn, foldername, title in [('cubic', 2, 'cubic',    'cubic vs cubic'),
-                                               ('cubic', 1, 'cubic-ecn','cubic vs cubic-ecn'),
-                                               ('dctcp', 1, 'dctcp',    'cubic vs dctcp')]:
-                testbed.cc_b = cc
-                testbed.ecn_b = ecn
+            aqm()
+            test_collection2 = TestCollection(foldername, title=aqmtitle, parent=test_collection1)
 
-                def my_set(testenv, testbed):
-                    for rtt in [2, 5, 10, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400]:
-                        testbed.rtt_servera = rtt
-                        testbed.rtt_serverb = rtt
-                        testenv.ta_idle = (rtt / 1000) * 20 + 4
+            #for numflows in [1,2,3]:
+            for numflows in [1,3]:
+                test_collection3 = TestCollection('flows-%d' % numflows, title='%d flows each' % numflows, parent=test_collection2)
 
-                        def my_test(testenv, testbed):
-                            for i in range(numflows):
-                                testenv.run_greedy(node='a')
-                                testenv.run_greedy(node='b')
+                for cc, ecn, foldername, title in [('cubic', 2, 'cubic',    'cubic vs cubic'),
+                                                   ('cubic', 1, 'cubic-ecn','cubic vs cubic-ecn'),
+                                                   ('dctcp', 1, 'dctcp',    'cubic vs dctcp')]:
+                    testbed.cc_b = cc
+                    testbed.ecn_b = ecn
 
-                        testenv.run_test(my_test, testbed, tag=rtt, xticlabel=rtt, xaxislabel='RTT')
+                    def my_set(testenv, testbed):
+                        #for rtt in [2, 5, 10, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400]:
+                        for rtt in [5, 10, 25, 50, 100, 200]:
+                            testbed.rtt_servera = rtt
+                            testbed.rtt_serverb = rtt
+                            testenv.ta_idle = (rtt / 1000) * 20 + 4
 
-                test_collection2.run_set(self, my_set, testbed, foldername=foldername, title=title)
+                            def my_test(testenv, testbed):
+                                for i in range(numflows):
+                                    testenv.run_greedy(node='a')
+                                    testenv.run_greedy(node='b')
+
+                            testenv.run_test(my_test, testbed, tag=rtt, xticlabel=rtt, xaxislabel='RTT')
+
+                    test_collection3.run_set(self, my_set, testbed, foldername=foldername, title=title)
 
     def test_increasing_udp_traffic(self):
         """Test UDP-traffic in both queues with increasing bandwidth"""
         testbed = self.testbed()
 
-        def my_set(testenv):
+        def my_set(testenv, testbed):
             def my_test(testenv, testbed):
                 for x in range(10):
                     testenv.run_udp(node='a', bitrate=1250000, ect='nonect')
                     testenv.run_udp(node='b', bitrate=1250000, ect='ect0')
                     time.sleep(2)
 
-            testenv.run_test(my_test, testbed)
-            testenv.run_test(my_test, testbed)
-            testenv.run_test(my_test, testbed)
+            testenv.run_test(my_test, testbed, xticlabel='test 1')
+            testenv.run_test(my_test, testbed, xticlabel='test 2')
+            testenv.run_test(my_test, testbed, xticlabel='test 3')
+            testenv.run_test(my_test, testbed, xticlabel='test 4')
 
-        self.run_set(my_set, testbed, 'testsets/increasing-udp')
+        self.run_set(my_set, testbed, 'testsets/increasing-udp', title='Testing increasing UDP-rate in same test',
+                     subtitle='Look at graphs for the individual tests for this to have any use')
+        plot_folder_compare('testsets/increasing-udp')
 
     def test_speeds(self):
         """Test one UDP-flow vs one TCP-greedy flow with different UDP speeds and UDP ECT-flags"""
@@ -825,22 +876,9 @@ class OverloadTesting(TestbedTesting):
 
 if __name__ == '__main__':
 
-    if False:
-        testfolders = []
-        for type in ['nonect', 'ect1']:
-            for i in range(1, 17+1):
-                folder = 'testset-speeds/%s/test-%03d' % (type, i)
-                Testbed.analyze_results(folder)
-                testfolders.append(folder)
-
-        p = Plot()
-        p.plot_multiple_flows(testfolders, 'testset-speeds/analysis')
-
-    if False:
-        t = OverloadTesting()
-        t.test_simple()
-
     if True:
         t = OverloadTesting()
         #t.test_plot_test_data()
-        t.test_simple()
+        #t.test_testbed()
+        t.test_cubic()
+        #t.test_increasing_udp_traffic()

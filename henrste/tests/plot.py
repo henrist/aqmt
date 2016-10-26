@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from pprint import pprint
-import unittest
+from collections import OrderedDict
 
 color_cubic = "#FC6C6C"
 color_dctcp = "blue"
@@ -25,15 +25,21 @@ class HierarchyPlot():
     def __init__(self):
         self.plotutils = Plot()
 
-    def get_num_testcases(self, testmeta):
+    @staticmethod
+    def get_num_testcases(testmeta):
         """Returns a tuple of numbers sets, tests and depth"""
 
         sets = 0
         tests = 0
         depth = 0
+        nodes = 0
 
         def traverse(testmeta, depthnow=0):
-            nonlocal sets, tests, depth
+            nonlocal sets, tests, depth, nodes
+
+            if len(testmeta['children']) == 0:
+                return
+
             f = testmeta['children'][0]
 
             if depthnow > depth:
@@ -43,14 +49,16 @@ class HierarchyPlot():
             if 'testcase' in f:
                 tests += len(testmeta['children'])
                 sets += 1
+                nodes += len(testmeta['children'])
 
             # or is it a list of sets
             else:
                 for item in testmeta['children']:
+                    nodes += 1
                     traverse(item, depthnow + 1)
 
         traverse(testmeta)
-        return (sets, tests, depth)
+        return (sets, tests, depth, nodes - depth)
 
     @staticmethod
     def walk_tree_leaf_set(testmeta, fn):
@@ -83,7 +91,7 @@ class HierarchyPlot():
         walk(testmeta)
 
     @staticmethod
-    def walk_tree_set(testmeta, fn):
+    def walk_tree_set_reverse(testmeta, fn):
         """Walks the tree and calls fn for every set in reverse order"""
         x = 0
 
@@ -110,6 +118,33 @@ class HierarchyPlot():
 
         walk(testmeta, 0)
 
+    @staticmethod
+    def walk_tree_set(testmeta, fn):
+        """Walks the tree and calls fn for every set"""
+        x = 0
+
+        def walk(testmeta, depth):
+            nonlocal x
+
+            if len(testmeta['children']) == 0:
+                return
+
+            f = testmeta['children'][0]
+
+            # is this a set of tests?
+            if 'testcase' in f:
+                x += len(testmeta['children'])
+
+            # or is it a list of sets
+            else:
+                for item in testmeta['children']:
+                    fn(item, x, depth)
+                    walk(item, depth + 1)
+
+            x += 1
+
+        walk(testmeta, 0)
+
     def get_testcases(testmeta):
         """Get list of testcases of a test set"""
         return [item['testcase'] for item in testmeta['children']]
@@ -117,28 +152,41 @@ class HierarchyPlot():
     def plot(self, outfile, testmeta):
         """Plot the test cases provided"""
 
-        n_sets, n_tests, n_depth = self.get_num_testcases(testmeta)
-        num = n_sets + n_tests
+        n_sets, n_tests, n_depth, n_nodes = HierarchyPlot.get_num_testcases(testmeta)
+        #num = n_sets + n_tests + n_depth - 1
+        num = n_nodes
 
         self.plotutils.size = '21cm,22cm'
         self.plotutils.header()
 
         def plot_labels(testmeta, x, depth, width):
+            fontsize = 9
+            if depth > 1:
+                fontsize = min(9, 15 - n_nodes / 18)
+
             self.plotutils.gpi += """
-                set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.07 * (n_depth - depth - 1)) + """ font 'Times-Roman,8pt' tc rgb 'black' center"""
+                #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
+                set label '""" + testmeta['title'] + """' at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
+
+        title = testmeta['title']
+        subtitle_size = 0
+        if 'subtitle' in testmeta and testmeta['subtitle']:
+            title += '\\n' + testmeta['subtitle']
+            subtitle_size = .8
 
         self.plotutils.gpi += """
-            set multiplot layout 3,1 title '""" + testmeta['title'] + """'
+            set multiplot layout 3,1 title \"""" + title + """\"
 
             unset bars
-            set xtic rotate by -65 font ',8pt'
+            set xtic rotate by -65 font ',""" + str(min(10, 15 - n_nodes / 18)) + """'
             set key above
+            set key spacing 5
 
             #set title '""" + testmeta['title'] + """'
-            set xrange [-.6:""" + str(num-2) + """.9]
+            set xrange [-2:""" + str(num+1) + """]
             set yrange [0:]
             set boxwidth 0.2
-            set tmargin """ + str(1 * n_depth + 2) + """
+            set tmargin """ + str(1 * n_depth + 2 + subtitle_size) + """
             set lmargin 13"""
 
 
@@ -151,7 +199,7 @@ class HierarchyPlot():
             #set xtic offset first .3
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
-        HierarchyPlot.walk_tree_set(testmeta, plot_labels)
+        HierarchyPlot.walk_tree_set_reverse(testmeta, plot_labels)
 
         plot = ''
         def data_util(testmeta, is_first_set, x):
@@ -173,7 +221,7 @@ class HierarchyPlot():
         self.plotutils.gpi += """
             plot """ + plot + """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
-            set xtic offset first .15"""
+            set xtic offset first .05"""
 
         plot = ''
         def data_rate(testmeta, is_first_set, x):
@@ -195,7 +243,7 @@ class HierarchyPlot():
         HierarchyPlot.walk_tree_leaf_set(testmeta, data_rate)
         self.plotutils.gpi += """
             plot """ + plot + """
-            #set xtic offset first .10
+            set xtic offset first 0
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
         if 'xlabel' in testmeta and len(testmeta['xlabel']) > 0:
@@ -405,7 +453,9 @@ class Plot():
                 #if line.startswith('x_udp_rate'):
                 #    return str(int(int(line.split()[1]) / 1000))
                 if line.startswith('xticlabel '):
-                    return line.split(maxsplit=1)[1].strip()
+                    l = line.split(maxsplit=1)
+                    if len(l) > 1:
+                        return l[1].strip()
 
         return 'n/a'
 
@@ -420,12 +470,12 @@ class Plot():
                     if line.startswith('#'):
                         continue
 
-                    out.append(tag + ' ' + line)
+                    out.append('"%s" %s' % (tag, line))
 
         return ''.join(out)
 
 
-def getTestcasesInFolder(folder):
+def get_testcases_in_folder(folder):
     testcases = []
 
     for file in os.listdir(folder):
@@ -435,8 +485,31 @@ def getTestcasesInFolder(folder):
     return sorted(testcases)
 
 
-def generateHierarchyData(folderspec, title, xlabel=''):
-    """Generate a dict that can be sent to HierarchyPlot"""
+def generate_hierarchy_data(folderspec, title, xlabel=''):
+    """Generate a dict that can be sent to HierarchyPlot
+
+    Example:
+        data = generate_hierarchy_data({
+            '1 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-1/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-1/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-1/dctcp',
+            },
+            '2 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-2/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-2/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-2/dctcp',
+            },
+            '3 flow each': {
+                'cubic vs cubic': 'testset-simple/flows-3/cubic',
+                'cubic vs cubic-ecn': 'testset-simple/flows-3/cubic-ecn',
+                'cubic vs dctcp': 'testset-simple/flows-3/dctcp',
+            },
+        }, title='Testing cubic vs different flows', xlabel='RTT')
+
+    See also generate_hierarchy_data_from_folder which does
+    the similar process just from a directory structure with metadata
+    """
 
     root = {
         'title': title,
@@ -453,12 +526,12 @@ def generateHierarchyData(folderspec, title, xlabel=''):
                 add_level(node, value)
 
             else:
-                node['children'] = [{'testcase': x} for x in getTestcasesInFolder(value)]
+                node['children'] = [{'testcase': x} for x in get_testcases_in_folder(value)]
 
     add_level(root, folderspec)
     return root
 
-def readMetadata(file):
+def read_metadata(file):
     if not os.path.isfile(file):
         raise Exception('Missing metadata file: ' + file)
 
@@ -475,7 +548,7 @@ def readMetadata(file):
 
     return (metadata, lines)
 
-def generateHierarchyDataFromFolder(folder):
+def generate_hierarchy_data_from_folder(folder):
     """Generate a dict that can be sent to HierarchyPlot by analyzing the directory
 
     It will look in all the metadata stored while running test
@@ -490,7 +563,7 @@ def generateHierarchyDataFromFolder(folder):
         if not os.path.isdir(folder):
             raise Exception('Non-existing directory: %s' % folder)
 
-        metadata_kv, metadata_lines = readMetadata(folder + '/details')
+        metadata_kv, metadata_lines = read_metadata(folder + '/details')
 
         if 'type' not in metadata_kv:
             raise Exception('Missing type in metadata for %s' % folder)
@@ -498,6 +571,7 @@ def generateHierarchyDataFromFolder(folder):
         if metadata_kv['type'] in ['collection', 'set']:
             node = {
                 'title': metadata_kv['title'] if 'title' in metadata_kv else '',
+                'subtitle': metadata_kv['subtitle'] if 'subtitle' in metadata_kv else '',
                 'children': []
             }
 
@@ -521,14 +595,72 @@ def generateHierarchyDataFromFolder(folder):
 
     return root
 
+def hierarchy_swap_levels(spec, level=0):
+    """Rotate order data is grouped to columns"""
 
-def plotFolderCompare(folder):
-    data = generateHierarchyDataFromFolder(folder)
+    if level > 0:
+        def walk(testmeta, depth):
+            if len(testmeta['children']) == 0:
+                return
+
+            # is this a set of tests?
+            if 'testcase' in testmeta['children'][0]:
+                return
+
+            for index, item in enumerate(testmeta['children']):
+                if depth + 1 == level:
+                    testmeta['children'][index] = hierarchy_swap_levels(item)
+                else:
+                    walk(item, depth + 1)
+
+        walk(spec, 0)
+        return spec
+
+    titles = []
+    def check_level(item, x, depth):
+        nonlocal titles
+        if depth == 1 and item['title'] not in titles:
+            titles.append(item['title'])
+    HierarchyPlot.walk_tree_set(spec, check_level)
+
+    if len(titles) == 0:
+        return spec
+
+    new_children = OrderedDict()
+    parent = None
+
+    def build_swap(item, x, depth):
+        nonlocal parent, new_children
+        if depth == 0:
+            parent = item
+        elif depth == 1:
+            parentcopy = dict(parent)
+            if item['title'] in new_children:
+                new_children[item['title']]['children'].append(parentcopy)
+            else:
+                childcopy = dict(item)
+                childcopy['children'] = [parentcopy]
+                new_children[item['title']] = childcopy
+
+            parentcopy['children'] = item['children']
+
+    HierarchyPlot.walk_tree_set(spec, build_swap)
+
+    spec['children'] = [val for key, val in new_children.items()]
+    return spec
+
+def plot_folder_compare(folder, swap_levels=False):
+    data = generate_hierarchy_data_from_folder(folder)
+
+    if swap_levels is not False:
+        for level in swap_levels:
+            data = hierarchy_swap_levels(data, level)
+
     hp = HierarchyPlot()
     hp.plot(folder + '/comparison', data)
 
-def plotFolderFlows(folder):
-    data = generateHierarchyDataFromFolder(folder)
+def plot_folder_flows(folder):
+    data = generate_hierarchy_data_from_folder(folder)
 
     def parse_set(testmeta, first_set, x):
         if len(testmeta['children']) == 0:
@@ -546,76 +678,20 @@ def plotFolderFlows(folder):
 
     HierarchyPlot.walk_tree_leaf_set(data, parse_set)
 
-class TestPlots(unittest.TestCase):
-
-    def testGenerateHierarchyData():
-        data = generateHierarchyData({
-            'traffic both machines': 'testsets/plot-testdata/traffic-ab',
-            'traffic only a': 'testsets/plot-testdata/traffic-a',
-            'traffic only b': 'testsets/plot-testdata/traffic-b',
-        }, title='Plot testing', xlabel='RTT')
-
-        hp = HierarchyPlot()
-        hp.plot('testsets/plot-testdata/analysis', data)
-
-
-if __name__ == '__main__' and len(sys.argv) >= 2:
-    if sys.argv[1] == 'test':
-        unittest.main()
-
-    elif len(sys.argv) >= 3 and sys.argv[1] == 'collection':
+if __name__ == '__main__':
+    if len(sys.argv) >= 3 and sys.argv[1] == 'collection':
         folder = sys.argv[2]
-        plotFolderCompare(folder)
+        swap_levels = False
+        if len(sys.argv) >= 4:
+            swap_levels = [int(x) for x in sys.argv[3].split(',')]
+
+        plot_folder_compare(folder, swap_levels=swap_levels)
 
     elif len(sys.argv) >= 3 and sys.argv[1] == 'flows':
         folder = sys.argv[2]
-        plotFolderFlows(folder)
+        plot_folder_flows(folder)
 
     else:
-        print('Unknown operation')
-
-elif __name__ == '__main__':
-
-    plot = Plot()
-
-    if False:
-        data = generateHierarchyData({
-            '1 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-1/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-1/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-1/dctcp',
-            },
-            '2 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-2/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-2/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-2/dctcp',
-            },
-            '3 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-3/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-3/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-3/dctcp',
-            },
-        }, title='Testing cubic vs different flows', xlabel='RTT')
-
-        hp = HierarchyPlot()
-        hp.plot('testset-simple/comparison', data)
-
-    if False:
-        plot.plot_flow('testset-speeds/nonect/test-001')
-
-    if False:
-        data = generateHierarchyData({
-            'UDP with Non-ECT': 'testset-speeds/nonect',
-            'UDP with ECT(1)': 'testset-speeds/ect1'
-        }, title='Overload with UDP', xlabel='UDP bitrate [kbps]')
-
-        hp = HierarchyPlot()
-        hp.plot('testset-speeds/analysis', data)
-
-    if False:
-        for subfolder in ['nonect', 'ect1']:
-            folder = 'testset-speeds/' + subfolder
-            plot.plot_multiple_flows(getTestcasesInFolder(folder), folder + '/analysis_merged')
-
-    if True:
-        plotFolder('testsets/plot-testdata')
+        print('Syntax:')
+        print('  ./plot.py collection <topdirectory> [<swap level>,..]')
+        print('  ./plot.py flows <topdirectory> [<swap level>,..]')
