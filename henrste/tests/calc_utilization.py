@@ -14,6 +14,8 @@ class Utilization():
 
     def processTest(self, folder, link_bitrate):
         with open(folder + '/util', 'w') as fout:
+            fout.write('# sample_id totao_util_in_percent ecn_util_in_percent nonecn_util_in_percent\n')
+
             f1 = open(folder + '/r_tot_ecn', 'r')
             f2 = open(folder + '/r_tot_nonecn', 'r')
 

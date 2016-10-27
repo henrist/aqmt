@@ -4,8 +4,6 @@
 # the results are saved to:
 # - qs_samples_ecn
 # - qs_samples_nonecn
-# with the format
-# - sample_id max average p25 p99
 
 import numpy as np
 
@@ -14,7 +12,7 @@ class QueueDelay():
         arr = np.array([])
 
         qs = 0
-        for num in line.split():
+        for num in line.split()[1:]:  # skip sample_time in first col
             num = int(num)
             if num > 0:
                 arr = np.concatenate([arr, np.full(num, qs, np.dtype('int64'))])
@@ -24,15 +22,20 @@ class QueueDelay():
         return arr
 
     def generateStats(self, numbers):
-        res = [np.max(numbers).astype('str'),
-               np.average(numbers).astype('str'),
-               np.percentile(numbers, 25, interpolation='lower').astype('str'),
-               np.percentile(numbers, 99, interpolation='lower').astype('str')]
+        if numbers.size == 0:
+            res = ['0', '0', '0', '0', '0']
+        else:
+            res = [np.min(numbers).astype('str'),
+                   np.percentile(numbers, 25, interpolation='lower').astype('str'),
+                   np.average(numbers).astype('str'),
+                   np.percentile(numbers, 99, interpolation='lower').astype('str'),
+                   np.max(numbers).astype('str')]
 
         return ' '.join(res)
 
     def processTest(self, folder):
         with open(folder + '/qs_samples_nonecn', 'w') as fout:
+            fout.write('# min p25 average p99 max\n')
             with open(folder + '/qs_ecn00_s', 'r') as f:
                 f.readline()  # skip header
 
@@ -41,6 +44,8 @@ class QueueDelay():
                             self.parseLine(line))))
 
         with open(folder + '/qs_samples_ecn', 'w') as fout:
+            fout.write('# min p25 average p99 max\n')
+
             f1 = open(folder + '/qs_ecn01_s', 'r')
             f2 = open(folder + '/qs_ecn10_s', 'r')
             f3 = open(folder + '/qs_ecn11_s', 'r')

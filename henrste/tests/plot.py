@@ -182,21 +182,18 @@ class HierarchyPlot():
             set key above
             set key spacing 5
 
-            #set title '""" + testmeta['title'] + """'
             set xrange [-2:""" + str(num+1) + """]
-            set yrange [0:]
+            set yrange [0:*<105]
             set boxwidth 0.2
-            set tmargin """ + str(1 * n_depth + 2 + subtitle_size) + """
+            set tmargin """ + str(1 * n_depth + 3 + subtitle_size) + """
             set lmargin 13"""
 
-
+        ##
+        # plot utilization
         self.plotutils.gpi += """
+            set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
+            set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            #set style line 100 lt 1 lc rgb 'red' lw 2
-            #set arrow 100 from 1,-1 to 1,1 nohead ls 100 front
-            #set arrow 100 from graph 0, second 100 to graph 1, second 100 nohead ls 100 front
-
-            #set xtic offset first .3
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
         HierarchyPlot.walk_tree_set_reverse(testmeta, plot_labels)
@@ -210,18 +207,35 @@ class HierarchyPlot():
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'util_stats') + """
                 EOD"""
 
-            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):3:5:4       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', "
-            plot += "                      '' using ($0+" + str(x) + "+0.1):6:8:7:xtic(1)    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.1):6  with lines lc rgb 'gray'         title '', "
-            plot += "                      '' using ($0+" + str(x) + "+0.2):9:10:11  with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.2):9  with lines lc rgb 'gray'         title '', "
+            # total
+            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:7:3       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.0):4  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.0):6  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
+
+            # ecn
+            plot += "                      '' using ($0+" + str(x) + "+0.1):10:8:12:xtic(1)    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($0+" + str(x) + "+0.1):10  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.1):9   with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.1):11  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+
+            # nonecn
+            plot += "                      '' using ($0+" + str(x) + "+0.2):15:13:17  with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($0+" + str(x) + "+0.2):15  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.2):14  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($0+" + str(x) + "+0.2):16  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         HierarchyPlot.walk_tree_leaf_set(testmeta, data_util)
         self.plotutils.gpi += """
             plot """ + plot + """
-            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
-            set xtic offset first .05"""
+            unset arrow 100"""
+
+        ##
+        # plot queueing delay
+        self.plotutils.gpi += """
+            set yrange [0:*]
+            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            #set xtic offset first .1"""
 
         plot = ''
         def data_rate(testmeta, is_first_set, x):
@@ -235,18 +249,27 @@ class HierarchyPlot():
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_nonecn_stats') + """
                 EOD"""
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN queue' if is_first_set else '') + "', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN queue' if is_first_set else '') + "', "
             plot += "                              ''    using ($0+" + str(x) + "+0.05):3  with lines lc rgb 'gray'         title '', "
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 5 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN queue' if is_first_set else '') + "', "
+            plot += "                              ''    using ($0+" + str(x) + "+0.05):6  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "                              ''    using ($0+" + str(x) + "+0.05):7  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN queue' if is_first_set else '') + "', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):3  with lines lc rgb 'gray'         title '', "
+            plot += "                              ''    using ($0+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "                              ''    using ($0+" + str(x) + "+0.15):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         HierarchyPlot.walk_tree_leaf_set(testmeta, data_rate)
         self.plotutils.gpi += """
-            plot """ + plot + """
-            set xtic offset first 0
-            set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
+            plot """ + plot
 
-        if 'xlabel' in testmeta and len(testmeta['xlabel']) > 0:
+        ##
+        # plot drops and marks
+        self.plotutils.gpi += """
+            set ylabel "Percent\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            set xtic offset first 0"""
+
+        # show xlabel at bottom of the multiplot
+        if 'xlabel' in testmeta and testmeta['xlabel'] is not None and len(testmeta['xlabel']) > 0:
             self.plotutils.gpi += """
                 set xlabel '""" + testmeta['xlabel'] + """'"""
 
@@ -255,22 +278,28 @@ class HierarchyPlot():
             nonlocal plot
 
             self.plotutils.gpi += """
-                $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_nonecn_stats') + """
-                EOD
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_ecn_stats') + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'm_percent_ecn_stats') + """
+                EOD
+                $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
+                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_nonecn_stats') + """
                 EOD"""
 
-            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($0+" + str(x) + "+0.0):3:5:4 with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.0):3     with lines lc rgb 'gray'         title '', "
-            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.10):3:5:4:xtic(1) with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
+            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.00):3:5:4 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.00):3     with lines lc rgb 'gray'         title '', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.00):6  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.00):7  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.10):3:5:4:xtic(1) with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
             plot += "                                         '' using ($0+" + str(x) + "+0.10):3     with lines lc rgb 'gray'         title '', "
-            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.20):3:5:4 with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.10):6  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.10):7  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($0+" + str(x) + "+0.20):3:5:4 with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
             plot += "                                         '' using ($0+" + str(x) + "+0.20):3     with lines lc rgb 'gray'         title '', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.20):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($0+" + str(x) + "+0.20):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         HierarchyPlot.walk_tree_leaf_set(testmeta, data_drops)
         self.plotutils.gpi += """
@@ -364,10 +393,10 @@ class Plot():
         self.size = '21cm,30cm'
 
         n_flows = 0
-        flows = {
+        flows = OrderedDict({
             'ecn': [],
             'nonecn': []
-        }
+        })
 
         for (type, items) in flows.items():
             with open(testfolder + '/flows_' + type, 'r') as f:
@@ -379,18 +408,19 @@ class Plot():
 
         self.gpi += """
             set multiplot layout 4,1 columnsfirst title '""" + testfolder + """'
+            set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
             set lmargin 13
             set yrange [0:]
-            set xrange [1:]
+            set xrange [0:2<*]
             set format y "%g"
             set ylabel 'Utilization in %'
             set style fill transparent solid 0.5 noborder
             set key above
             plot """
 
-        self.gpi += "'" + testfolder + "/util'    using ($0+1):2   with lines lw 1.5 title 'Total utilization', "
-        self.gpi += "                       ''    using ($0+1):3   with lines lw 1.5 lc rgb 'red'    title 'ECN utilization', "
-        self.gpi += "                       ''    using ($0+1):4   with lines lw 1.5               title 'Non-ECN utilization', "
+        self.gpi += "'" + testfolder + "/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
+        self.gpi += "                       ''    using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', "
+        self.gpi += "                       ''    using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', "
 
         self.gpi += """
 
@@ -406,41 +436,45 @@ class Plot():
             j = 0
             for flow in items:
                 pt = 2 if type == 'ecn' else 6
-                ls = 3 if type == 'ecn' else 5
+                ls = 2 if type == 'ecn' else 3
                 self.gpi += "'" + testfolder + "/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', "
                 j += 1
 
         self.gpi += """
-            """
+            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
+            unset bars
+            set xtics out nomirror
+            plot """
 
-        self.header()
+        # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
+        self.gpi += "'" + testfolder + "/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN queue', "
+        self.gpi +=                                  "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', "
+        self.gpi +=                                  "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi +=                                  "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi += "'" + testfolder + "/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN queue', "
+        self.gpi +=                                     "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', "
+        self.gpi +=                                     "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi +=                                     "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
 
         self.gpi += """
             set format y "%g"
-            set offset graph 0, graph 0, graph 0.02, graph 0.02
-            set ylabel 'Packets per sample'
+            set xlabel 'Sample'
+            set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in either queue}"
+            set bars
+            set xtics in mirror
             set key above
             plot """
 
-        self.gpi += "'" + testfolder + "/d_tot_nonecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Drops (nonecn)', "
-        self.gpi += "'" + testfolder + "/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ecn)', "
-        self.gpi += "'" + testfolder + "/m_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Marks (ecn)', "
+        self.gpi += "'" + testfolder + "/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', "
+        self.gpi += "'" + testfolder + "/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', "
+        self.gpi += "'" + testfolder + "/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', "
+
+        self.gpi += "'" + testfolder + "/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        self.gpi += "'" + testfolder + "/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
 
         self.gpi += """
-            set ylabel 'Queueing delay [ms]'
-            set xlabel 'Sample'
-            plot """
-
-        # old ps: 2 4 6 1 4 6
-        self.gpi += "'" + testfolder + "/qs_samples_ecn' using ($0+1):2 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Max (ECN)', "
-        self.gpi +=                                  "'' using ($0+1):5 with linespoints pointtype 7 ps 0.2 lw 1.5 title '99th percentile (ECN)', "
-        self.gpi +=                                  "'' using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Average (ECN)', "
-        self.gpi += "'" + testfolder + "/qs_samples_nonecn' using ($0+1):2 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Max (Non-ECN)', "
-        self.gpi +=                                     "'' using ($0+1):5 with linespoints pointtype 7 ps 0.2 lw 1.5 title '99th percentile (Non-ECN)', "
-        self.gpi +=                                     "'' using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 title 'Average (Non-ECN)', "
-
-        self.gpi += """
-            unset multiplot"""
+            unset multiplot
+            reset"""
 
         if generate:
             self.generate(testfolder + '/analysis')
