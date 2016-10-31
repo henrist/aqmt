@@ -157,10 +157,10 @@ void signalHandler(int signum) {
     pthread_cond_broadcast(&tp->quit_cond);
 }
 
-char *IPtoString(in_addr_t ip) {
+std::string IPtoString(in_addr_t ip) {
     struct sockaddr_in ipip;
     ipip.sin_addr.s_addr = ip;
-    return inet_ntoa(ipip.sin_addr);
+    return std::string(inet_ntoa(ipip.sin_addr));
 }
 
 void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
