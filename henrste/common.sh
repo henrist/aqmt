@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# this file contains all code that is used to actually modify the testbed
+# parameters on the different machines
+#
+# it acts as an abstraction layer on top of the testbed
+#
+# it handles both setup in the docker environment as well as on a real testbed
+# as the variables for the testbed is stored seperately
+
 . "$(dirname $(readlink -f $BASH_SOURCE))/vars.sh"
 
 # run all tc and ip commands through sudo if needed
