@@ -11,13 +11,9 @@ class QueueDelay():
     def parseLine(self, line):
         arr = np.array([])
 
-        qs = 0
-        for num in line.split()[1:]:  # skip sample_time in first col
-            num = int(num)
-            if num > 0:
-                arr = np.concatenate([arr, np.full(num, qs, np.dtype('int64'))])
-
-            qs += 1
+        num = np.fromstring(line, dtype=int, sep=' ')[1:]
+        qs = np.arange(0, num.size)
+        arr = np.repeat(qs, num)
 
         return arr
 
