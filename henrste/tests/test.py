@@ -348,7 +348,7 @@ class TestCase():
 
         self.check_folder()
 
-    def run_greedy(self, node='a'):
+    def run_greedy(self, node='a', tag=None):
         """
         Run greedy TCP traffic
 
@@ -356,13 +356,16 @@ class TestCase():
 
         node: a or b (a is normally classic traffic, b is normally l4s)
 
+        Tagging makes it possible to map similar traffic from multiple tests,
+        despite being different ports and setup
+
         Returns a lambda to stop the traffic
         """
-        server_port = self.testenv.get_next_traffic_port()
+        server_port = self.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
-        self.save_hint('traffic=tcp type=greedy node=%s%s server=%s' % (node, node, server_port))
+        self.save_hint('traffic=tcp type=greedy node=%s%s server=%s tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
 
         cmd1 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], '/opt/testbed/greedy_generator/greedy -vv -s %d' % server_port]
         cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; /opt/testbed/greedy_generator/greedy -vv %s %d' % (os.environ['IP_SERVER%s' % node], server_port)]
@@ -387,11 +390,14 @@ class TestCase():
 
         return stopTest
 
-    def run_udp(self, bitrate, node='a', ect="nonect"):
+    def run_udp(self, bitrate, node='a', ect="nonect", tag=None):
         """
         Run UDP traffic at a constant bitrate
 
         ect: ect0 = ECT(0), ect1 = ECT(1), all other is Non-ECT
+
+        Tagging makes it possible to map similar traffic from multiple tests,
+        despite being different ports and setup
 
         Returns a lambda to stop the traffic
         """
@@ -404,11 +410,11 @@ class TestCase():
         else:
             ect = 'nonect'
 
-        server_port = self.testenv.get_next_traffic_port()
+        server_port = self.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
-        self.save_hint('traffic=udp node=%s%s client=%s rate=%d ect=%s' % (node, node, server_port, bitrate, ect))
+        self.save_hint('traffic=udp node=%s%s client=%s rate=%d ect=%s tag=%s' % (node, node, server_port, bitrate, ect, 'No-tag' if tag is None else tag))
 
         cmd_server = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'iperf -s -p %d' % server_port]
 
