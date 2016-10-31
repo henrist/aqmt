@@ -34,7 +34,7 @@ def get_shell_cmd(cmd_object):
     return ' '.join(cmd_object.formulate(10))
 
 def require_on_aqm_node():
-    bash['-c', 'source ../common.sh; require_on_aqm_node'] & FG
+    bash['-c', 'source common.sh; require_on_aqm_node'] & FG
 
 def kill_known_pids():
     if not hasattr(kill_known_pids, 'pids'):
@@ -231,7 +231,7 @@ class Testbed():
 
     def setup(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
-            source ../common.sh
+            source common.sh
 
             configure_clients_edge """ + '%s %s %s "%s"' % (self.bitrate, self.rtt_clients, self.aqm_name, self.aqm_params) + """
             configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA """ + str(self.rtt_servera) + """
@@ -252,7 +252,7 @@ class Testbed():
 
     def reset(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
-            source ../common.sh
+            source common.sh
             reset_aqm_client_edge
             reset_aqm_server_edge
             reset_all_hosts_edge
@@ -272,7 +272,7 @@ class Testbed():
 
     @staticmethod
     def get_aqm_options(name):
-        res = bash['-c', 'source ../common.sh; get_aqm_options %s' % name]()
+        res = bash['-c', 'source common.sh; get_aqm_options %s' % name]()
         return res.strip()
 
     def print_setup(self):
@@ -297,7 +297,7 @@ class Testbed():
             ip = 'IP_%s_MGMT' % node
 
             print('  %s: ' % node.lower(), end='')
-            res = (bash['-c', 'source ../common.sh; get_host_cc "$%s"' % ip] | local['tr']['\n', ' '])().strip()
+            res = (bash['-c', 'source common.sh; get_host_cc "$%s"' % ip] | local['tr']['\n', ' '])().strip()
             print(res)
 
     @staticmethod
@@ -325,7 +325,7 @@ class Testbed():
         nbr_l4s_flows = 1      # used to generate rPDF and dmPDF, we don't use it now
         nbr_classic_flows = 1  # used to generate rPDF and dmPDF, we don't use it now
 
-        cmd = local['../../traffic_analyzer/calc_henrste'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
+        cmd = local['../traffic_analyzer/calc_henrste'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
         if verbose > 0:
             print(get_shell_cmd(cmd))
 
@@ -534,7 +534,7 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; ../../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
+        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
                    (self.testbed.ta_idle, pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
 
         if self.testenv.dry_run:
@@ -665,7 +665,7 @@ class TestEnv():
             add_known_pid(pid)
 
     def run_monitor_setup(self):
-        cmd = local['watch']['-n', '.2', '../show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
+        cmd = local['watch']['-n', '.2', 'show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
 
         if self.dry_run:
             if self.verbose > 0:
@@ -830,7 +830,7 @@ class OverloadTesting(TestbedTesting):
 
     def test_cubic(self):
         testbed = self.testbed()
-        collection1 = TestCollection('testsets/cubic', TestEnv(), title='Testing cubic vs other congestion controls',
+        collection1 = TestCollection('tests/testsets/cubic', TestEnv(), title='Testing cubic vs other congestion controls',
                                           subtitle='Linkrate: 10 Mbit')
 
         for aqm, foldername, aqmtitle in [#(testbed.aqm_pi2, 'pi2', 'AQM: pi2'),
@@ -872,7 +872,7 @@ class OverloadTesting(TestbedTesting):
     def test_increasing_udp_traffic(self):
         """Test UDP-traffic in both queues with increasing bandwidth"""
         testbed = self.testbed()
-        collection = TestCollection('testsets/increasing-udp', TestEnv(),
+        collection = TestCollection('tests/testsets/increasing-udp', TestEnv(),
                                     title='Testing increasing UDP-rate in same test',
                                     subtitle='Look at graphs for the individual tests for this to have any use')
 
@@ -895,7 +895,7 @@ class OverloadTesting(TestbedTesting):
         testbed.ta_delay = 500
         testbed.ta_idle = 5
 
-        collection1 = TestCollection('testsets/speeds-1', TestEnv(), title='Overload with UDP')
+        collection1 = TestCollection('tests/testsets/speeds-1', TestEnv(), title='Overload with UDP')
 
         for ect, title in [('nonect', 'UDP with Non-ECT'),
                            ('ect1', 'UDP with ECT(1)')]:
@@ -918,7 +918,7 @@ class OverloadTesting(TestbedTesting):
         testbed.cc('a', 'cubic', testbed.ECN_INITIATE)
         testbed.cc('b', 'cubic', testbed.ECN_ALLOW)
 
-        collection = TestCollection('testsets/tcp-competing', TestEnv(), title='Competing flows')
+        collection = TestCollection('tests/testsets/tcp-competing', TestEnv(), title='Competing flows')
         def my_test(testcase):
             testcase.run_greedy(node='a')
             testcase.run_greedy(node='b')
@@ -933,7 +933,7 @@ class OverloadTesting(TestbedTesting):
         testbed.ta_idle = .5
         testbed.ta_delay = 500
 
-        collection1 = TestCollection('testsets/plot-testdata', TestEnv(), title='Testing cubic vs different flows')
+        collection1 = TestCollection('tests/testsets/plot-testdata', TestEnv(), title='Testing cubic vs different flows')
 
         for name, n_a, n_b, title in [('traffic-ab', 1, 1, 'traffic both machines'),
                                       ('traffic-a',  1, 0, 'traffic only a'),
@@ -961,7 +961,7 @@ class OverloadTesting(TestbedTesting):
         testbed.ta_samples = 120
         testbed.ta_delay = 50
 
-        collection1 = TestCollection('testsets/many-flows-2', TestEnv(), title='Testing with many flows', subtitle='All tests on pi2 AQM')
+        collection1 = TestCollection('tests/testsets/many-flows-2', TestEnv(), title='Testing with many flows', subtitle='All tests on pi2 AQM')
         for name, n_a, n_b, title in [#('mixed', 1, 1, 'traffic both machines'),
                                       #('a',     1, 0, 'traffic only a'),
                                       ('b',     0, 1, 'traffic only b')]:
@@ -992,7 +992,7 @@ class OverloadTesting(TestbedTesting):
         testbed.ta_samples = 400
         testbed.ta_delay = 50
 
-        collection0 = TestCollection('testsets/different-cc', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing different congestion controls on its own')
+        collection0 = TestCollection('tests/testsets/different-cc', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing different congestion controls on its own')
 
         for l_thresh in [1000, 100000]:
             collection1 = TestCollection('l_thresh-%d' % l_thresh, parent=collection0, title=l_thresh) #title='l\\_thresh=%d' % l_thresh)
@@ -1032,7 +1032,7 @@ class OverloadTesting(TestbedTesting):
         testbed.ta_samples = 400
         testbed.ta_delay = 50
 
-        collection1 = TestCollection('testsets/scaling-in-classic-queue', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing scaling ecn traffic in classic queue')
+        collection1 = TestCollection('tests/testsets/scaling-in-classic-queue', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing scaling ecn traffic in classic queue')
 
         for cc, ecn, foldername, title, aqm_params in [#('cubic', testbed.ECN_INITIATE, 'cubic-ecn',  'cubic-ecn ', 'noecn ecn_scal'),
                                                        ('dctcp', testbed.ECN_INITIATE, 'dctcp-noecn-no_scal', 'cubic-ecn noecn no\\_scal', 'noecn no_scal'),
@@ -1081,7 +1081,7 @@ class ComparisonTesting(TestbedTesting):
 
         rtts = [2, 20, 100, 200]
 
-        collection1 = TestCollection('testsets/fairness', TestEnv(), title='Testing traffic fairness')
+        collection1 = TestCollection('tests/testsets/fairness', TestEnv(), title='Testing traffic fairness')
 
         for aqmtag, aqmtitle, aqmfn in aqms:
             aqmfn()
