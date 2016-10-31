@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-# this file generates utilization statistics for _each_ sample
+# this file generates total utilization statistics for _each_ sample
 # the results are saved to:
 # - util
-# with the format
-# - sample_id total_util_in_percent ecn_util_in_percent nonecn_util_in_percent
 
 import sys
 
@@ -14,7 +12,7 @@ class Utilization():
 
     def processTest(self, folder, link_bitrate):
         with open(folder + '/util', 'w') as fout:
-            fout.write('# sample_id totao_util_in_percent ecn_util_in_percent nonecn_util_in_percent\n')
+            fout.write('# sample_id total_util_in_percent ecn_util_in_percent nonecn_util_in_percent\n')
 
             f1 = open(folder + '/r_tot_ecn', 'r')
             f2 = open(folder + '/r_tot_nonecn', 'r')

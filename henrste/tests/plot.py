@@ -249,11 +249,11 @@ class HierarchyPlot():
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_nonecn_stats') + """
                 EOD"""
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN queue' if is_first_set else '') + "', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
             plot += "                              ''    using ($0+" + str(x) + "+0.05):3  with lines lc rgb 'gray'         title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.05):6  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.05):7  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN queue' if is_first_set else '') + "', "
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN packets' if is_first_set else '') + "', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):3  with lines lc rgb 'gray'         title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
@@ -411,11 +411,15 @@ class Plot():
             set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
             set lmargin 13
             set yrange [0:]
-            set xrange [0:2<*]
+            set xrange [1:""" + read_metadata(testfolder + '/details')[0]['ta_samples'] + """]
             set format y "%g"
             set ylabel 'Utilization in %'
             set style fill transparent solid 0.5 noborder
             set key above
+
+            set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
+            set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
+
             plot """
 
         self.gpi += "'" + testfolder + "/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
@@ -424,6 +428,7 @@ class Plot():
 
         self.gpi += """
 
+            unset arrow 100
             set format y "%.0f"
             set ylabel 'Rate [b/s]'
             set key right center inside
@@ -443,23 +448,24 @@ class Plot():
         self.gpi += """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             unset bars
+            set key above
             set xtics out nomirror
             plot """
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
-        self.gpi += "'" + testfolder + "/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN queue', "
+        self.gpi += "'" + testfolder + "/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', "
         self.gpi +=                                  "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', "
         self.gpi +=                                  "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
         self.gpi +=                                  "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi += "'" + testfolder + "/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN queue', "
+        self.gpi += "'" + testfolder + "/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', "
         self.gpi +=                                     "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', "
         self.gpi +=                                     "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
         self.gpi +=                                     "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
 
         self.gpi += """
             set format y "%g"
-            set xlabel 'Sample'
-            set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in either queue}"
+            set xlabel 'Sample #'
+            set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in the queue}"
             set bars
             set xtics in mirror
             set key above
@@ -688,12 +694,11 @@ def hierarchy_swap_levels(spec, level=0):
     spec['children'] = [val for key, val in new_children.items()]
     return spec
 
-def plot_folder_compare(folder, swap_levels=False):
+def plot_folder_compare(folder, swap_levels=[]):
     data = generate_hierarchy_data_from_folder(folder)
 
-    if swap_levels is not False:
-        for level in swap_levels:
-            data = hierarchy_swap_levels(data, level)
+    for level in swap_levels:
+        data = hierarchy_swap_levels(data, level)
 
     hp = HierarchyPlot()
     hp.plot(folder + '/comparison', data)
@@ -720,7 +725,7 @@ def plot_folder_flows(folder):
 if __name__ == '__main__':
     if len(sys.argv) >= 3 and sys.argv[1] == 'collection':
         folder = sys.argv[2]
-        swap_levels = False
+        swap_levels = []
         if len(sys.argv) >= 4:
             swap_levels = [int(x) for x in sys.argv[3].split(',')]
 
