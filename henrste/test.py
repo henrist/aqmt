@@ -266,20 +266,21 @@ class ComparisonTesting(TestingBase):
         aqms = [
             ['pi2', 'PI2', lambda: testbed.aqm_pi2()],
             ['pie', 'PIE', lambda: testbed.aqm_pie()],
+            ['pi2-l_thresh-10000', 'PI2 with l\\_thresh 10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
         ]
 
         cc_matrix = [
-            ['reno-vs-reno', 'Reno vs Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
-            ['reno-vs-dctcp', 'Reno vs DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-            ['reno-vs-cubic', 'Reno vs Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
-            ['cubic-vs-cubic', 'Cubic vs Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
-            ['cubic-vs-dctcp', 'Cubic vs DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-            ['dctcp-vs-dctcp', 'DCTCP vs DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
+            ['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
+            ['reno-vs-dctcp', 'Reno/DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+            ['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
+            ['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
+            ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+            ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
         ]
 
         rtts = [2, 20, 100, 200]
 
-        collection1 = TestCollection('tests/testsets/fairness', TestEnv(), title='Testing traffic fairness')
+        collection1 = TestCollection('tests/testsets/fairness', TestEnv(reanalyze=True), title='Testing traffic fairness')
 
         for aqmtag, aqmtitle, aqmfn in aqms:
             aqmfn()

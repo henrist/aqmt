@@ -22,8 +22,31 @@ class HierarchyPlot():
     a leaf
     """
 
-    def __init__(self):
+    def __init__(self, output_file, testmeta):
         self.plotutils = Plot()
+        self.gpi = ''
+        self.testmeta = testmeta
+        self.output_file = output_file
+
+        self.n_sets, self.n_tests, self.n_depth, self.n_nodes = HierarchyPlot.get_num_testcases(testmeta)
+
+        self.tmargin_base = 1 * self.n_depth + 2
+        if 'subtitle' in self.testmeta and self.testmeta['subtitle']:
+            self.tmargin_base += .8
+
+        self.depth_sizes = HierarchyPlot.get_depth_sizes(testmeta)
+
+    @staticmethod
+    def get_depth_sizes(testmeta):
+        depths = {}
+
+        def check_node(item, x, depth):
+            if depth not in depths:
+                depths[depth] = 0
+            depths[depth] += 1
+
+        HierarchyPlot.walk_tree_set(testmeta, check_node)
+        return depths
 
     @staticmethod
     def get_num_testcases(testmeta):
@@ -145,64 +168,35 @@ class HierarchyPlot():
 
         walk(testmeta, 0)
 
+    @staticmethod
     def get_testcases(testmeta):
         """Get list of testcases of a test set"""
         return [item['testcase'] for item in testmeta['children']]
 
-    def plot(self, outfile, testmeta):
-        """Plot the test cases provided"""
+    def plot_labels(self, testmeta, x, depth, width):
+        fontsize = fontsize = max(5, min(9, 10 - self.depth_sizes[depth] / 4.5))
 
-        n_sets, n_tests, n_depth, n_nodes = HierarchyPlot.get_num_testcases(testmeta)
-        #num = n_sets + n_tests + n_depth - 1
-        num = n_nodes
+        self.gpi += """
+            #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
+            set label '""" + testmeta['title'] + """' at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
 
-        self.plotutils.size = '21cm,22cm'
-        self.plotutils.header()
+    def plot_utilization(self):
+        """Plot graph of utilization for total, ECN and non-ECN flows"""
+        self.gpi += self.common_header()
+        self.gpi += """
 
-        def plot_labels(testmeta, x, depth, width):
-            fontsize = 9
-            if depth > 1:
-                fontsize = min(9, 15 - n_nodes / 18)
-
-            self.plotutils.gpi += """
-                #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
-                set label '""" + testmeta['title'] + """' at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
-
-        title = testmeta['title']
-        subtitle_size = 0
-        if 'subtitle' in testmeta and testmeta['subtitle']:
-            title += '\\n' + testmeta['subtitle']
-            subtitle_size = .8
-
-        self.plotutils.gpi += """
-            set multiplot layout 3,1 title \"""" + title + """\"
-
-            unset bars
-            set xtic rotate by -65 font ',""" + str(min(10, 15 - n_nodes / 18)) + """'
-            set key above
-            set key spacing 5
-
-            set xrange [-2:""" + str(num+1) + """]
-            set yrange [0:*<105]
-            set boxwidth 0.2
-            set tmargin """ + str(1 * n_depth + 3 + subtitle_size) + """
-            set lmargin 13"""
-
-        ##
-        # plot utilization
-        self.plotutils.gpi += """
+            # utilization
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
-        HierarchyPlot.walk_tree_set_reverse(testmeta, plot_labels)
-
         plot = ''
+        titles_used = []
         def data_util(testmeta, is_first_set, x):
-            nonlocal plot
+            nonlocal plot, titles_used
 
-            self.plotutils.gpi += """
+            self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'util_stats') + """
                 EOD"""
@@ -225,14 +219,70 @@ class HierarchyPlot():
             #plot += "                      '' using ($0+" + str(x) + "+0.2):14  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             #plot += "                      '' using ($0+" + str(x) + "+0.2):16  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(testmeta, data_util)
-        self.plotutils.gpi += """
+        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_util)
+        self.gpi += """
             plot """ + plot + """
             unset arrow 100"""
 
-        ##
-        # plot queueing delay
-        self.plotutils.gpi += """
+    def plot_utilization_tags(self):
+        self.gpi += self.common_header()
+        self.gpi += """
+
+            # utilization of tags
+            set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
+            set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
+
+            set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
+
+        plot = ''
+        titles_used = []
+        def data_util_tags(testmeta, is_first_set, x):
+            nonlocal plot, titles_used
+
+            testcases = HierarchyPlot.get_testcases(testmeta)
+
+            self.gpi += """
+                $dataUtil""" + str(x) + """ << EOD
+                """ + Plot.merge_testcase_data(testcases, 'util_stats') + """
+                EOD"""
+
+            # total
+            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:7:3:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
+
+            tagged_flows = Plot.merge_testcase_data_group(testcases, 'util_tagged_stats')
+            x_distance = .2 / len(tagged_flows)
+
+            for i, (tagname, data) in enumerate(tagged_flows.items()):
+                self.gpi += """
+                    $dataUtil""" + str(x) + "_" + str(i) + """ << EOD
+                    """ + data + """
+                    EOD"""
+
+                if tagname in titles_used:
+                    title = ''
+                else:
+                    titles_used.append(tagname)
+                    title = tagname
+                ls = str(titles_used.index(tagname) + 4)
+
+                # TODO: improve x position so it dont overlap with the others above
+                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100):($8*100):($4*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
+                plot += "                                     '' using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100) with lines lc rgb 'gray' title '', "
+
+        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_util_tags)
+
+        self.gpi += """
+            set tmargin """ + str(self.tmargin_base + 1.3 * (len(titles_used)+1) / 4 - 1) + """
+
+            plot """ + plot + """
+            unset arrow 100"""
+
+    def plot_queueing_delay(self):
+        self.gpi += self.common_header()
+        self.gpi += """
+
+            # queueing delay
             set yrange [0:*]
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             #set xtic offset first .1"""
@@ -241,7 +291,7 @@ class HierarchyPlot():
         def data_rate(testmeta, is_first_set, x):
             nonlocal plot
 
-            self.plotutils.gpi += """
+            self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_ecn_stats') + """
                 EOD
@@ -258,26 +308,28 @@ class HierarchyPlot():
             plot += "                              ''    using ($0+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(testmeta, data_rate)
-        self.plotutils.gpi += """
+        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_rate)
+        self.gpi += """
             plot """ + plot
 
-        ##
-        # plot drops and marks
-        self.plotutils.gpi += """
+    def plot_drops_marks(self):
+        self.gpi += self.common_header()
+        self.gpi += """
+
+            # drops and marks
             set ylabel "Percent\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             set xtic offset first 0"""
 
         # show xlabel at bottom of the multiplot
-        if 'xlabel' in testmeta and testmeta['xlabel'] is not None and len(testmeta['xlabel']) > 0:
-            self.plotutils.gpi += """
-                set xlabel '""" + testmeta['xlabel'] + """'"""
+        if 'xlabel' in self.testmeta and self.testmeta['xlabel'] is not None and len(self.testmeta['xlabel']) > 0:
+            self.gpi += """
+                set xlabel '""" + self.testmeta['xlabel'] + """'"""
 
         plot = ''
         def data_drops(testmeta, is_first_set, x):
             nonlocal plot
 
-            self.plotutils.gpi += """
+            self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
                 """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_ecn_stats') + """
                 EOD
@@ -301,36 +353,68 @@ class HierarchyPlot():
             plot += "                                         '' using ($0+" + str(x) + "+0.20):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             plot += "                                         '' using ($0+" + str(x) + "+0.20):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(testmeta, data_drops)
-        self.plotutils.gpi += """
-            plot """ + plot + """
+        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_drops)
+        self.gpi += """
+            plot """ + plot
+
+    def common_header(self):
+        return """
+            unset bars
+            set xtic rotate by -65 font ',""" + str(min(10, 15 - self.n_nodes / 18)) + """'
+            set key above
+
+            set xrange [-2:""" + str(self.n_nodes + 1) + """]
+            set yrange [0:*<105]
+            set boxwidth 0.2
+            set tmargin """ + str(self.tmargin_base) + """
+            set lmargin 13"""
+
+    def plot(self):
+        """Plot the test cases provided"""
+        self.gpi = Plot.header()
+
+        title = self.testmeta['title']
+        if 'subtitle' in self.testmeta and self.testmeta['subtitle']:
+            title += '\\n' + self.testmeta['subtitle']
+
+        self.gpi += """
+            set multiplot layout 4,1 title \"""" + title + """\\n\" scale 1,1"""
+
+        HierarchyPlot.walk_tree_set_reverse(self.testmeta, self.plot_labels)
+
+        self.plot_utilization()
+        self.plot_utilization_tags()
+        self.plot_queueing_delay()
+        self.plot_drops_marks()
+
+        self.gpi += """
             unset multiplot"""
 
-        self.plotutils.generate(outfile)
+        Plot.generate(self.output_file, self.gpi, size='21cm,28cm')
 
 
 class Plot():
     gpi = ''
     size = '21cm,10cm'
 
-    def generate(self, outputFile):
-        self.gpi = """
+    def generate(output_file, gpi, size='21cm,10cm'):
+        gpi = """
             reset
-            set terminal pdfcairo font 'Times-Roman,12' size """ + self.size + """
-            set output '""" + outputFile + """.pdf'
-            """ + self.gpi
+            set terminal pdfcairo font 'Times-Roman,12' size """ + size + """
+            set output '""" + output_file + """.pdf'
+            """ + gpi
 
-        self.gpi = re.sub(r'^[\t ]+', '', self.gpi, 0, re.MULTILINE)
+        # clean up whitespace at beginning of lines
+        gpi = re.sub(r'^[\t ]+', '', gpi, 0, re.MULTILINE)
 
-        with open(outputFile + '.gpi', 'w') as f:
-            f.write(self.gpi)
+        with open(output_file + '.gpi', 'w') as f:
+            f.write(gpi)
 
-        local['gnuplot'][outputFile + '.gpi'].run(stdin=None, stdout=None, stderr=None, retcode=None)
+        local['gnuplot'][output_file + '.gpi'].run(stdin=None, stdout=None, stderr=None, retcode=None)
 
-        self.gpi = ''
-
-    def header(self, num=1):
-        self.gpi += """
+    @staticmethod
+    def header():
+        return """
             #set key above
             #set key box linestyle 99
             set key spacing 1.3
@@ -372,12 +456,12 @@ class Plot():
             """
 
     def plot_compare_flows(self, folder, testfolders):
-        hp = HierarchyPlot()
-        hp.plot(folder + '/analysis_compare', {
+        hp = HierarchyPlot(folder + '/analysis_compare', {
             'title': folder,
             #'xlabel': 'something',
             'children': [{'testcase': x} for x in testfolders]
         })
+        hp.plot()
 
     def plot_multiple_flows(self, testfolders, output_path):
         """Generate a PDF with one page with graphs per flow"""
@@ -385,7 +469,7 @@ class Plot():
         for testfolder in testfolders:
             self.plot_flow(testfolder, generate=False)
 
-        self.generate(output_path)
+        Plot.generate(output_path, self.gpi, self.size)
 
     def plot_flow(self, testfolder, generate=True):
         """Generate a plot for a single test case"""
@@ -404,7 +488,7 @@ class Plot():
                     items.append(line.strip())
                     n_flows += 1
 
-        self.header()
+        self.gpi += Plot.header()
 
         self.gpi += """
             set multiplot layout 4,1 columnsfirst title '""" + testfolder + """'
@@ -420,11 +504,15 @@ class Plot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
+            stats '""" + testfolder + """/util_tagged' using 1 nooutput
             plot """
 
+        #ls 1 lw 1.5 lc variable
         self.gpi += "'" + testfolder + "/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
         self.gpi += "                       ''    using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', "
         self.gpi += "                       ''    using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', "
+
+        self.gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1),"
 
         self.gpi += """
 
@@ -483,7 +571,7 @@ class Plot():
             reset"""
 
         if generate:
-            self.generate(testfolder + '/analysis')
+            Plot.generate(testfolder + '/analysis', self.gpi, self.size)
 
     @staticmethod
     def get_xtic_value(testcase_folder):
@@ -513,6 +601,35 @@ class Plot():
                     out.append('"%s" %s' % (tag, line))
 
         return ''.join(out)
+
+    @staticmethod
+    def merge_testcase_data_group(testcases, statsname):
+        """Similar to merge_testcase_data except it groups all data by first column"""
+        out = OrderedDict()
+
+        for testcase_folder in testcases:
+            with open(testcase_folder + '/' + statsname, 'r') as f:
+                tag = Plot.get_xtic_value(testcase_folder)
+
+                for line in f:
+                    if line.startswith('#') or line == '\n':
+                        continue
+
+                    if line.startswith('"'):
+                        i = line.index('"', 1)
+                        group_by = line[1:i]
+                    else:
+                        group_by = line.split()[0]
+
+                    if group_by not in out:
+                        out[group_by] = []
+
+                    out[group_by].append('"%s" %s' % (tag, line))
+
+        for key in out.keys():
+            out[key] = ''.join(out[key])
+
+        return out
 
 
 def get_testcases_in_folder(folder):
@@ -700,8 +817,8 @@ def plot_folder_compare(folder, swap_levels=[]):
     for level in swap_levels:
         data = hierarchy_swap_levels(data, level)
 
-    hp = HierarchyPlot()
-    hp.plot(folder + '/comparison', data)
+    hp = HierarchyPlot(folder + '/comparison', data)
+    hp.plot()
 
 def plot_folder_flows(folder):
     data = generate_hierarchy_data_from_folder(folder)
@@ -721,6 +838,7 @@ def plot_folder_flows(folder):
         plot.plot_multiple_flows(testcases, output_path='%s/analysis_merged' % set_folder)
 
     HierarchyPlot.walk_tree_leaf_set(data, parse_set)
+
 
 if __name__ == '__main__':
     if len(sys.argv) >= 3 and sys.argv[1] == 'collection':

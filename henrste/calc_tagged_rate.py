@@ -34,32 +34,44 @@ class TaggedRate():
 
     def saveTagRates(self, folder, rates):
         with open(folder + '/r_tagged', 'w') as fall:
-            fall.write('#sample tag rate\n')
+            fall.write('#sample rate\n')
 
             with open(folder + '/r_tagged_stats', 'w') as fstats:
                 fstats.write('#tag min p1 p25 mean p75 p99 max\n')
 
+                first = True
                 for tag, values in rates.items():
+                    if not first:
+                        fall.write('\n\n')
+                    first = False
+                    fall.write('"%s"\n' % tag)
+
                     for i, rate in enumerate(values):
-                        fall.write('%d "%s" %d\n' % (i, tag, rate))
+                        fall.write('%d %d\n' % (i, rate))
 
                     fstats.write('"%s" %s\n' % (tag, self.generateStats(values)))
 
     def saveTagUtil(self, folder, rates, bitrate):
         with open(folder + '/util_tagged', 'w') as fall:
-            fall.write('#sample tag util\n')
+            fall.write('#sample util\n')
 
             with open(folder + '/util_tagged_stats', 'w') as fstats:
                 fstats.write('#tag min p1 p25 mean p75 p99 max\n')
 
-                for tag,values in rates.items():
+                first = True
+                for tag, values in rates.items():
                     list_util = []
+
+                    if not first:
+                        fall.write('\n\n')
+                    first = False
+                    fall.write('"%s"\n' % tag)
 
                     for i, rate in enumerate(values):
                         util = rate / bitrate
                         list_util.append(util)
 
-                        fall.write('%d "%s" %f\n' % (i, tag, util))
+                        fall.write('%d %f\n' % (i, util))
 
                     fstats.write('"%s" %s\n' % (tag, self.generateStats(list_util)))
 
