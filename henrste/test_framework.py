@@ -179,9 +179,9 @@ class Testbed():
         self.cc_b = 'cubic'
         self.ecn_b = self.ECN_ALLOW
 
-        self.ta_idle = 3  # time to wait before collecting traffic
+        self.ta_idle = None  # time to wait before collecting traffic, default to RTT-dependent
         self.ta_delay = 1000
-        self.ta_samples = 60
+        self.ta_samples = 250
 
         self.traffic_port = 5500
 
@@ -230,9 +230,10 @@ class Testbed():
             self.cc_b = cc
             self.ecn_b = ecn
 
-    def ta_idle_rtt(self, rtt):
-        """Set the idle time related to the rtt being tested"""
-        self.ta_idle = (rtt / 1000) * 20 + 3
+    def get_ta_idle(self):
+        if self.ta_idle is None:
+            return (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 20 + 3
+        return self.ta_idle
 
     def setup(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
@@ -541,7 +542,7 @@ class TestCase():
         ipclass = 'f'
 
         cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
-                   (self.testbed.ta_idle, pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
+                   (self.testbed.get_ta_idle(), pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
 
         if self.testenv.dry_run:
             pid = -1
@@ -572,13 +573,13 @@ class TestCase():
         if not self.testenv.dry_run:
             self.testbed.print_setup()
 
-        print('%.2f s: Testbed initialized, starting test. Estimated time %d s' % (time.time()-start, self.testbed.ta_samples * self.testbed.ta_delay / 1000 + self.testbed.ta_idle))
+        print('%.2f s: Testbed initialized, starting test. Estimated time %d s' % (time.time()-start, self.testbed.ta_samples * self.testbed.ta_delay / 1000 + self.testbed.get_ta_idle()))
         print()
 
         self.save_hint('type test')
         self.save_hint('xticlabel %s' % ('' if self.xticlabel is None else self.xticlabel))
         self.save_hint('xaxislabel %s' % ('' if self.xaxislabel is None else self.xaxislabel))
-        self.save_hint('ta_idle %s' % self.testbed.ta_idle)
+        self.save_hint('ta_idle %s' % self.testbed.get_ta_idle())
         self.save_hint('ta_delay %s' % self.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testbed.ta_samples)
 
@@ -791,10 +792,10 @@ class TestCollection():
         elif test.already_exists:
             self.add_sub(test.test_folder)
 
-    def plot(self, swap_levels=[]):
+    def plot(self, swap_levels=[], **kwargs):
         print('Plotting multiple flows..')
         self.plot_tests_merged()
-        self.plot_tests_compare(swap_levels=swap_levels)
+        self.plot_tests_compare(swap_levels=swap_levels, **kwargs)
 
     def plot_tests_merged(self):
         testfolders = []
@@ -806,9 +807,9 @@ class TestCollection():
             p = Plot()
             p.plot_multiple_flows(testfolders, self.folder + '/analysis_merged')
 
-    def plot_tests_compare(self, swap_levels=[]):
+    def plot_tests_compare(self, swap_levels=[], **kwargs):
         if self.have_sub:
-            plot_folder_compare(self.folder, swap_levels=swap_levels)
+            plot_folder_compare(self.folder, swap_levels=swap_levels, **kwargs)
 
 
 if __name__ == '__main__':

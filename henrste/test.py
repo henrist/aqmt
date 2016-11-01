@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 from test_framework import Testbed, TestEnv, TestCase, TestCollection, require_on_aqm_node
+import time
 
-def testbed(self):
+def base_testbed():
     testbed = Testbed()
     testbed.bitrate = 10*1000*1000
     testbed.aqm_pi2()
@@ -12,8 +13,8 @@ def testbed(self):
     testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
     return testbed
 
-def test_testbed(self):
-    testbed = testbed()
+def test_testbed():
+    testbed = base_testbed()
     testbed.rtt_servera = testbed.rtt_serverb = 100
     testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
     testbed.aqm_pi2()
@@ -22,8 +23,8 @@ def test_testbed(self):
     testbed.setup()
     testbed.print_setup()
 
-def test_cubic(self):
-    testbed = testbed()
+def test_cubic():
+    testbed = base_testbed()
     collection1 = TestCollection('tests/testsets/cubic', TestEnv(), title='Testing cubic vs other congestion controls',
                                       subtitle='Linkrate: 10 Mbit')
 
@@ -52,7 +53,6 @@ def test_cubic(self):
                 #for rtt in [2, 5, 10, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400]:
                 for rtt in [5, 10, 25, 50, 100, 200]:
                     testbed.rtt_servera = testbed.rtt_serverb = rtt
-                    testbed.ta_idle = (rtt / 1000) * 20 + 4
 
                     def my_test(testcase):
                         for i in range(numflows):
@@ -63,93 +63,86 @@ def test_cubic(self):
                 collection3.plot()
     collection1.plot()
 
-def test_increasing_udp_traffic(self):
+def test_increasing_udp_traffic():
     """Test UDP-traffic in both queues with increasing bandwidth"""
-    testbed = testbed()
+    testbed = base_testbed()
+    testbed.ta_delay = 500
+    testbed.ta_samples = 60
+
     collection = TestCollection('tests/testsets/increasing-udp', TestEnv(),
                                 title='Testing increasing UDP-rate in same test',
                                 subtitle='Look at graphs for the individual tests for this to have any use')
 
     def my_test(testcase):
         for x in range(10):
-            testcase.run_udp(node='a', bitrate=1250000, ect='nonect')
-            testcase.run_udp(node='b', bitrate=1250000, ect='ect0')
+            testcase.run_udp(node='a', bitrate=1250000, ect='nonect', tag='UDP Non-ECT')
+            testcase.run_udp(node='b', bitrate=1250000, ect='ect0', tag='UDP ECT0')
             time.sleep(2)
 
     collection.run_test(my_test, testbed, tag='001', xticlabel='test 1')
     collection.run_test(my_test, testbed, tag='002', xticlabel='test 2')
     collection.run_test(my_test, testbed, tag='003', xticlabel='test 3')
     collection.run_test(my_test, testbed, tag='004', xticlabel='test 4')
-    collection.plot()
+    collection.plot(utilization_queues=False, utilization_tags=True)
 
-def test_speeds(self):
+def test_speeds():
     """Test one UDP-flow vs one TCP-greedy flow with different UDP speeds and UDP ECT-flags"""
-    testbed = testbed()
-    testbed.ta_samples = 250
-    testbed.ta_delay = 500
-    testbed.ta_idle = 5
-
-    collection1 = TestCollection('tests/testsets/speeds-1', TestEnv(), title='Overload with UDP')
-
-    for ect, title in [('nonect', 'UDP with Non-ECT'),
-                       ('ect1', 'UDP with ECT(1)')]:
-        collection2 = TestCollection(ect, parent=collection1, title=title)
-        speeds = [5000, 9000, 9500, 10000, 10500, 11000, 12000, 12500,
-                  13000, 13100, 13200, 13400, 13500, 14000, 28000, 50000, 500000]
-        for speed in speeds:
-            def my_test(testcase):
-                testcase.run_greedy(node='b')
-                testcase.run_udp(node='a', bitrate=speed*1000, ect=ect)
-
-            collection2.run_test(my_test, testbed, tag=speed, xticlabel=speed, xaxislabel='UDP bitrate [kb/s]')
-
-        collection2.plot()
-    collection1.plot()
-
-def test_tcp_competing(self):
-    testbed = testbed()
-    testbed.aqm_pi2()
-    testbed.cc('a', 'cubic', testbed.ECN_INITIATE)
-    testbed.cc('b', 'cubic', testbed.ECN_ALLOW)
-
-    collection = TestCollection('tests/testsets/tcp-competing', TestEnv(), title='Competing flows')
-    def my_test(testcase):
-        testcase.run_greedy(node='a')
-        testcase.run_greedy(node='b')
-
-    collection.run_test(my_test, testbed)
-    collection.plot()
-
-def test_plot_test_data(self):
-    testbed = testbed()
-    testbed.aqm_pi2()
-    testbed.ta_samples = 5
-    testbed.ta_idle = .5
+    testbed = base_testbed()
+    testbed.ta_samples = 60
     testbed.ta_delay = 500
 
-    collection1 = TestCollection('tests/testsets/plot-testdata', TestEnv(), title='Testing cubic vs different flows')
+    collection1 = TestCollection('tests/testsets/speeds', TestEnv(), title='Overload with UDP')
 
-    for name, n_a, n_b, title in [('traffic-ab', 1, 1, 'traffic both machines'),
-                                  ('traffic-a',  1, 0, 'traffic only a'),
-                                  ('traffic-b',  0, 1, 'traffic only b')]:
-        collection2 = TestCollection(name, parent=collection1, title=title)
-        def my_test(testcase):
-            for n in range(n_a):
-                testcase.run_greedy(node='a')
-            for n in range(n_b):
-                testcase.run_greedy(node='b')
+    aqm_set = [
+        ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+        ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
+    ]
 
-        for rtt in [2, 5, 8, 10, 20, 50, 100]:
-            testbed.rtt_servera = testbed.rtt_serverb = rtt
+    ect_set = [
+        ('nonect', 'UDP with Non-ECT'),
+        ('ect1', 'UDP with ECT(1)'),
+    ]
 
-            for i in range(1,6):
-                collection2.run_test(my_test, testbed, tag='rtt-%s-%d' % (rtt, i), xticlabel=rtt, xaxislabel='RTT')
+    for aqmtag, aqmtitle, aqmfn in aqm_set:
+        aqmfn()
+        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
 
-        collection2.plot()
-    collection1.plot()
+        for ect, title in ect_set:
+            collection3 = TestCollection(ect, parent=collection2, title=title)
 
-def test_many_flows(self):
-    testbed = testbed()
+            speeds = [
+                5000,
+                #9000,
+                9500,
+                10000,
+                #10500,
+                #11000,
+                #12000,
+                #12500,
+                #13000,
+                #13100,
+                #13200,
+                #13400,
+                #13500,
+                #14000,
+                #28000,
+                #50000,
+                #500000,
+            ]
+
+            for speed in speeds:
+                def my_test(testcase):
+                    testcase.run_greedy(node='b', tag='TCP')
+                    testcase.run_udp(node='a', bitrate=speed*1000, ect=ect, tag='Unresponsive UDP')
+
+                collection3.run_test(my_test, testbed, tag=speed, xticlabel=speed, xaxislabel='UDP bitrate [kb/s]')
+
+            collection3.plot(utilization_queues=False, utilization_tags=True)
+        collection2.plot(utilization_queues=False, utilization_tags=True)
+    collection1.plot(utilization_queues=False, utilization_tags=True)
+
+def test_many_flows():
+    testbed = base_testbed()
     testbed.aqm_pi2()
     testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
     testbed.ta_samples = 120
@@ -174,15 +167,13 @@ def test_many_flows(self):
 
             for rtt in [5, 10, 20, 50, 100, 400, 600, 800]:
                 testbed.rtt_servera = testbed.rtt_serverb = rtt
-                testbed.ta_idle = 0
-                #testbed.ta_idle_rtt(rtt)
                 collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
 
             collection3.plot()
     collection1.plot()
 
-def test_different_cc(self):
-    testbed = testbed()
+def test_different_cc():
+    testbed = base_testbed()
     testbed.ta_samples = 400
     testbed.ta_delay = 50
 
@@ -221,8 +212,8 @@ def test_different_cc(self):
         collection1.plot()
     collection0.plot(swap_levels=[0])
 
-def test_scaling_in_classic_queue(self):
-    testbed = testbed()
+def test_scaling_in_classic_queue():
+    testbed = base_testbed()
     testbed.ta_samples = 400
     testbed.ta_delay = 50
 
@@ -252,13 +243,13 @@ def test_scaling_in_classic_queue(self):
         collection2.plot()
     collection1.plot(swap_levels=[0])
 
-def test_fairness(self):
+def test_fairness():
     """Test different combinations of congestion controls on different qdiscs
 
     - Single flows in different congestion controls
     - No overload
     """
-    testbed = testbed()
+    testbed = base_testbed()
     testbed.ta_samples = 180
     testbed.ta_delay = 1000
 
@@ -266,14 +257,15 @@ def test_fairness(self):
         ['pie', 'PIE', lambda: testbed.aqm_pie()],
         ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
         ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
-        ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
+        ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000')],
+        #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
     ]
 
     cc_matrix = [
-        ['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
+        #['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
         ['reno-vs-dctcp', 'Reno/DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
         ['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
-        ['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
+        #['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
         ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
         ['cubic-vs-cubic-ecn', 'Cubic/CubECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
         ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
@@ -288,6 +280,9 @@ def test_fairness(self):
         collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
 
         for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix:
+            if aqmtag == 'pi2-l_thresh-50000' and cctag != 'dctcp-vs-dctcp' and cctag != 'cubic-vs-dctcp':
+                continue
+
             testbed.cc(node1, cc1, ecn1)
             testbed.cc(node2, cc2, ecn2)
 
@@ -295,7 +290,6 @@ def test_fairness(self):
 
             for rtt in rtts:
                 testbed.rtt_servera = testbed.rtt_serverb = rtt
-                testbed.ta_idle_rtt(rtt)
 
                 def my_test(testcase):
                     testcase.run_greedy(node='a', tag=cctag1)
@@ -303,9 +297,70 @@ def test_fairness(self):
 
                 collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
 
-            collection3.plot()
-        collection2.plot()
-    collection1.plot()
+            collection3.plot(utilization_queues=False, utilization_tags=True)
+        collection2.plot(utilization_queues=False, utilization_tags=True)
+    collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[0])
+
+def test_shifted_fifo():
+    """Test different parameters for the shifted fifo"""
+    testbed = base_testbed()
+    testbed.ta_samples = 60
+    testbed.ta_delay = 500
+
+    bitrates = [
+        ['10mbit', '10 mbit', 10*1000*1000],
+        ['10mbit', '40 mbit', 40*1000*1000],
+    ]
+
+    aqms = [
+        #['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+        #['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
+        #['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000')],
+        ['pi2-l_thresh-50000-t_shift-40000', 'PI2\\nl\\\\_thresh=50000 t\\\\_shift=40000', lambda: testbed.aqm_pi2(params='l_thresh 50000 t_shift 40000')],
+    ]
+
+    cc_matrix = [
+        #['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
+        ['reno-vs-dctcp', 'Reno/DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+        #['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
+        #['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
+        ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+        #['cubic-vs-cubic-ecn', 'Cubic/CubECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
+        #['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
+    ]
+
+    rtts = [2, 20, 100, 200]
+
+    collection1 = TestCollection('tests/testsets/shifted_fifo', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo')
+
+    for aqmtag, aqmtitle, aqmfn in aqms:
+        aqmfn()
+        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+
+        for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix:
+            testbed.cc(node1, cc1, ecn1)
+            testbed.cc(node2, cc2, ecn2)
+
+            collection3 = TestCollection(folder=cctag, parent=collection2, title=cctitle)
+
+            for bitratetag, bitratetitle, bitrate in bitrates:
+                testbed.bitrate = bitrate
+
+                collection4 = TestCollection(folder=bitratetag, parent=collection3, title=bitratetitle)
+
+                for rtt in rtts:
+                    testbed.rtt_servera = testbed.rtt_serverb = rtt
+
+                    def my_test(testcase):
+                        testcase.run_greedy(node='a', tag=cctag1)
+                        testcase.run_greedy(node='b', tag=cctag2)
+
+                    collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
+
+                collection4.plot(utilization_queues=False, utilization_tags=True)
+            collection3.plot(utilization_queues=False, utilization_tags=True)
+        collection2.plot(utilization_queues=False, utilization_tags=True)
+    collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[0])
 
 
 if __name__ == '__main__':
@@ -320,3 +375,4 @@ if __name__ == '__main__':
     #test_different_cc()
     #test_scaling_in_classic_queue()
     #test_fairness()
+    test_shifted_fifo()

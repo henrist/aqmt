@@ -180,7 +180,7 @@ class HierarchyPlot():
             #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
             set label \"""" + testmeta['title'] + """\" at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
 
-    def plot_utilization(self):
+    def plot_utilization_queues(self):
         """Plot graph of utilization for total, ECN and non-ECN flows"""
         self.gpi += self.common_header()
         self.gpi += """
@@ -232,7 +232,7 @@ class HierarchyPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
+            set ylabel "Percent\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}" """
 
         plot = ''
         titles_used = []
@@ -247,11 +247,12 @@ class HierarchyPlot():
                 EOD"""
 
             # total
-            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:7:3:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            # 5:7:3
+            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:6:4:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
 
             tagged_flows = Plot.merge_testcase_data_group(testcases, 'util_tagged_stats')
-            x_distance = .2 / len(tagged_flows)
+            x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
                 self.gpi += """
@@ -266,8 +267,7 @@ class HierarchyPlot():
                     title = tagname
                 ls = str(titles_used.index(tagname) + 4)
 
-                # TODO: improve x position so it dont overlap with the others above
-                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100):($8*100):($4*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
+                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100):($7*100):($5*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
                 plot += "                                     '' using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100) with lines lc rgb 'gray' title '', "
 
         HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_util_tags)
@@ -369,28 +369,40 @@ class HierarchyPlot():
             set tmargin """ + str(self.tmargin_base) + """
             set lmargin 13"""
 
-    def plot(self):
+    def plot(self, utilization_queues=True, utilization_tags=False):
         """Plot the test cases provided"""
         self.gpi = Plot.header()
+
+        n_height = 2
+        height = 14
+        if utilization_queues:
+            n_height += 1
+            height += 7
+        if utilization_tags:
+            n_height += 1
+            height += 7
 
         title = self.testmeta['title']
         if 'subtitle' in self.testmeta and self.testmeta['subtitle']:
             title += '\\n' + self.testmeta['subtitle']
 
         self.gpi += """
-            set multiplot layout 3,1 title \"""" + title + """\\n\" scale 1,1"""
+            set multiplot layout """ + str(n_height) + """,1 title \"""" + title + """\\n\" scale 1,1"""
 
         HierarchyPlot.walk_tree_set_reverse(self.testmeta, self.plot_labels)
 
-        #self.plot_utilization()
-        self.plot_utilization_tags()
+        if utilization_queues:
+            self.plot_utilization_queues()
+        if utilization_tags:
+            self.plot_utilization_tags()
+
         self.plot_queueing_delay()
         self.plot_drops_marks()
 
         self.gpi += """
             unset multiplot"""
 
-        Plot.generate(self.output_file, self.gpi, size='21cm,28cm')
+        Plot.generate(self.output_file, self.gpi, size='21cm,%dcm' % height)
 
 
 class Plot():
@@ -563,8 +575,8 @@ class Plot():
         self.gpi += "'" + testfolder + "/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', "
         self.gpi += "'" + testfolder + "/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', "
 
-        self.gpi += "'" + testfolder + "/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
-        self.gpi += "'" + testfolder + "/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        #self.gpi += "'" + testfolder + "/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        #self.gpi += "'" + testfolder + "/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
 
         self.gpi += """
             unset multiplot
@@ -811,14 +823,14 @@ def hierarchy_swap_levels(spec, level=0):
     spec['children'] = [val for key, val in new_children.items()]
     return spec
 
-def plot_folder_compare(folder, swap_levels=[]):
+def plot_folder_compare(folder, swap_levels=[], **kwargs):
     data = generate_hierarchy_data_from_folder(folder)
 
     for level in swap_levels:
         data = hierarchy_swap_levels(data, level)
 
     hp = HierarchyPlot(folder + '/comparison', data)
-    hp.plot()
+    hp.plot(**kwargs)
 
 def plot_folder_flows(folder):
     data = generate_hierarchy_data_from_folder(folder)
@@ -844,10 +856,20 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3 and sys.argv[1] == 'collection':
         folder = sys.argv[2]
         swap_levels = []
-        if len(sys.argv) >= 4:
+        if len(sys.argv) >= 4 and sys.argv[3] != '':
             swap_levels = [int(x) for x in sys.argv[3].split(',')]
 
-        plot_folder_compare(folder, swap_levels=swap_levels)
+        utilization_queues = True
+        utilization_tags = False
+
+        if len(sys.argv) >= 5:
+            if 'nouq' in sys.argv[4].split(','):
+                utilization_queues = False
+            if 'ut' in sys.argv[4].split(','):
+                utilization_tags = True
+
+        plot_folder_compare(folder, swap_levels=swap_levels,
+                            utilization_queues=utilization_queues, utilization_tags=utilization_tags)
 
     elif len(sys.argv) >= 3 and sys.argv[1] == 'flows':
         folder = sys.argv[2]
@@ -855,5 +877,5 @@ if __name__ == '__main__':
 
     else:
         print('Syntax:')
-        print('  ./plot.py collection <topdirectory> [<swap level>,..]')
+        print('  ./plot.py collection <topdirectory> [<swap level>,..] [nouq,ut]')
         print('  ./plot.py flows <topdirectory> [<swap level>,..]')
