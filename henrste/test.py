@@ -94,7 +94,7 @@ def test_speeds():
     collection1 = TestCollection('tests/testsets/speeds', TestEnv(), title='Overload with UDP')
 
     aqm_set = [
-        ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+        ['pi2', 'PI2 l\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
         ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
     ]
 
@@ -112,12 +112,12 @@ def test_speeds():
 
             speeds = [
                 5000,
-                #9000,
+                9000,
                 9500,
                 10000,
-                #10500,
-                #11000,
-                #12000,
+                10500,
+                11000,
+                12000,
                 #12500,
                 #13000,
                 #13100,
@@ -309,14 +309,11 @@ def test_shifted_fifo():
 
     bitrates = [
         ['10mbit', '10 mbit', 10*1000*1000],
-        ['10mbit', '40 mbit', 40*1000*1000],
+        ['40mbit', '40 mbit', 40*1000*1000],
     ]
 
     aqms = [
-        #['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
-        #['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
-        #['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000')],
-        ['pi2-l_thresh-50000-t_shift-40000', 'PI2\\nl\\\\_thresh=50000 t\\\\_shift=40000', lambda: testbed.aqm_pi2(params='l_thresh 50000 t_shift 40000')],
+        ['pi2-l_thresh-50000-t_shift-40000', 'l\\\\_thresh=50000 t\\\\_shift=40000', lambda: testbed.aqm_pi2(params='l_thresh 50000 t_shift 40000')],
     ]
 
     cc_matrix = [
@@ -331,7 +328,7 @@ def test_shifted_fifo():
 
     rtts = [2, 20, 100, 200]
 
-    collection1 = TestCollection('tests/testsets/shifted_fifo', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo')
+    collection1 = TestCollection('tests/testsets/shifted_fifo', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo (all on PI2)')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -363,6 +360,73 @@ def test_shifted_fifo():
     collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[0])
 
 
+def test_dctth_paper():
+    """Testing similar to page 8 of the DCttH-paper"""
+    testbed = base_testbed()
+    testbed.ta_samples = 250
+    testbed.ta_delay = 1000
+    #testbed.ta_idle = 0
+
+    bitrates = [
+        ['4mbit', '4 mbit', 4*1000*1000],
+        ['12mbit', '12 mbit', 12*1000*1000],
+        ['40mbit', '40 mbit', 40*1000*1000],
+        ['120mbit', '120 mbit', 120*1000*1000],
+        ['200mbit', '200 mbit', 200*1000*1000],
+    ]
+
+    aqms = [
+        ['pie', 'PIE', lambda: testbed.aqm_pie()],
+        ['pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda: testbed.aqm_pi2(params='t_shift 40000')],
+    ]
+
+    cc_matrix = [
+        ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+        ['cubic-vs-cubic-ecn', 'Cubic/ECN-Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'ECN-Cubic'],
+    ]
+
+    rtts = [
+        2, # extra, not in paper
+        5, 10, 20, 50, 100,
+    ]
+
+    collection1 = TestCollection('tests/testsets/dctth-paper-page-8', TestEnv(), title='Testing similar to page 8 of DCttH paper')
+
+    for aqmtag, aqmtitle, aqmfn in aqms:
+        aqmfn()
+        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+
+        for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix:
+            if aqmtag == 'pie' and cctag == 'cubic-vs-dctcp':
+                continue
+            if aqmtag != 'pie' and cctag == 'cubic-vs-cubic-ecn':
+                continue
+
+            testbed.cc(node1, cc1, ecn1)
+            testbed.cc(node2, cc2, ecn2)
+
+            collection3 = TestCollection(folder=cctag, parent=collection2, title=cctitle)
+
+            for bitratetag, bitratetitle, bitrate in bitrates:
+                testbed.bitrate = bitrate
+
+                collection4 = TestCollection(folder=bitratetag, parent=collection3, title=bitratetitle)
+
+                for rtt in rtts:
+                    testbed.rtt_servera = testbed.rtt_serverb = rtt
+
+                    def my_test(testcase):
+                        testcase.run_greedy(node='a', tag=cctag1)
+                        testcase.run_greedy(node='b', tag=cctag2)
+
+                    collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
+                    collection4.run_test(my_test, testbed, tag='rtt-%d-2' % rtt, title=rtt, titlelabel='RTT')
+
+                collection4.plot(utilization_queues=False, utilization_tags=True)
+            collection3.plot(utilization_queues=False, utilization_tags=True)
+        collection2.plot(utilization_queues=False, utilization_tags=True)
+    collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[])
+
 if __name__ == '__main__':
     require_on_aqm_node()
 
@@ -375,4 +439,5 @@ if __name__ == '__main__':
     #test_different_cc()
     #test_scaling_in_classic_queue()
     #test_fairness()
-    test_shifted_fifo()
+    #test_shifted_fifo()
+    test_dctth_paper()

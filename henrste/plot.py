@@ -69,12 +69,12 @@ class HierarchyPlot():
                 depth = depthnow
 
             # is this a set of tests?
-            if 'testcase' in f:
+            if len(f['children']) == 1 and 'testcase' in f['children'][0]:
                 tests += len(testmeta['children'])
                 sets += 1
                 nodes += len(testmeta['children'])
 
-            # or is it a list of sets
+            # or is it a collection of collections
             else:
                 for item in testmeta['children']:
                     nodes += 1
@@ -85,7 +85,7 @@ class HierarchyPlot():
 
     @staticmethod
     def walk_tree_leaf_set(testmeta, fn):
-        """Walks the tree and calls fn for every leaf set"""
+        """Walks the tree and calls fn for every leaf collection"""
 
         first_set = True
         x = 0
@@ -99,12 +99,12 @@ class HierarchyPlot():
             f = testmeta['children'][0]
 
             # is this a set of tests?
-            if 'testcase' in f:
+            if len(f['children']) == 1 and 'testcase' in f['children'][0]:
                 fn(testmeta, first_set, x)
                 first_set = False
                 x += len(testmeta['children'])
 
-            # or is it a list of sets
+            # or is it a collection of collections
             else:
                 for item in testmeta['children']:
                     walk(item)
@@ -115,7 +115,7 @@ class HierarchyPlot():
 
     @staticmethod
     def walk_tree_set_reverse(testmeta, fn):
-        """Walks the tree and calls fn for every set in reverse order"""
+        """Walks the tree and calls fn for every collection in reverse order"""
         x = 0
 
         def walk(testmeta, depth):
@@ -126,11 +126,11 @@ class HierarchyPlot():
 
             f = testmeta['children'][0]
 
-            # is this a set of tests?
-            if 'testcase' in f:
+            # is this a collection of tests?
+            if len(f['children']) == 1 and 'testcase' in f['children'][0]:
                 x += len(testmeta['children'])
 
-            # or is it a list of sets
+            # or else it is a collection of collections
             else:
                 for item in testmeta['children']:
                     y = x
@@ -142,8 +142,8 @@ class HierarchyPlot():
         walk(testmeta, 0)
 
     @staticmethod
-    def walk_tree_set(testmeta, fn):
-        """Walks the tree and calls fn for every set"""
+    def walk_tree_set(testmeta, fn, include_test_node=False):
+        """Walks the tree and calls fn for every tree node"""
         x = 0
 
         def walk(testmeta, depth):
@@ -154,15 +154,26 @@ class HierarchyPlot():
 
             f = testmeta['children'][0]
 
-            # is this a set of tests?
-            if 'testcase' in f:
-                x += len(testmeta['children'])
+            if include_test_node:
+                # is this a set of tests?
+                if 'testcase' in f:
+                    x += len(testmeta['children'])
 
-            # or is it a list of sets
+                # or is it a list of sets
+                else:
+                    for item in testmeta['children']:
+                        fn(item, x, depth)
+                        walk(item, depth + 1)
             else:
-                for item in testmeta['children']:
-                    fn(item, x, depth)
-                    walk(item, depth + 1)
+                # is this a collection of tests?
+                if len(f['children']) == 1 and 'testcase' in f['children'][0]:
+                    x += len(testmeta['children'])
+
+                # or else it is a collection of collections
+                else:
+                    for item in testmeta['children']:
+                        fn(item, x, depth)
+                        walk(item, depth + 1)
 
             x += 1
 
@@ -171,7 +182,49 @@ class HierarchyPlot():
     @staticmethod
     def get_testcases(testmeta):
         """Get list of testcases of a test set"""
-        return [item['testcase'] for item in testmeta['children']]
+        return [(item['title'], item['children'][0]['testcase']) for item in testmeta['children']]
+
+    @staticmethod
+    def merge_testcase_data(testmeta, statsname):
+        # testmeta -> testcases
+
+        out = []
+        for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
+            with open(testcase_folder + '/' + statsname, 'r') as f:
+                for line in f:
+                    if line.startswith('#'):
+                        continue
+
+                    out.append('"%s" %s' % (title, line))
+
+        return ''.join(out)
+
+    @staticmethod
+    def merge_testcase_data_group(testmeta, statsname):
+        """Similar to merge_testcase_data except it groups all data by first column"""
+        out = OrderedDict()
+
+        for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
+            with open(testcase_folder + '/' + statsname, 'r') as f:
+                for line in f:
+                    if line.startswith('#') or line == '\n':
+                        continue
+
+                    if line.startswith('"'):
+                        i = line.index('"', 1)
+                        group_by = line[1:i]
+                    else:
+                        group_by = line.split()[0]
+
+                    if group_by not in out:
+                        out[group_by] = []
+
+                    out[group_by].append('"%s" %s' % (title, line))
+
+        for key in out.keys():
+            out[key] = ''.join(out[key])
+
+        return out
 
     def plot_labels(self, testmeta, x, depth, width):
         fontsize = fontsize = max(5, min(9, 10 - self.depth_sizes[depth] / 4.5))
@@ -198,7 +251,7 @@ class HierarchyPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'util_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'util_stats') + """
                 EOD"""
 
             # total
@@ -239,11 +292,9 @@ class HierarchyPlot():
         def data_util_tags(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
-            testcases = HierarchyPlot.get_testcases(testmeta)
-
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(testcases, 'util_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'util_stats') + """
                 EOD"""
 
             # total
@@ -251,7 +302,7 @@ class HierarchyPlot():
             plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:6:4:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
 
-            tagged_flows = Plot.merge_testcase_data_group(testcases, 'util_tagged_stats')
+            tagged_flows = HierarchyPlot.merge_testcase_data_group(testmeta, 'util_tagged_stats')
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -293,10 +344,10 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'qs_ecn_stats') + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'qs_nonecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'qs_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
@@ -331,13 +382,13 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'd_percent_ecn_stats') + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'm_percent_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'm_percent_ecn_stats') + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + Plot.merge_testcase_data(HierarchyPlot.get_testcases(testmeta), 'd_percent_nonecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'd_percent_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.00):3:5:4 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
@@ -585,64 +636,6 @@ class Plot():
         if generate:
             Plot.generate(testfolder + '/analysis', self.gpi, self.size)
 
-    @staticmethod
-    def get_xtic_value(testcase_folder):
-        with open(testcase_folder + '/details', 'r') as f:
-            for line in f:
-                # TODO: remove old x_udp_rate
-                #if line.startswith('x_udp_rate'):
-                #    return str(int(int(line.split()[1]) / 1000))
-                if line.startswith('title '):
-                    l = line.split(maxsplit=1)
-                    if len(l) > 1:
-                        return l[1].strip()
-
-        return 'n/a'
-
-    @staticmethod
-    def merge_testcase_data(testcases, statsname):
-        out = []
-        for testcase_folder in testcases:
-            with open(testcase_folder + '/' + statsname, 'r') as f:
-                tag = Plot.get_xtic_value(testcase_folder)
-
-                for line in f:
-                    if line.startswith('#'):
-                        continue
-
-                    out.append('"%s" %s' % (tag, line))
-
-        return ''.join(out)
-
-    @staticmethod
-    def merge_testcase_data_group(testcases, statsname):
-        """Similar to merge_testcase_data except it groups all data by first column"""
-        out = OrderedDict()
-
-        for testcase_folder in testcases:
-            with open(testcase_folder + '/' + statsname, 'r') as f:
-                tag = Plot.get_xtic_value(testcase_folder)
-
-                for line in f:
-                    if line.startswith('#') or line == '\n':
-                        continue
-
-                    if line.startswith('"'):
-                        i = line.index('"', 1)
-                        group_by = line[1:i]
-                    else:
-                        group_by = line.split()[0]
-
-                    if group_by not in out:
-                        out[group_by] = []
-
-                    out[group_by].append('"%s" %s' % (tag, line))
-
-        for key in out.keys():
-            out[key] = ''.join(out[key])
-
-        return out
-
 
 def get_testcases_in_folder(folder):
     testcases = []
@@ -700,7 +693,17 @@ def generate_hierarchy_data(folderspec, title, xlabel=''):
                 add_level(node, value)
 
             else:
-                node['children'] = [{'testcase': x} for x in get_testcases_in_folder(value)]
+                for testcase in get_testcases_in_folder(value):
+                    metadata_kv, metadata_lines = read_metadata(testcase + '/details')
+
+                    node['children'].append({
+                        'title': metadata_kv['title'],
+                        'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
+                        'subtitle': '',
+                        'children': [
+                            {'testcase': testcase}
+                        ]
+                    })
 
     add_level(root, folderspec)
     return root
@@ -754,7 +757,14 @@ def generate_hierarchy_data_from_folder(folder):
                     node['children'].append(parse_folder(folder + '/' + metadata[1]))
 
         elif metadata_kv['type'] == 'test':
-            node = {'testcase': folder}
+            node = {
+                'title': metadata_kv['title'],
+                'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
+                'subtitle': '',
+                'children': [
+                    {'testcase': folder}
+                ]
+            }
 
             if xlabel is None and 'titlelabel' in metadata_kv:
                 xlabel = metadata_kv['titlelabel']
@@ -795,7 +805,7 @@ def hierarchy_swap_levels(spec, level=0):
         nonlocal titles
         if depth == 1 and item['title'] not in titles:
             titles.append(item['title'])
-    HierarchyPlot.walk_tree_set(spec, check_level)
+    HierarchyPlot.walk_tree_set(spec, check_level, include_test_node=True)
 
     if len(titles) == 0:
         return spec
@@ -818,7 +828,7 @@ def hierarchy_swap_levels(spec, level=0):
 
             parentcopy['children'] = item['children']
 
-    HierarchyPlot.walk_tree_set(spec, build_swap)
+    HierarchyPlot.walk_tree_set(spec, build_swap, include_test_node=True)
 
     spec['children'] = [val for key, val in new_children.items()]
     return spec
