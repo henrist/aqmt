@@ -178,7 +178,7 @@ class HierarchyPlot():
 
         self.gpi += """
             #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
-            set label '""" + testmeta['title'] + """' at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
+            set label \"""" + testmeta['title'] + """\" at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
 
     def plot_utilization(self):
         """Plot graph of utilization for total, ECN and non-ECN flows"""
@@ -378,11 +378,11 @@ class HierarchyPlot():
             title += '\\n' + self.testmeta['subtitle']
 
         self.gpi += """
-            set multiplot layout 4,1 title \"""" + title + """\\n\" scale 1,1"""
+            set multiplot layout 3,1 title \"""" + title + """\\n\" scale 1,1"""
 
         HierarchyPlot.walk_tree_set_reverse(self.testmeta, self.plot_labels)
 
-        self.plot_utilization()
+        #self.plot_utilization()
         self.plot_utilization_tags()
         self.plot_queueing_delay()
         self.plot_drops_marks()
