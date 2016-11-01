@@ -224,6 +224,16 @@ reset_all_hosts_cc() {
     done
 }
 
+kill_all_traffic() {
+    hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
+
+    for host in ${hosts[@]}; do
+        ssh root@$host '
+            killall -9 iperf 2>/dev/null
+            killall -9 greedy 2>/dev/null'
+    done
+}
+
 get_host_cc() {
     local host=$1
 

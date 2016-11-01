@@ -258,6 +258,7 @@ class Testbed():
     def reset(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
             source common.sh
+            kill_all_traffic
             reset_aqm_client_edge
             reset_aqm_server_edge
             reset_all_hosts_edge
