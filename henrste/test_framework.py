@@ -215,6 +215,10 @@ class Testbed():
         self.aqm_name = 'fq_codel'
         self.aqm_params = 'ecn'
 
+    def aqm_pfifo(self):
+        self.aqm_name = 'pfifo_qsize'
+        self.aqm_params = ''
+
     def cc(self, node, cc, ecn):
         if node != 'a' and node != 'b':
             raise Exception("Invalid node: %s" % node)
@@ -228,7 +232,7 @@ class Testbed():
 
     def ta_idle_rtt(self, rtt):
         """Set the idle time related to the rtt being tested"""
-        self.ta_idle = (rtt / 1000) * 20 + 4
+        self.ta_idle = (rtt / 1000) * 20 + 3
 
     def setup(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
@@ -666,7 +670,7 @@ class TestEnv():
             add_known_pid(pid)
 
     def run_monitor_setup(self):
-        cmd = local['watch']['-n', '.2', 'show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
+        cmd = local['watch']['-n', '.2', './show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
 
         if self.dry_run:
             if self.verbose > 0:

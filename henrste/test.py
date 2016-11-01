@@ -260,13 +260,14 @@ class OverloadTesting(TestingBase):
 class ComparisonTesting(TestingBase):
     def test_fairness(self):
         testbed = self.testbed()
-        testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-        testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
+        testbed.ta_samples = 180
+        testbed.ta_delay = 1000
 
         aqms = [
-            ['pi2', 'PI2', lambda: testbed.aqm_pi2()],
             ['pie', 'PIE', lambda: testbed.aqm_pie()],
-            ['pi2-l_thresh-10000', 'PI2 with l\\_thresh 10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
+            ['pi2', 'PI2 with l\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+            ['pi2-l_thresh-10000', 'PI2 with l\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
+            ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
         ]
 
         cc_matrix = [
@@ -275,12 +276,13 @@ class ComparisonTesting(TestingBase):
             ['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
             ['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
             ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+            ['cubic-vs-cubic-ecn', 'Cubic/Cubic-ECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
             ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
         ]
 
         rtts = [2, 20, 100, 200]
 
-        collection1 = TestCollection('tests/testsets/fairness', TestEnv(reanalyze=True), title='Testing traffic fairness')
+        collection1 = TestCollection('tests/testsets/fairness', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
 
         for aqmtag, aqmtitle, aqmfn in aqms:
             aqmfn()
@@ -293,6 +295,9 @@ class ComparisonTesting(TestingBase):
                 collection3 = TestCollection(folder=cctag, parent=collection2, title=cctitle)
 
                 for rtt in rtts:
+                    testbed.rtt_servera = testbed.rtt_serverb = rtt
+                    testbed.ta_idle_rtt(rtt)
+
                     def my_test(testcase):
                         testcase.run_greedy(node='a', tag=cctag1)
                         testcase.run_greedy(node='b', tag=cctag2)
