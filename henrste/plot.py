@@ -592,7 +592,7 @@ class Plot():
                 # TODO: remove old x_udp_rate
                 #if line.startswith('x_udp_rate'):
                 #    return str(int(int(line.split()[1]) / 1000))
-                if line.startswith('xticlabel '):
+                if line.startswith('title '):
                     l = line.split(maxsplit=1)
                     if len(l) > 1:
                         return l[1].strip()
@@ -756,8 +756,8 @@ def generate_hierarchy_data_from_folder(folder):
         elif metadata_kv['type'] == 'test':
             node = {'testcase': folder}
 
-            if xlabel is None and 'xaxislabel' in metadata_kv:
-                xlabel = metadata_kv['xaxislabel']
+            if xlabel is None and 'titlelabel' in metadata_kv:
+                xlabel = metadata_kv['titlelabel']
 
         else:
             raise Exception('Unknown metadata type %s' % metadata_kv['type'])

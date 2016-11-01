@@ -59,7 +59,7 @@ def test_cubic():
                             testcase.run_greedy(node='a')
                             testcase.run_greedy(node='b')
 
-                    collection3.run_test(my_test, testbed, tag=rtt, xticlabel=rtt, xaxislabel='RTT')
+                    collection3.run_test(my_test, testbed, tag=rtt, title=rtt, titlelabel='RTT')
                 collection3.plot()
     collection1.plot()
 
@@ -79,10 +79,10 @@ def test_increasing_udp_traffic():
             testcase.run_udp(node='b', bitrate=1250000, ect='ect0', tag='UDP ECT0')
             time.sleep(2)
 
-    collection.run_test(my_test, testbed, tag='001', xticlabel='test 1')
-    collection.run_test(my_test, testbed, tag='002', xticlabel='test 2')
-    collection.run_test(my_test, testbed, tag='003', xticlabel='test 3')
-    collection.run_test(my_test, testbed, tag='004', xticlabel='test 4')
+    collection.run_test(my_test, testbed, tag='001', title='test 1')
+    collection.run_test(my_test, testbed, tag='002', title='test 2')
+    collection.run_test(my_test, testbed, tag='003', title='test 3')
+    collection.run_test(my_test, testbed, tag='004', title='test 4')
     collection.plot(utilization_queues=False, utilization_tags=True)
 
 def test_speeds():
@@ -135,7 +135,7 @@ def test_speeds():
                     testcase.run_greedy(node='b', tag='TCP')
                     testcase.run_udp(node='a', bitrate=speed*1000, ect=ect, tag='Unresponsive UDP')
 
-                collection3.run_test(my_test, testbed, tag=speed, xticlabel=speed, xaxislabel='UDP bitrate [kb/s]')
+                collection3.run_test(my_test, testbed, tag=speed, title=speed, titlelabel='UDP bitrate [kb/s]')
 
             collection3.plot(utilization_queues=False, utilization_tags=True)
         collection2.plot(utilization_queues=False, utilization_tags=True)
@@ -167,7 +167,7 @@ def test_many_flows():
 
             for rtt in [5, 10, 20, 50, 100, 400, 600, 800]:
                 testbed.rtt_servera = testbed.rtt_serverb = rtt
-                collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
+                collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
 
             collection3.plot()
     collection1.plot()
@@ -205,9 +205,9 @@ def test_different_cc():
                 testbed.rtt_servera = testbed.rtt_serverb = rtt
                 def my_test(testcase):
                     testcase.run_greedy(node='a')
-                collection2.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
-                #collection2.run_test(my_test, testbed, tag='rtt-%d-verify1' % rtt, xticlabel=rtt, xaxislabel='RTT')
-                #collection2.run_test(my_test, testbed, tag='rtt-%d-verify2' % rtt, xticlabel=rtt, xaxislabel='RTT')
+                collection2.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
+                #collection2.run_test(my_test, testbed, tag='rtt-%d-verify1' % rtt, title=rtt, titlelabel='RTT')
+                #collection2.run_test(my_test, testbed, tag='rtt-%d-verify2' % rtt, title=rtt, titlelabel='RTT')
             collection2.plot()
         collection1.plot()
     collection0.plot(swap_levels=[0])
@@ -237,9 +237,9 @@ def test_scaling_in_classic_queue():
             def my_test(testcase):
                 testcase.run_greedy(node='a')
                 testcase.run_greedy(node='b')
-            collection2.run_test(my_test, testbed, tag='rtt-%d-test1' % rtt, xticlabel=rtt, xaxislabel='RTT')
-            collection2.run_test(my_test, testbed, tag='rtt-%d-test2' % rtt, xticlabel=rtt, xaxislabel='RTT')
-            collection2.run_test(my_test, testbed, tag='rtt-%d-test3' % rtt, xticlabel=rtt, xaxislabel='RTT')
+            collection2.run_test(my_test, testbed, tag='rtt-%d-test1' % rtt, title=rtt, titlelabel='RTT')
+            collection2.run_test(my_test, testbed, tag='rtt-%d-test2' % rtt, title=rtt, titlelabel='RTT')
+            collection2.run_test(my_test, testbed, tag='rtt-%d-test3' % rtt, title=rtt, titlelabel='RTT')
         collection2.plot()
     collection1.plot(swap_levels=[0])
 
@@ -295,7 +295,7 @@ def test_fairness():
                     testcase.run_greedy(node='a', tag=cctag1)
                     testcase.run_greedy(node='b', tag=cctag2)
 
-                collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
+                collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
 
             collection3.plot(utilization_queues=False, utilization_tags=True)
         collection2.plot(utilization_queues=False, utilization_tags=True)
@@ -355,7 +355,7 @@ def test_shifted_fifo():
                         testcase.run_greedy(node='a', tag=cctag1)
                         testcase.run_greedy(node='b', tag=cctag2)
 
-                    collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, xticlabel=rtt, xaxislabel='RTT')
+                    collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
 
                 collection4.plot(utilization_queues=False, utilization_tags=True)
             collection3.plot(utilization_queues=False, utilization_tags=True)

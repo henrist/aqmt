@@ -372,14 +372,14 @@ class Testbed():
 
 
 class TestCase():
-    def __init__(self, testenv, testbed, folder, tag=None, xticlabel=None, xaxislabel=None):
+    def __init__(self, testenv, testbed, folder, tag=None, title=None, titlelabel=None):
         self.testenv = testenv
         self.testbed = testbed
         self.test_folder = folder
         self.tag = tag
 
-        self.xticlabel = xticlabel
-        self.xaxislabel = xaxislabel
+        self.title = title
+        self.titlelabel = titlelabel
 
         self.directory_error = False
         self.data_collected = False
@@ -577,8 +577,8 @@ class TestCase():
         print()
 
         self.save_hint('type test')
-        self.save_hint('xticlabel %s' % ('' if self.xticlabel is None else self.xticlabel))
-        self.save_hint('xaxislabel %s' % ('' if self.xaxislabel is None else self.xaxislabel))
+        self.save_hint('title %s' % ('' if self.title is None else self.title))
+        self.save_hint('titlelabel %s' % ('' if self.titlelabel is None else self.titlelabel))
         self.save_hint('ta_idle %s' % self.testbed.get_ta_idle())
         self.save_hint('ta_delay %s' % self.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testbed.ta_samples)
@@ -759,18 +759,18 @@ class TestCollection():
             self.parent_called = True
             self.parent.add_sub(self.folder)
 
-    def run_test(self, test_fn, testbed, tag, xticlabel=None, xaxislabel=None):
+    def run_test(self, test_fn, testbed, tag, title=None, titlelabel=None):
         """Run a single test (the smallest possible test)
 
         the_test: Method that generates test data
         tag: String appended to test case directory name
-        xticlabel: The x label value for this specific test when aggregated
-        xaxislabel: Description of the xtic values
+        title: The x label value for this specific test when aggregated
+        titlelabel: Description of the title values
         """
 
         self.check_and_add_tag(tag)
         test = TestCase(testenv=self.testenv, testbed=testbed, folder=self.folder + '/test-' + str(tag),
-                        xticlabel=xticlabel, xaxislabel=xaxislabel)
+                        title=title, titlelabel=titlelabel)
 
         self.tests.append(test)
         if not test.should_skip():
