@@ -556,6 +556,13 @@ class TestCase():
 
         return pid
 
+    def calc_post_wait_time(self):
+        """The time it will idle after the test is run"""
+        return max(self.testbed.rtt_clients, self.testbed.rtt_servera, self.testbed.rtt_serverb) / 1000 * 5 + 2
+
+    def calc_estimated_run_time(self):
+        return self.testbed.ta_samples * self.testbed.ta_delay / 1000 + self.testbed.get_ta_idle() + self.calc_post_wait_time()
+
     def run(self, test_fn):
         if self.directory_error:
             raise('Cannot run a test with an unrecognized directory')
@@ -573,7 +580,8 @@ class TestCase():
         if not self.testenv.dry_run:
             self.testbed.print_setup()
 
-        print('%.2f s: Testbed initialized, starting test. Estimated time %d s' % (time.time()-start, self.testbed.ta_samples * self.testbed.ta_delay / 1000 + self.testbed.get_ta_idle()))
+        print()
+        print('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
         print()
 
         self.save_hint('type test')
@@ -607,6 +615,15 @@ class TestCase():
         print('%.2f s: Data collection finished' % (time.time()-start))
         self.save_hint('data_collected')
         self.data_collected = True
+
+        self.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        print('%.2f s: Testbed reset, waiting %.2f s for cooldown period' % (time.time()-start, self.calc_post_wait_time()))
+
+        # in case there is a a queue buildup it should now free because the
+        # testbed is reset (so no added RTT or rate limit) and we give it some
+        # time to complete
+        time.sleep(self.calc_post_wait_time())
+        print('%.2f s: Finished waiting to let the connections finish' % (time.time()-start))
 
         self.testenv.get_terminal().cleanup()
 
