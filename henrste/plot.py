@@ -190,20 +190,30 @@ class HierarchyPlot():
 
         out = []
         for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
+            added = False
             with open(testcase_folder + '/' + statsname, 'r') as f:
                 for line in f:
                     if line.startswith('#'):
                         continue
 
                     out.append('"%s" %s' % (title, line))
+                    added = True
+                    break  # only allow one line from each sample
+
+            if not added:
+                out.append('"%s"' % title)
 
         return ''.join(out)
 
     @staticmethod
     def merge_testcase_data_group(testmeta, statsname):
-        """Similar to merge_testcase_data except it groups all data by first column"""
+        """Similar to merge_testcase_data except it groups all data by first column
+
+        There should only exist one data point in the files for each group
+        """
         out = OrderedDict()
 
+        i_file = 0
         for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
             with open(testcase_folder + '/' + statsname, 'r') as f:
                 for line in f:
@@ -217,9 +227,14 @@ class HierarchyPlot():
                         group_by = line.split()[0]
 
                     if group_by not in out:
-                        out[group_by] = []
+                        out[group_by] = ['"%s"\n' % title] * i_file
 
                     out[group_by].append('"%s" %s' % (title, line))
+
+            i_file += 1
+            for key in out.keys():
+                if len(out[key]) != i_file:
+                    out[key].append('"%s"\n' % title)
 
         for key in out.keys():
             out[key] = ''.join(out[key])
