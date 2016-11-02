@@ -250,14 +250,14 @@ def test_fairness():
     - No overload
     """
     testbed = base_testbed()
-    testbed.ta_samples = 180
+    testbed.ta_samples = 250
     testbed.ta_delay = 1000
 
     aqms = [
         ['pie', 'PIE', lambda: testbed.aqm_pie()],
-        ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
-        ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000')],
-        ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000')],
+        ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000 sojourn')],
+        ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000 sojourn')],
+        ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000 sojourn')],
         #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
     ]
 
@@ -273,7 +273,7 @@ def test_fairness():
 
     rtts = [2, 20, 100, 200]
 
-    collection1 = TestCollection('tests/testsets/fairness', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
+    collection1 = TestCollection('tests/testsets/fairness-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -377,7 +377,7 @@ def test_dctth_paper():
 
     aqms = [
         ['pie', 'PIE', lambda: testbed.aqm_pie()],
-        ['pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda: testbed.aqm_pi2(params='t_shift 40000')],
+        ['pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda: testbed.aqm_pi2(params='t_shift 40000 sojourn')],
     ]
 
     cc_matrix = [
