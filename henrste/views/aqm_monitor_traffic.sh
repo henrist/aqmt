@@ -12,12 +12,17 @@ cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . ../common.sh
 
 delay=0.05
-max=$((1000*1000*25/8))
+max=$((1000*1000*12/8))
 
 ifaces=($IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB)
 
 if [ ${#ifaces[@]} -eq 0 ]; then
     echo "Missing IFACE_* environment variables"
+    exit 1
+fi
+
+if [ -z $TMUX ]; then
+    echo "Run this inside tmux!"
     exit 1
 fi
 
@@ -37,11 +42,7 @@ for iface in ${ifaces[@]}; do
 
     i=$(($i+1))
     if [ $i -eq 1 ]; then
-        if [ -z $TMUX ]; then
-            tmux new-session -d -n $sn $cmd
-        else
-            tmux new-window -n $sn $cmd
-        fi
+        tmux new-window -n $sn $cmd
     else
         tmux split-window -t $sn $cmd
         tmux select-layout -t $sn even-horizontal
@@ -50,7 +51,3 @@ done
 
 tmux select-layout -t $sn even-horizontal
 tmux set-window -t $sn synchronize-panes
-
-if [ -z $TMUX ]; then
-    tmux attach-session
-fi
