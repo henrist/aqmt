@@ -257,7 +257,7 @@ class HierarchyPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Percent\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
+            set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
         plot = ''
         titles_used = []
@@ -300,7 +300,7 @@ class HierarchyPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Percent\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}" """
+            set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}" """
 
         plot = ''
         titles_used = []
@@ -350,7 +350,7 @@ class HierarchyPlot():
 
             # queueing delay
             set yrange [0:*]
-            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             #set xtic offset first .1"""
 
         plot = ''
@@ -383,7 +383,7 @@ class HierarchyPlot():
         self.gpi += """
 
             # drops and marks
-            set ylabel "Percent\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             set xtic offset first 0"""
 
         # show xlabel at bottom of the multiplot
@@ -575,7 +575,7 @@ class Plot():
             set yrange [0:]
             set xrange [1:""" + read_metadata(testfolder + '/details')[0]['ta_samples'] + """]
             set format y "%g"
-            set ylabel 'Utilization in %'
+            set ylabel 'Utilization per queue [%]'
             set style fill transparent solid 0.5 noborder
             set key above
 
@@ -596,7 +596,7 @@ class Plot():
 
             unset arrow 100
             set format y "%.0f"
-            set ylabel 'Rate [b/s]'
+            set ylabel 'Rate per flow [b/s]'
             set key right center inside
             plot """
 
@@ -612,7 +612,7 @@ class Plot():
                 j += 1
 
         self.gpi += """
-            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
+            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             unset bars
             set key above
             set xtics out nomirror
