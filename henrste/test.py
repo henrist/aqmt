@@ -100,7 +100,7 @@ def test_speeds():
     ]
 
     aqm_set = [
-        ['pi2', 'PI2 l\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+        ['pi2', 'PI2 l\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000 sojourn')],
         ['pie', 'PIE', lambda: testbed.aqm_pie()],
         ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
     ]
@@ -476,7 +476,7 @@ def test_dctth_paper():
                         testcase.run_greedy(node='b', tag=cctag2)
 
                     collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
-                    collection4.run_test(my_test, testbed, tag='rtt-%d-2' % rtt, title=rtt, titlelabel='RTT')
+                    #collection4.run_test(my_test, testbed, tag='rtt-%d-2' % rtt, title=rtt, titlelabel='RTT')
 
                 collection4.plot(utilization_queues=False, utilization_tags=True)
             collection3.plot(utilization_queues=False, utilization_tags=True)
