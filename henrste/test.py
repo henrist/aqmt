@@ -86,15 +86,22 @@ def test_increasing_udp_traffic():
     collection.plot(utilization_queues=False, utilization_tags=True)
 
 def test_speeds():
-    """Test one UDP-flow vs one TCP-greedy flow with different UDP speeds and UDP ECT-flags"""
+    """Test one UDP-flow vs TCP-greedy flows) with different UDP speeds and UDP ECT-flags"""
     testbed = base_testbed()
     testbed.ta_samples = 60
     testbed.ta_delay = 500
 
-    collection1 = TestCollection('tests/testsets/speeds', TestEnv(), title='Overload with UDP')
+    collection1 = TestCollection('tests/testsets/speeds', TestEnv(), title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera)
+
+    cc_set = [
+        #['dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'],
+        #['cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'],
+        ['mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+    ]
 
     aqm_set = [
         ['pi2', 'PI2 l\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000')],
+        ['pie', 'PIE', lambda: testbed.aqm_pie()],
         ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
     ]
 
@@ -103,43 +110,90 @@ def test_speeds():
         ('ect1', 'UDP with ECT(1)'),
     ]
 
-    for aqmtag, aqmtitle, aqmfn in aqm_set:
-        aqmfn()
-        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+    for cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2 in cc_set:
+        testbed.cc(node1, cc1, ecn1)
+        testbed.cc(node2, cc2, ecn2)
 
-        for ect, title in ect_set:
-            collection3 = TestCollection(ect, parent=collection2, title=title)
+        collection2 = TestCollection(folder=cctag, parent=collection1, title=cctitle)
 
-            speeds = [
-                5000,
-                9000,
-                9500,
-                10000,
-                10500,
-                11000,
-                12000,
-                #12500,
-                #13000,
-                #13100,
-                #13200,
-                #13400,
-                #13500,
-                #14000,
-                #28000,
-                #50000,
-                #500000,
-            ]
+        for aqmtag, aqmtitle, aqmfn in aqm_set:
+            aqmfn()
+            collection3 = TestCollection(folder=aqmtag, parent=collection2, title=aqmtitle)
 
-            for speed in speeds:
-                def my_test(testcase):
-                    testcase.run_greedy(node='b', tag='TCP')
-                    testcase.run_udp(node='a', bitrate=speed*1000, ect=ect, tag='Unresponsive UDP')
+            for ect, title in ect_set:
+                collection4 = TestCollection(ect, parent=collection3, title=title)
 
-                collection3.run_test(my_test, testbed, tag=speed, title=speed, titlelabel='UDP bitrate [kb/s]')
+                speeds = [
+                    2500,
+                    5000,
+                    9000,
+                    9500,
+                    9600,
+                    9700,
+                    9800,
+                    9900,
+                    10000,
+                    10100,
+                    10200,
+                    10300,
+                    10400,
+                    10500,
+                    11000,
+                    #12000,
+                    #12500,
+                    #13000,
+                    #13100,
+                    #13200,
+                    #13400,
+                    #13500,
+                    #14000,
+                    20000,
+                    #28000,
+                    #50000,
+                    #500000,
+                ]
 
-            collection3.plot(utilization_queues=False, utilization_tags=True)
-        collection2.plot(utilization_queues=False, utilization_tags=True)
-    collection1.plot(utilization_queues=False, utilization_tags=True)
+                for speed in speeds:
+                    def my_test(testcase):
+                        for i in range(cc1n):
+                            testcase.run_greedy(node=node1, tag=cctag1)
+
+                        for i in range(cc2n):
+                            testcase.run_greedy(node=node2, tag=cctag2)
+
+                        testcase.run_udp(node='a', bitrate=speed*1000, ect=ect, tag='Unresponsive UDP')
+
+                    collection4.run_test(my_test, testbed, tag=speed, title=speed, titlelabel='UDP bitrate [kb/s]')
+                collection4.plot_tests_merged()
+
+    collection1.plot(utilization_queues=True, utilization_tags=True, swap_levels=[1])
+
+def test_issue_other_traffic():
+    testbed = base_testbed()
+    testbed.ta_samples = 10
+    testbed.ta_delay = 500
+    testbed.ta_idle = 0
+
+    testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
+    testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
+
+    testbed.aqm_pfifo()
+
+    def my_test1(testcase):
+        testcase.run_greedy(node='a', tag='A')
+        testcase.run_greedy(node='b', tag='B')
+        testcase.run_udp(node='a', bitrate=10500*1000, ect='nonect', tag='Unresponsive UDP - Non-ECT')
+
+    def my_test2(testcase):
+        testcase.run_greedy(node='a', tag='A')
+        testcase.run_greedy(node='b', tag='B')
+        testcase.run_udp(node='a', bitrate=10500*1000, ect='ect1', tag='Unresponsive UDP - ECT1')
+
+    collection = TestCollection('tests/testsets/issue-other-traffic', TestEnv(retest=True))
+    collection.run_test(my_test1, testbed, tag='test1')
+    collection.run_test(my_test2, testbed, tag='test2')
+    collection.run_test(my_test1, testbed, tag='test3')
+    collection.plot(utilization_tags=True, utilization_queues=False)
 
 def test_many_flows():
     testbed = base_testbed()
@@ -304,16 +358,19 @@ def test_fairness():
 def test_shifted_fifo():
     """Test different parameters for the shifted fifo"""
     testbed = base_testbed()
-    testbed.ta_samples = 60
-    testbed.ta_delay = 500
+    testbed.ta_samples = 100
+    testbed.ta_delay = 1000
 
     bitrates = [
-        ['10mbit', '10 mbit', 10*1000*1000],
+        ['4mbit', '4 mbit', 4*1000*1000],
+        ['12mbit', '12 mbit', 12*1000*1000],
         ['40mbit', '40 mbit', 40*1000*1000],
+        ['120mbit', '120 mbit', 120*1000*1000],
+        ['200mbit', '200 mbit', 200*1000*1000],
     ]
 
     aqms = [
-        ['pi2-l_thresh-50000-t_shift-40000', 'l\\\\_thresh=50000 t\\\\_shift=40000', lambda: testbed.aqm_pi2(params='l_thresh 50000 t_shift 40000')],
+        ['pi2-l_thresh-50000-t_shift-40000', 'l\\\\_thresh=50000 t\\\\_shift=40000', lambda: testbed.aqm_pi2(params='l_thresh 50000 t_shift 40000 sojourn')],
     ]
 
     cc_matrix = [
@@ -328,7 +385,7 @@ def test_shifted_fifo():
 
     rtts = [2, 20, 100, 200]
 
-    collection1 = TestCollection('tests/testsets/shifted_fifo', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo (all on PI2)')
+    collection1 = TestCollection('tests/testsets/shifted_fifo-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo (all on PI2)')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -358,7 +415,6 @@ def test_shifted_fifo():
             collection3.plot(utilization_queues=False, utilization_tags=True)
         collection2.plot(utilization_queues=False, utilization_tags=True)
     collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[0])
-
 
 def test_dctth_paper():
     """Testing similar to page 8 of the DCttH-paper"""
@@ -435,9 +491,10 @@ if __name__ == '__main__':
     #test_testbed()
     #test_cubic()
     #test_increasing_udp_traffic()
-    #test_speeds()
+    test_speeds()
+    #test_issue_other_traffic()
     #test_different_cc()
     #test_scaling_in_classic_queue()
     #test_fairness()
     #test_shifted_fifo()
-    test_dctth_paper()
+    #test_dctth_paper()
