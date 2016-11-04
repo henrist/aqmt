@@ -3,9 +3,11 @@
 from test_framework import Testbed, TestEnv, TestCase, TestCollection, require_on_aqm_node
 import time
 
+MBIT=1000*1000
+
 def base_testbed():
     testbed = Testbed()
-    testbed.bitrate = 10*1000*1000
+    testbed.bitrate = 10 * MBIT
     testbed.aqm_pi2()
     testbed.rtt_servera = 25
     testbed.rtt_serverb = 25
@@ -126,7 +128,10 @@ def test_speeds():
                 speeds = [
                     2500,
                     5000,
+                    8000,
+                    8500,
                     9000,
+                    9250,
                     9500,
                     9600,
                     9700,
@@ -134,10 +139,10 @@ def test_speeds():
                     9900,
                     10000,
                     10100,
-                    10200,
-                    10300,
-                    10400,
-                    10500,
+                    #10200,
+                    #10300,
+                    #10400,
+                    #10500,
                     11000,
                     #12000,
                     #12500,
@@ -148,7 +153,7 @@ def test_speeds():
                     #13500,
                     #14000,
                     20000,
-                    #28000,
+                    40000,
                     #50000,
                     #500000,
                 ]
