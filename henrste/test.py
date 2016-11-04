@@ -488,6 +488,63 @@ def test_dctth_paper():
         collection2.plot(utilization_queues=False, utilization_tags=True)
     collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[])
 
+def test_max_window():
+    """Tests the maximum window size we can achieve
+
+    requirement outside this test:
+    - adjust wmem, see set_sysctl_tcp_mem.sh
+      (when in Docker, this must be done outside the Docker container)
+    """
+
+    testbed = base_testbed()
+    testbed.ta_samples = 300
+    testbed.ta_delay = 400
+    testbed.ta_idle = 0
+    testbed.bitrate = 1200 * MBIT
+    testbed.aqm_pi2('limit 50000 target 500000 ecn no_scal tupdate 500000 sojourn')
+    #testbed.aqm_pfifo()
+
+
+    cc_set = [
+        #('reno', testbed.ECN_ALLOW, 'reno', 'reno'),
+        ('cubic', testbed.ECN_INITIATE, 'cubic', 'cubic'),
+        #('dctcp', testbed.ECN_INITIATE, 'dctcp', 'dctcp')
+    ]
+
+    rtt_set = [
+        #50, 100, 200, 400,
+        50,
+        100,
+        200,
+        400,
+        800,
+    ]
+
+    collection1 = TestCollection('tests/testsets/max-window', TestEnv(retest=False), title='Testing to achieve a high TCP window',
+        subtitle='AQM: pi2 ecn no\\\\_scal 500 ms target   testrate: 1,2 Gb/s   sample interval: 400 ms')
+
+    for cc, ecn, foldername, title in cc_set:
+        testbed.cc('a', cc, ecn)
+
+        collection2 = TestCollection(foldername, parent=collection1, title=title)
+
+        for rtt in rtt_set:
+            testbed.rtt_servera = rtt
+
+            def my_test(testcase):
+                testcase.run_greedy(node='a')
+                #testcase.run_greedy(node='a')
+                #testcase.run_udp(node='a', bitrate=800000000, ect='ect0', tag='UDP')
+                #testcase.run_udp(node='a', bitrate=800000000, ect='ect1', tag='UDP')
+                #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
+                #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
+
+            collection2.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
+
+        collection2.plot()
+    collection1.plot()
+
+
 if __name__ == '__main__':
     require_on_aqm_node()
 
@@ -496,10 +553,11 @@ if __name__ == '__main__':
     #test_testbed()
     #test_cubic()
     #test_increasing_udp_traffic()
-    test_speeds()
+    #test_speeds()
     #test_issue_other_traffic()
     #test_different_cc()
     #test_scaling_in_classic_queue()
     #test_fairness()
     #test_shifted_fifo()
     #test_dctth_paper()
+    test_max_window()
