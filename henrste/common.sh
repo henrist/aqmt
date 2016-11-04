@@ -224,6 +224,22 @@ reset_all_hosts_cc() {
     done
 }
 
+disable_offloading() {
+    hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
+    ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB $IFACE_ON_SERVERA $IFACE_ON_SERVERB)
+
+    for i in ${!hosts[@]}; do
+        ssh root@${hosts[$i]} "
+            ethtool -K ${ifaces[$i]} gso off
+            ethtool -K ${ifaces[$i]} tso off"
+    done
+
+    for iface in $IFACE_AQM $IFACE_SERVERA $IFACE_SERVERB; do
+        sudo ethtool -K $iface gso off
+        sudo ethtool -K $iface tso off
+    done
+}
+
 kill_all_traffic() {
     hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
 
