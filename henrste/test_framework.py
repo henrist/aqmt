@@ -102,30 +102,35 @@ class Terminal():
 
 
 class Tmux(Terminal):
-    win_id = None
-    win_bg_id = None
-
     def __init__(self):
         if 'TMUX' not in os.environ:
             raise Exception("Please run this inside a tmux session")
 
-        self.win_id = tmux['display-message', '-p', '#{window_id}']().strip()
-        tmux['set-window-option', '-t', self.win_id, 'remain-on-exit', 'on']()
+        self.win_id = tmux['display-message', '-p', '-t', os.environ['TMUX_PANE'], '#{window_id}']().strip()
+        self.session_id = tmux['display-message', '-p', '-t', os.environ['TMUX_PANE'], '#{session_id}']().strip()
+        self.win_bg_id = None
 
+        tmux['set-window-option', '-t', self.win_id, 'remain-on-exit', 'on']()
         self.cleanup()
 
     def cleanup(self):
         self.kill_dead_panes()
 
     def kill_dead_panes(self):
-        (tmux['list-panes', '-s', '-F', '#{pane_dead} #{pane_id}'] | local['grep']['^1'] | local['awk']['{print $2}'] | local['xargs']['-rL1', 'tmux', 'kill-pane', '-t']).run(retcode=None)
+        (tmux['list-panes', '-s', '-F', '#{pane_dead} #{pane_id}', '-t', self.session_id] | local['grep']['^1'] | local['awk']['{print $2}'] | local['xargs']['-rL1', 'tmux', 'kill-pane', '-t']).run(retcode=None)
+
+    def get_pane_id(self, window_id):
+        # for some reasons list-panes is not reliable with -t flag
+        # so list everything and find from it
+        pane_ids = (tmux['list-panes', '-aF', '#{window_id} #{pane_id}'] | local['grep']['^' + window_id + ' '] | local['awk']['{ print $2 }']).run(retcode=None)[1].split()
+        return pane_ids[0]
 
     def run_fg(self, cmd, verbose=False):
         cmd = get_shell_cmd(cmd)
         if verbose:
             print(cmd)
 
-        pane_pid = tmux['split-window', '-dP', '-t', self.win_id, '-F', '#{pane_pid}', cmd]().strip()
+        pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_id), '-F', '#{pane_pid}', cmd]().strip()
 
         tmux['select-layout', '-t', self.win_id, 'tiled']()
         return int(pane_pid)
@@ -139,13 +144,13 @@ class Tmux(Terminal):
         # output in the end should be the new pid of the running command
         # so that we can stop it later
         if not self.have_bg_win():
-            res = tmux['new-window', '-dP', '-F', '#{window_id} #{pane_pid}', cmd]().strip().split()
+            res = tmux['new-window', '-adP', '-F', '#{window_id} #{pane_pid}', '-t', self.win_id, cmd]().strip().split()
             self.win_bg_id = res[0]
             pane_pid = res[1]
             tmux['set-window-option', '-t', self.win_bg_id, 'remain-on-exit', 'on'] & FG
 
         else:
-            pane_pid = tmux['split-window', '-dP', '-t', self.win_bg_id, '-F', '#{pane_pid}', cmd]().strip()
+            pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_bg_id), '-F', '#{pane_pid}', cmd]().strip()
             tmux['select-layout', '-t', self.win_bg_id, 'tiled'] & FG
 
         return int(pane_pid)
@@ -154,7 +159,7 @@ class Tmux(Terminal):
         if self.win_bg_id == None:
             return False
 
-        res = (tmux['list-windows', '-F', '#{window_id}'] | local['grep'][self.win_bg_id]).run(retcode=None)[1].strip()
+        res = (tmux['list-windows', '-aF', '#{window_id}'] | local['grep']['^' + self.win_bg_id + '$']).run(retcode=None)[1].strip()
 
         return len(res) > 0
 
