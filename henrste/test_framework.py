@@ -546,7 +546,7 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
+        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
                    (self.testbed.get_ta_idle(), pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
 
         if self.testenv.dry_run:
