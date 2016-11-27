@@ -64,6 +64,7 @@ configure_clients_edge_aqm_node() {
     local rtt=$2
     local aqm_name=$3
     local aqm_params=$4
+    local netem_params=$5  # optional
 
     local delay=$(echo "scale=2; $rtt / 2" | bc)  # delay is half the rtt
 
@@ -72,13 +73,13 @@ configure_clients_edge_aqm_node() {
 
     if [ $rtt -gt 0 ]; then
         if tc qdisc show dev $IFACE_CLIENTS | grep -q "qdisc netem 2:"; then
-            tc qdisc change dev $IFACE_CLIENTS handle 2: htb delay ${delay}ms
+            tc qdisc change dev $IFACE_CLIENTS handle 2: htb delay ${delay}ms $netem_params
             tc class change dev $IFACE_CLIENTS parent 3: classid 10 htb rate $testrate
         else
             tc qdisc  del dev $IFACE_CLIENTS root 2>/dev/null || true
             tc qdisc  add dev $IFACE_CLIENTS root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
             tc filter add dev $IFACE_CLIENTS parent 1:0 protocol ip prio 1 u32 match ip src $IP_AQM_C flowid 1:1
-            tc qdisc  add dev $IFACE_CLIENTS parent 1:2 handle 2:  netem delay ${delay}ms
+            tc qdisc  add dev $IFACE_CLIENTS parent 1:2 handle 2:  netem delay ${delay}ms $netem_params
             tc qdisc  add dev $IFACE_CLIENTS parent 2: handle 3: htb default 10
             tc class  add dev $IFACE_CLIENTS parent 3: classid 10 htb rate $testrate   #burst 1516
         fi
@@ -108,6 +109,7 @@ configure_clients_edge_aqm_node() {
 
 configure_clients_node() {
     local rtt=$1
+    local netem_params=$2  # optional
 
     local delay=$(echo "scale=2; $rtt / 2" | bc)  # delay is half the rtt
 
@@ -120,11 +122,11 @@ configure_clients_node() {
             ssh root@${hosts[$i]} "
                 # if possible update the delay rather than destroying the existing qdisc
                 if tc qdisc show dev ${ifaces[$i]} | grep -q 'qdisc netem 12:'; then
-                    tc qdisc change dev ${ifaces[$i]} handle 12: netem delay ${delay}ms
+                    tc qdisc change dev ${ifaces[$i]} handle 12: netem delay ${delay}ms $netem_params
                 else
                     tc qdisc  del dev ${ifaces[$i]} root 2>/dev/null || true
                     tc qdisc  add dev ${ifaces[$i]} root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-                    tc qdisc  add dev ${ifaces[$i]} parent 1:2 handle 12: netem delay ${delay}ms
+                    tc qdisc  add dev ${ifaces[$i]} parent 1:2 handle 12: netem delay ${delay}ms $netem_params
                     tc filter add dev ${ifaces[$i]} parent 1:0 protocol ip prio 1 u32 match ip dst $IP_AQM_C flowid 1:1
                 fi"
         done
@@ -148,9 +150,10 @@ configure_clients_edge() {
     local rtt=$2
     local aqm_name=$3
     local aqm_params=$4
+    local netem_params=$5  # optional
 
-    configure_clients_edge_aqm_node $testrate $rtt $aqm_name "$aqm_params"
-    configure_clients_node $rtt
+    configure_clients_edge_aqm_node $testrate $rtt $aqm_name "$aqm_params" "$netem_params"
+    configure_clients_node $rtt "$netem_params"
 }
 
 configure_server_edge() {
@@ -159,6 +162,7 @@ configure_server_edge() {
     local iface_server=$3
     local iface_on_server=$4
     local rtt=$5
+    local netem_params=$6  # optional
 
     local delay=$(echo "scale=2; $rtt / 2" | bc)  # delay is half the rtt
 
@@ -166,21 +170,21 @@ configure_server_edge() {
     # delay traffic in band 1
     # filter traffic from aqm node itself into band 0 for priority and no delay
     if tc qdisc show dev $iface_server | grep -q 'qdisc netem 12:'; then
-        tc qdisc change dev $iface_server handle 12: netem delay ${delay}ms
+        tc qdisc change dev $iface_server handle 12: netem delay ${delay}ms $netem_params
     else
         tc qdisc  del dev $iface_server root 2>/dev/null || true
         tc qdisc  add dev $iface_server root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-        tc qdisc  add dev $iface_server parent 1:2 handle 12: netem delay ${delay}ms # todo: put "limit" ?
+        tc qdisc  add dev $iface_server parent 1:2 handle 12: netem delay ${delay}ms $netem_params
         tc filter add dev $iface_server parent 1:0 protocol ip prio 1 u32 match ip src $ip_aqm_s flowid 1:1
     fi
 
     ssh root@$ip_server_mgmt "
         if tc qdisc show dev $iface_on_server | grep -q 'qdisc netem 12:'; then
-            tc qdisc change dev $iface_on_server handle 12: netem delay ${delay}ms
+            tc qdisc change dev $iface_on_server handle 12: netem delay ${delay}ms $netem_params
         else
             tc qdisc  del dev $iface_on_server root 2>/dev/null || true
             tc qdisc  add dev $iface_on_server root       handle  1: prio bands 2 priomap 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-            tc qdisc  add dev $iface_on_server parent 1:2 handle 12: netem delay ${delay}ms
+            tc qdisc  add dev $iface_on_server parent 1:2 handle 12: netem delay ${delay}ms $netem_params
             tc filter add dev $iface_on_server parent 1:0 protocol ip prio 1 u32 match ip dst $ip_aqm_s flowid 1:1
         fi"
 }

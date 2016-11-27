@@ -176,6 +176,10 @@ class Testbed():
         self.rtt_servera = 0  # in ms
         self.rtt_serverb = 0  # in ms
 
+        self.netem_clients_params = ""
+        self.netem_servera_params = ""
+        self.netem_serverb_params = ""
+
         self.aqm_name = ''
         self.aqm_params = ''
 
@@ -244,9 +248,9 @@ class Testbed():
         cmd = bash['-c', """
             source common.sh
 
-            configure_clients_edge """ + '%s %s %s "%s"' % (self.bitrate, self.rtt_clients, self.aqm_name, self.aqm_params) + """
-            configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA """ + str(self.rtt_servera) + """
-            configure_server_edge $IP_SERVERB_MGMT $IP_AQM_SB $IFACE_SERVERB $IFACE_ON_SERVERB """ + str(self.rtt_serverb) + """
+            configure_clients_edge """ + '%s %s %s "%s" "%s"' % (self.bitrate, self.rtt_clients, self.aqm_name, self.aqm_params, self.netem_clients_params) + """
+            configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA """ + '%s "%s"' % (self.rtt_servera, self.netem_servera_params) + """
+            configure_server_edge $IP_SERVERB_MGMT $IP_AQM_SB $IFACE_SERVERB $IFACE_ON_SERVERB """ + '%s "%s"' % (self.rtt_serverb, self.netem_serverb_params) + """
 
             configure_host_cc $IP_CLIENTA_MGMT """ + '%s %s' % (self.cc_a, self.ecn_a) + """
             configure_host_cc $IP_SERVERA_MGMT """ + '%s %s' % (self.cc_a, self.ecn_a) + """
