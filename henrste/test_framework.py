@@ -396,6 +396,45 @@ class TestCase():
 
         self.check_folder()
 
+    def run_scp(self, node='a', tag=None):
+        """
+        Run TCP traffic with SCP (SFTP)
+
+        Note there are some issues with the window size inside
+        SSH as it uses its own sliding window. This test is therefore
+        not reliable with a high BDP
+
+        See:
+        - http://www.slideshare.net/datacenters/enabling-high-performance-bulk-data-transfers-with-ssh
+        - http://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp
+
+        All traffic goes over port 22 as of now. Tagging is
+        not really possible because of this.
+        """
+        server_port = -1
+
+        node = 'A' if node == 'a' else 'B'
+
+        self.save_hint('traffic=tcp type=scp node=%s%s server=%s tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
+
+        cmd = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'scp /opt/testbed/bigfile %s:/tmp/' % (os.environ['IP_CLIENT%s' % node])]
+
+        if self.testenv.dry_run:
+            if self.testenv.verbose > 0:
+                print(get_shell_cmd(cmd))
+
+            def stopTest():
+                pass
+
+        else:
+            pid_server = self.testenv.run(cmd, bg=True, verbose=True)
+            add_known_pid(pid_server)
+
+            def stopTest():
+                kill_pid(pid_server)
+
+        return stopTest
+
     def run_greedy(self, node='a', tag=None):
         """
         Run greedy TCP traffic
