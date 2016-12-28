@@ -16,16 +16,20 @@ We do not allow kernel modules to be loaded inside the Docker containers,
 so they have to be compiled and loaded on the host before trying to use
 them inside the container.
 
+Run the helper script that will build and load the modules:
+
 ```bash
-# on host os, not inside Docker
-cd sch_pi2
-make
-sudo make load
+# on host os, not inside Docker, in the git root directory
+./load_sch.sh
 ```
 
-Now the scheduler can be used inside a Docker container.
+Now the schedulers can be used inside the Docker container.
 
 ## Generating patch for iproute2
+
+When changing the iproute2 implementation, a new patchfile have to be
+built which is applied when building the Docker image we use when running
+using Docker.
 
 See Dockerfile for which branch is used to patch on top of iproute2.
 
