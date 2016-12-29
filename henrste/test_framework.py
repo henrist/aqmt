@@ -429,6 +429,39 @@ class TestCase():
 
         return stopTest
 
+    def run_tcp_iperf(self, node='a', tag=None):
+        """
+        Run TCP traffic with iperf2
+        """
+        server_port = self.testbed.get_next_traffic_port()
+
+        node = 'A' if node == 'a' else 'B'
+
+        self.save_hint('traffic=tcp type=iperf2 node=%s%s client=%d tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
+
+        cmd1 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'iperf -s -p %d' % server_port]
+        cmd2 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.2; iperf -c %s -p %d -t 86400' % (os.environ['IP_CLIENT%s' % node], server_port)]
+
+        if self.testenv.dry_run:
+            if self.testenv.verbose > 0:
+                print(get_shell_cmd(cmd1))
+                print(get_shell_cmd(cmd2))
+
+            def stopTest():
+                pass
+
+        else:
+            pid1 = self.testenv.run(cmd1, bg=True, verbose=True)
+            pid2 = self.testenv.run(cmd2, bg=True, verbose=True)
+            add_known_pid(pid1)
+            add_known_pid(pid2)
+
+            def stopTest():
+                kill_pid(pid1)
+                kill_pid(pid2)
+
+        return stopTest
+
     def run_scp(self, node='a', tag=None):
         """
         Run TCP traffic with SCP (SFTP)
