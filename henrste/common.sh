@@ -73,7 +73,7 @@ configure_clients_edge_aqm_node() {
 
     if [ $rtt -gt 0 ]; then
         if tc qdisc show dev $IFACE_CLIENTS | grep -q "qdisc netem 2:"; then
-            tc qdisc change dev $IFACE_CLIENTS handle 2: htb delay ${delay}ms $netem_params
+            tc qdisc change dev $IFACE_CLIENTS handle 2: netem delay ${delay}ms $netem_params
             tc class change dev $IFACE_CLIENTS parent 3: classid 10 htb rate $testrate
         else
             tc qdisc  del dev $IFACE_CLIENTS root 2>/dev/null || true
