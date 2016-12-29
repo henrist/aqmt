@@ -864,7 +864,7 @@ def plot_folder_flows(folder):
         if len(testmeta['children']) == 0:
             return
 
-        testcases = [item['testcase'] for item in testmeta['children']]
+        testcases = [item['children'][0]['testcase'] for item in testmeta['children']]
 
         # assume all tests referred to is in the same folder, so use the parent folder
         set_folder = os.path.dirname(testcases[0].rstrip('/'))
