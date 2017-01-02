@@ -24,17 +24,21 @@ from plumbum import local, FG, BG
 from plumbum.cmd import bash, tmux, ssh
 import subprocess
 
-from calc_queuedelay import QueueDelay
-from calc_tagged_rate import TaggedRate
-from calc_utilization import Utilization
-from plot import Plot, plot_folder_compare, plot_folder_flows
+from .calc_queuedelay import QueueDelay
+from .calc_tagged_rate import TaggedRate
+from .calc_utilization import Utilization
+from .plot import Plot, plot_folder_compare, plot_folder_flows
+
+def get_common_script_path():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/common.sh'
 
 def get_shell_cmd(cmd_object):
     """Convert a plumbum cmd to a shell expression"""
     return ' '.join(cmd_object.formulate(10))
 
 def require_on_aqm_node():
-    bash['-c', 'source common.sh; require_on_aqm_node'] & FG
+    common = get_common_script_path()
+    bash['-c', 'source %s; require_on_aqm_node' % common] & FG
 
 def kill_known_pids():
     if not hasattr(kill_known_pids, 'pids'):
@@ -246,7 +250,7 @@ class Testbed():
 
     def setup(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
-            source common.sh
+            source """ + get_common_script_path() + """
 
             configure_clients_edge """ + '%s %s %s "%s" "%s"' % (self.bitrate, self.rtt_clients, self.aqm_name, self.aqm_params, self.netem_clients_params) + """
             configure_server_edge $IP_SERVERA_MGMT $IP_AQM_SA $IFACE_SERVERA $IFACE_ON_SERVERA """ + '%s "%s"' % (self.rtt_servera, self.netem_servera_params) + """
@@ -267,7 +271,7 @@ class Testbed():
 
     def reset(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
-            source common.sh
+            source """ + get_common_script_path() + """
             kill_all_traffic
             reset_aqm_client_edge
             reset_aqm_server_edge
@@ -288,7 +292,8 @@ class Testbed():
 
     @staticmethod
     def get_aqm_options(name):
-        res = bash['-c', 'source common.sh; get_aqm_options %s' % name]()
+        common = get_common_script_path()
+        res = bash['-c', 'source %s; get_aqm_options %s' % (common, name)]()
         return res.strip()
 
     def print_setup(self):
@@ -313,7 +318,8 @@ class Testbed():
             ip = 'IP_%s_MGMT' % node
 
             print('  %s: ' % node.lower(), end='')
-            res = (bash['-c', 'source common.sh; get_host_cc "$%s"' % ip] | local['tr']['\n', ' '])().strip()
+            common = get_common_script_path()
+            res = (bash['-c', 'source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
             print(res)
 
     @staticmethod

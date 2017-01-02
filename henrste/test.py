@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from test_framework import Testbed, TestEnv, TestCase, TestCollection, require_on_aqm_node
+from framework.test_framework import Testbed, TestEnv, TestCase, TestCollection, require_on_aqm_node
 import time
 
 MBIT=1000*1000
