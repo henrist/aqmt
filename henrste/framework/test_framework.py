@@ -809,7 +809,7 @@ class TestEnv():
             add_known_pid(pid)
 
     def run_monitor_setup(self):
-        cmd = local['watch']['-n', '.2', './show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
+        cmd = local['watch']['-n', '.2', './views/show_setup.sh', '-vir', '%s' % os.environ['IFACE_CLIENTS']]
 
         if self.dry_run:
             if self.verbose > 0:

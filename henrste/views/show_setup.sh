@@ -4,7 +4,7 @@
 # (it is piped through less to make it easier to use)
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. common.sh
+. ../common.sh
 
 links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:@]\+\)[:@].*/\1/')
 verbose=
