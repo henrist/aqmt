@@ -1,29 +1,55 @@
 # Internal testbed using docker
 
 Prerequirements:
-* docker
-* docker-compose
+* [docker](https://docs.docker.com/engine/installation/)
+* [docker-compose](https://docs.docker.com/compose/install/)
 
-## Starting the services
+## Quickstart
 
-`docker-compose up -d --build`
+In project root directory, build and load the schedulers:
 
-This will bring up all the containers and network configuration.
-
-## Loading kernel modules (the schedulers)
+`./load_sch.sh`
 
 We do not allow kernel modules to be loaded inside the Docker containers,
 so they have to be compiled and loaded on the host before trying to use
 them inside the container.
 
-Run the helper script that will build and load the modules:
+Go into docker folder and build the Docker images:
 
-```bash
-# on host os, not inside Docker, in the git root directory
-./load_sch.sh
-```
+`cd docker; docker-compose build`
 
-Now the schedulers can be used inside the Docker container.
+Run the docker containers:
+
+`docker-compose up -d`
+
+Connect to the aqm node:
+
+`./ssh.sh aqm`
+
+Start a tmux session ([learn more about tmux](https://tmuxcheatsheet.com/)):
+
+`tmux`
+
+Run a test (modify `test.py` as desired):
+
+`cd henrste; TEST_INTERACTIVE=1 ./test.py`
+
+When test is complete, look in `henrste/results` for graphs.
+
+## Using without Docker
+
+See the readme in `../henrste/`.
+
+When using Docker the environment configuration is automatically sourced.
+This have to be done manually by typing `. vars.sh` when not using Docker.
+
+## Increasing the rmem and wmem tcp sizes
+
+From project root (outside Docker):
+
+`./henrste/utils/set_sysctl_tcp_mem.sh 5000`
+
+To allow a TCP window up to approx. 5000 packets.
 
 ## Generating patch for iproute2
 
