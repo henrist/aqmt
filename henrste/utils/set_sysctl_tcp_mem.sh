@@ -21,18 +21,34 @@ if [ -f /testbed-is-docker ]; then
     exit 1
 fi
 
+if [ $(id -u) -ne 0 ]; then
+    echo "Run this with sudo or as root"
+    exit 1
+fi
+
 if [ -n "$1" ]; then
     max_window=$1
-    sysctl -w net.ipv4.tcp_rmem="4096 87380 $(($max_window * 1448 * 2))"
-    sysctl -w net.ipv4.tcp_wmem="4096 16384 $(($max_window * 1448 * 3))"
+    rmem=$(($max_window * 1448 * 2))
+    wmem=$(($max_window * 1448 * 3))
 else
     # no argument will reset to "default"
     rmem=6291456
     wmem=4194304
-    sysctl -w net.ipv4.tcp_rmem="4096 87380 $rmem"
-    sysctl -w net.ipv4.tcp_wmem="4096 16384 $wmem"
-
-    echo "Maximum window size is now approx. (using 1448 sized segments):"
-    echo "   $((rmem / 1448 / 2)) packets for receiving side"
-    echo "   $((wmem / 1448 / 3)) packets for sending side"
 fi
+
+echo "Setting rmem and wmem locally"
+sysctl -w net.ipv4.tcp_rmem="4096 87380 $rmem"
+sysctl -w net.ipv4.tcp_wmem="4096 16384 $wmem"
+
+if [ -n "$IP_CLIENTA_MGMT" ]; then
+    for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; do
+        echo "Setting rmem and wmem on $ip"
+        ssh root@$ip "
+            sysctl -w net.ipv4.tcp_rmem='4096 87380 $rmem'
+            sysctl -w net.ipv4.tcp_wmem='4096 16384 $wmem'"
+    done
+fi
+
+echo "Maximum window size is now approx. (using 1448 sized segments):"
+echo "   $((rmem / 1448 / 2)) packets for receiving side"
+echo "   $((wmem / 1448 / 3)) packets for sending side"
