@@ -5,7 +5,11 @@ tc=tc
 
 # load variables if running on simula testbed
 if [ "$(hostname)" == "ford" ]; then
-    . "$(dirname $(readlink -f $BASH_SOURCE))/simula-testbed.env"
+    . "$(dirname $(readlink -f $BASH_SOURCE))/simula_testbed.env"
+fi
+
+if ! [[ "$PATH" = *iproute2-l4s* ]] && [ -f "$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc/tc" ]; then
+    export PATH="$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc:$PATH"
 fi
 
 error=0
@@ -29,5 +33,5 @@ for check in \
 done
 
 if [ $error -eq 1 ]; then
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
