@@ -27,7 +27,7 @@ def test_testbed():
 
 def test_cubic():
     testbed = base_testbed()
-    collection1 = TestCollection('tests/testsets/cubic', TestEnv(), title='Testing cubic vs other congestion controls',
+    collection1 = TestCollection('results/cubic', TestEnv(), title='Testing cubic vs other congestion controls',
                                       subtitle='Linkrate: 10 Mbit')
 
     for aqm, foldername, aqmtitle in [#(testbed.aqm_pi2, 'pi2', 'AQM: pi2'),
@@ -71,7 +71,7 @@ def test_increasing_udp_traffic():
     testbed.ta_delay = 500
     testbed.ta_samples = 60
 
-    collection = TestCollection('tests/testsets/increasing-udp', TestEnv(),
+    collection = TestCollection('results/increasing-udp', TestEnv(),
                                 title='Testing increasing UDP-rate in same test',
                                 subtitle='Look at graphs for the individual tests for this to have any use')
 
@@ -93,7 +93,7 @@ def test_speeds():
     testbed.ta_samples = 60
     testbed.ta_delay = 500
 
-    collection1 = TestCollection('tests/testsets/speeds', TestEnv(), title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera)
+    collection1 = TestCollection('results/speeds', TestEnv(), title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera)
 
     cc_set = [
         #['dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'],
@@ -194,7 +194,7 @@ def test_issue_other_traffic():
         testcase.run_greedy(node='b', tag='B')
         testcase.run_udp(node='a', bitrate=10500*1000, ect='ect1', tag='Unresponsive UDP - ECT1')
 
-    collection = TestCollection('tests/testsets/issue-other-traffic', TestEnv(retest=True))
+    collection = TestCollection('results/issue-other-traffic', TestEnv(retest=True))
     collection.run_test(my_test1, testbed, tag='test1')
     collection.run_test(my_test2, testbed, tag='test2')
     collection.run_test(my_test1, testbed, tag='test3')
@@ -207,7 +207,7 @@ def test_many_flows():
     testbed.ta_samples = 120
     testbed.ta_delay = 50
 
-    collection1 = TestCollection('tests/testsets/many-flows-2', TestEnv(), title='Testing with many flows', subtitle='All tests on pi2 AQM')
+    collection1 = TestCollection('results/many-flows-2', TestEnv(), title='Testing with many flows', subtitle='All tests on pi2 AQM')
     for name, n_a, n_b, title in [#('mixed', 1, 1, 'traffic both machines'),
                                   #('a',     1, 0, 'traffic only a'),
                                   ('b',     0, 1, 'traffic only b')]:
@@ -236,7 +236,7 @@ def test_different_cc():
     testbed.ta_samples = 400
     testbed.ta_delay = 50
 
-    collection0 = TestCollection('tests/testsets/different-cc', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing different congestion controls on its own')
+    collection0 = TestCollection('results/different-cc', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing different congestion controls on its own')
 
     for l_thresh in [1000, 100000]:
         collection1 = TestCollection('l_thresh-%d' % l_thresh, parent=collection0, title=l_thresh) #title='l\\_thresh=%d' % l_thresh)
@@ -276,7 +276,7 @@ def test_scaling_in_classic_queue():
     testbed.ta_samples = 400
     testbed.ta_delay = 50
 
-    collection1 = TestCollection('tests/testsets/scaling-in-classic-queue', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing scaling ecn traffic in classic queue')
+    collection1 = TestCollection('results/scaling-in-classic-queue', TestEnv(is_interactive=None, retest=False, replot=False, dry_run=False), title='Testing scaling ecn traffic in classic queue')
 
     for cc, ecn, foldername, title, aqm_params in [#('cubic', testbed.ECN_INITIATE, 'cubic-ecn',  'cubic-ecn ', 'noecn ecn_scal'),
                                                    ('dctcp', testbed.ECN_INITIATE, 'dctcp-noecn-no_scal', 'cubic-ecn noecn no\\_scal', 'noecn no_scal'),
@@ -332,7 +332,7 @@ def test_fairness():
 
     rtts = [2, 20, 100, 200]
 
-    collection1 = TestCollection('tests/testsets/fairness-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
+    collection1 = TestCollection('results/fairness-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -390,7 +390,7 @@ def test_shifted_fifo():
 
     rtts = [2, 20, 100, 200]
 
-    collection1 = TestCollection('tests/testsets/shifted_fifo-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo (all on PI2)')
+    collection1 = TestCollection('results/shifted_fifo-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing shifted fifo (all on PI2)')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -451,7 +451,7 @@ def test_dctth_paper():
         5, 10, 20, 50, 100,
     ]
 
-    collection1 = TestCollection('tests/testsets/dctth-paper-page-8', TestEnv(), title='Testing similar to page 8 of DCttH paper')
+    collection1 = TestCollection('results/dctth-paper-page-8', TestEnv(), title='Testing similar to page 8 of DCttH paper')
 
     for aqmtag, aqmtitle, aqmfn in aqms:
         aqmfn()
@@ -520,7 +520,7 @@ def test_max_window():
         800,
     ]
 
-    collection1 = TestCollection('tests/testsets/max-window', TestEnv(retest=False), title='Testing to achieve a high TCP window',
+    collection1 = TestCollection('results/max-window', TestEnv(retest=False), title='Testing to achieve a high TCP window',
         subtitle='AQM: pi2 ecn no\\\\_scal 500 ms target   testrate: 1,2 Gb/s   sample interval: 400 ms')
 
     for cc, ecn, foldername, title in cc_set:
