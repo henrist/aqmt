@@ -86,3 +86,11 @@ ping -I tap0 10.0.1.100
 sudo tcpdump -v -i enp3s0 '(src 10.0.1.211 or dst 10.0.1.211)'
 # server-a: 172.16.0.127/22
 ```
+
+## Find git tags for a commit text
+
+Probably a simpler way to do this...
+
+```
+git log --all --grep="^net_sched: update hierar" --pretty="%h" | xargs -L1 git tag --contain
+```
