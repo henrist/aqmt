@@ -211,7 +211,6 @@ class Testbed():
 
         self.aqm_params += ' ' + str(params)
 
-
     def aqm_red(self):
         self.aqm_name = 'red'
         self.aqm_params = 'limit 1000000 avpkt 1000 ecn adaptive bandwidth %d' % self.bitrate
@@ -267,7 +266,6 @@ class Testbed():
                 print(get_shell_cmd(cmd))
         else:
             cmd & FG
-
 
     def reset(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
