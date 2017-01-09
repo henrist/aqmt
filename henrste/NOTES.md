@@ -1,3 +1,22 @@
+# Various notes
+
+## Iperf issues
+
+Bursty behaviour:
+
+* iperf3 currently only sends packets every 100 ms which causes bursts
+  (fix is not upstream yet, see
+  https://github.com/esnet/iperf/commit/93c498d417386edd1eb187e5dd2890eecdce85f9)
+* iperf2 does not have this problem, but packets are still not paced perfectly
+
+## Using iperf to generate UDP-traffic with ECT
+
+```
+iperf -s
+# 0x01 = ECT(1)
+iperf -c $IP_SERVER --tos 0x01 -u -l 1458 -R -b $((10*1000*1000)) -i 1 -t 99999
+```
+
 ## Useful utils
 
 `bmon`
