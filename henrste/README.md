@@ -17,23 +17,23 @@ Look in `../docker/` for a quick quide.
 
 ### Using the framework
 
-* A `TestEnv` object is created defining some variables that is used
-  for the tests, such as if existing tests should be rerun and the
-  verbose level.
-* A main `TestCollection` is created defining where results will be
-  stored and the title for all tests run inside it. The `TestEnv`
-  object is injected when instanced.
-* Zero, one or multiple `TestCollection` objects are "chained" to form
-  a hierarchy of test parameters. This is usually done in a loop.
-* In the deepest `TestCollection` one or more tests are run by calling
-  `run_test` on the last `TestCollection` object. As arguments to this
-  method call a function reference that defines the actual test/traffic,
-  a `Testbed` object representing the testbed configuration that will be
-  provisioned, a tag that distinguish the test from others in the same depth
-  and optionally a title and titlelabel that add labels for this test in
-  the plots.
-* After each `TestCollection` is finished with its work we call the `plot`
-  method of its object to generate plots in its directory.
+1. A `TestEnv` object is created defining some variables that is used
+   for the tests, such as if existing tests should be rerun and the
+   verbose level.
+2. A main `TestCollection` is created defining where results will be
+   stored and the title for all tests run inside it. The `TestEnv`
+   object is injected when instanced.
+3. Zero, one or multiple `TestCollection` objects are "chained" to form
+   a hierarchy of test parameters. This is usually done in a loop.
+4. In the deepest `TestCollection` one or more tests are run by calling
+   `run_test` on the last `TestCollection` object. As arguments to this
+   method call a function reference that defines the actual test/traffic,
+   a `Testbed` object representing the testbed configuration that will be
+   provisioned, a tag that distinguish the test from others in the same depth
+   and optionally a title and titlelabel that add labels for this test in
+   the plots.
+5. After each `TestCollection` is finished with its work we call the `plot`
+   method of its object to generate plots in its directory.
 
 When the function reference with `run_test` is called, it will be given
 an argument object of `TestCase`, which contains different traffic generation
