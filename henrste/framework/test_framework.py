@@ -897,7 +897,8 @@ class TestCollection():
     def run_test(self, test_fn, testbed, tag, title=None, titlelabel=None):
         """Run a single test (the smallest possible test)
 
-        the_test: Method that generates test data
+        test_fn: Method that generates test data
+        testbed: Instance of Testbed with the desired configuration
         tag: String appended to test case directory name
         title: The x label value for this specific test when aggregated
         titlelabel: Description of the title values

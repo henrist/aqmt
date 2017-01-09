@@ -30,11 +30,19 @@ Start a tmux session ([learn more about tmux](https://tmuxcheatsheet.com/)):
 
 `tmux`
 
-Run a test (modify `test.py` as desired):
+Run a test (modify `example.py` as desired):
 
-`cd henrste; TEST_INTERACTIVE=1 ./test.py`
+```
+cd henrste`
+TEST_INTERACTIVE=1 ./example.py
+```
 
 When test is complete, look in `henrste/results` for graphs.
+
+You can switch to the next tmux window by pressing `Ctrl+b` + `n` to see
+the output from the traffic generator.
+
+You can cancel the test by pressing `Ctrl+c`.
 
 ## Using without Docker
 
