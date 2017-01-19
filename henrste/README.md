@@ -87,6 +87,7 @@ Setup:
    * `make` (the binary will be added to PATH by `vars.sh` later)
 5. Build and load the schedulers: `../load_sch.sh` (has to be done every time
    the AQM-node is rebooted).
+6. Build the traffic analyzer programs: `cd ../traffic_analyzer; make`
 
 ### Running a test
 

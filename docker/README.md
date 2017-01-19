@@ -14,9 +14,13 @@ We do not allow kernel modules to be loaded inside the Docker containers,
 so they have to be compiled and loaded on the host before trying to use
 them inside the container.
 
+Also, outside of Docker we build the traffic analyzer and some other tools:
+
+`cd traffic_analyzer; make`
+
 Go into docker folder:
 
-`cd docker`
+`cd ../docker`
 
 Create the SSH-keys that will be used by all Docker containers:
 
