@@ -14,9 +14,17 @@ We do not allow kernel modules to be loaded inside the Docker containers,
 so they have to be compiled and loaded on the host before trying to use
 them inside the container.
 
-Go into docker folder and build the Docker images:
+Go into docker folder:
 
-`cd docker; docker-compose build`
+`cd docker`
+
+Create the SSH-keys that will be used by all Docker containers:
+
+`make keys`
+
+Build the Docker images:
+
+`docker-compose build`
 
 Run the docker containers:
 
