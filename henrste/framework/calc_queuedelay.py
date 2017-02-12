@@ -6,6 +6,7 @@
 # - qs_samples_nonecn
 
 import numpy as np
+import os
 
 class QueueDelay():
     def parseLine(self, line):
@@ -30,21 +31,25 @@ class QueueDelay():
         return ' '.join(res)
 
     def processTest(self, folder):
-        with open(folder + '/qs_samples_nonecn', 'w') as fout:
+        outfolder = folder + '/derived'
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+
+        with open(outfolder + '/qs_samples_nonecn', 'w') as fout:
             fout.write('# min p25 average p99 max\n')
-            with open(folder + '/qs_ecn00_s', 'r') as f:
+            with open(folder + '/ta/qs_ecn00_s', 'r') as f:
                 f.readline()  # skip header
 
                 for line in f:
                     fout.write('%s %s\n' % (line.split()[0], self.generateStats(
                             self.parseLine(line))))
 
-        with open(folder + '/qs_samples_ecn', 'w') as fout:
-            fout.write('# min p25 average p99 max\n')
+        with open(outfolder + '/qs_samples_ecn', 'w') as fout:
+            fout.write('# min p26 average p99 max\n')
 
-            f1 = open(folder + '/qs_ecn01_s', 'r')
-            f2 = open(folder + '/qs_ecn10_s', 'r')
-            f3 = open(folder + '/qs_ecn11_s', 'r')
+            f1 = open(folder + '/ta/qs_ecn01_s', 'r')
+            f2 = open(folder + '/ta/qs_ecn10_s', 'r')
+            f3 = open(folder + '/ta/qs_ecn11_s', 'r')
 
             f1.readline()  # skip header
             f2.readline()

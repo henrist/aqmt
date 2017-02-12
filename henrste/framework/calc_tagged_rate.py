@@ -12,6 +12,7 @@
 # - util_tagged_stats
 
 import numpy as np
+import os
 import re
 import sys
 
@@ -33,10 +34,10 @@ class TaggedRate():
         return ' '.join(res)
 
     def saveTagRates(self, folder, rates):
-        with open(folder + '/r_tagged', 'w') as fall:
+        with open(folder + '/derived/r_tagged', 'w') as fall:
             fall.write('#sample rate\n')
 
-            with open(folder + '/r_tagged_stats', 'w') as fstats:
+            with open(folder + '/derived/r_tagged_stats', 'w') as fstats:
                 fstats.write('#tag min p1 p25 mean p75 p99 max\n')
 
                 first = True
@@ -52,10 +53,10 @@ class TaggedRate():
                     fstats.write('"%s" %s\n' % (tag, self.generateStats(values)))
 
     def saveTagUtil(self, folder, rates, bitrate):
-        with open(folder + '/util_tagged', 'w') as fall:
+        with open(folder + '/derived/util_tagged', 'w') as fall:
             fall.write('#sample util\n')
 
-            with open(folder + '/util_tagged_stats', 'w') as fstats:
+            with open(folder + '/derived/util_tagged_stats', 'w') as fstats:
                 fstats.write('#tag min p1 p25 mean p75 p99 max\n')
 
                 first = True
@@ -84,7 +85,7 @@ class TaggedRate():
 
         for ecntype in ['ecn', 'nonecn']:
             n_samples = 0
-            with open(folder + '/r_pf_' + ecntype) as f:
+            with open(folder + '/ta/r_pf_' + ecntype) as f:
                 #0 1000 6152397 3693860
                 for line in f:
                     n_samples += 1
@@ -150,7 +151,7 @@ class TaggedRate():
     def getFlows(self, folder, classify):
         flows = {'ecn': [], 'nonecn': []}
         for ecntype in ['ecn', 'nonecn']:
-            with open(folder + '/flows_' + ecntype) as f:
+            with open(folder + '/ta/flows_' + ecntype) as f:
                 for line in f:
                     #TCP 10.25.2.21 5504 10.25.1.11 53898
                     type, srcip, srcport, dstip, dstport = line.split()
@@ -173,6 +174,10 @@ class TaggedRate():
         return flows
 
     def processTest(self, folder):
+        outfolder = folder + '/derived'
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+
         tags, classify = self.getClassification(folder)
         bitrate = self.getBitrate(folder)
         flows = self.getFlows(folder, classify)

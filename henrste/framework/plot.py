@@ -266,7 +266,7 @@ class HierarchyPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'util_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/util_stats') + """
                 EOD"""
 
             # total
@@ -309,7 +309,7 @@ class HierarchyPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'util_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/util_stats') + """
                 EOD"""
 
             # total
@@ -317,7 +317,7 @@ class HierarchyPlot():
             plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:6:4:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
 
-            tagged_flows = HierarchyPlot.merge_testcase_data_group(testmeta, 'util_tagged_stats')
+            tagged_flows = HierarchyPlot.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats')
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -359,10 +359,10 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'qs_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/qs_ecn_stats') + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'qs_nonecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
@@ -397,13 +397,13 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'd_percent_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats') + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'm_percent_ecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats') + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'd_percent_nonecn_stats') + """
+                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.00):3:5:4 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
@@ -561,7 +561,7 @@ class Plot():
         })
 
         for (type, items) in flows.items():
-            with open(testfolder + '/flows_' + type, 'r') as f:
+            with open(testfolder + '/ta/flows_' + type, 'r') as f:
                 for line in f:
                     items.append(line.strip())
                     n_flows += 1
@@ -582,15 +582,15 @@ class Plot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            stats '""" + testfolder + """/util_tagged' using 1 nooutput
+            stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
             plot """
 
         #ls 1 lw 1.5 lc variable
-        self.gpi += "'" + testfolder + "/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
-        self.gpi += "                       ''    using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', "
-        self.gpi += "                       ''    using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', "
+        self.gpi += "'" + testfolder + "/derived/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
+        self.gpi += "                               ''    using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', "
+        self.gpi += "                               ''    using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', "
 
-        self.gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1),"
+        self.gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/derived/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1),"
 
         self.gpi += """
 
@@ -608,7 +608,7 @@ class Plot():
             for flow in items:
                 pt = 2 if type == 'ecn' else 6
                 ls = 2 if type == 'ecn' else 3
-                self.gpi += "'" + testfolder + "/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', "
+                self.gpi += "'" + testfolder + "/ta/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', "
                 j += 1
 
         self.gpi += """
@@ -619,14 +619,14 @@ class Plot():
             plot """
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
-        self.gpi += "'" + testfolder + "/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', "
-        self.gpi +=                                  "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', "
-        self.gpi +=                                  "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi +=                                  "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi += "'" + testfolder + "/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', "
-        self.gpi +=                                     "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', "
-        self.gpi +=                                     "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi +=                                     "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', "
+        self.gpi +=                                          "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', "
+        self.gpi +=                                          "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi +=                                          "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', "
+        self.gpi +=                                             "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', "
+        self.gpi +=                                             "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi +=                                             "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
 
         self.gpi += """
             set format y "%g"
@@ -637,12 +637,12 @@ class Plot():
             set key above
             plot """
 
-        self.gpi += "'" + testfolder + "/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', "
-        self.gpi += "'" + testfolder + "/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', "
-        self.gpi += "'" + testfolder + "/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', "
+        self.gpi += "'" + testfolder + "/ta/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', "
+        self.gpi += "'" + testfolder + "/ta/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', "
+        self.gpi += "'" + testfolder + "/ta/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', "
 
-        #self.gpi += "'" + testfolder + "/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
-        #self.gpi += "'" + testfolder + "/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        #self.gpi += "'" + testfolder + "/ta/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        #self.gpi += "'" + testfolder + "/ta/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
 
         self.gpi += """
             unset multiplot

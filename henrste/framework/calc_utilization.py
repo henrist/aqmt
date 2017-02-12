@@ -4,6 +4,7 @@
 # the results are saved to:
 # - util
 
+import os
 import sys
 
 class Utilization():
@@ -11,11 +12,15 @@ class Utilization():
         return int(line.split()[2])
 
     def processTest(self, folder, link_bitrate):
-        with open(folder + '/util', 'w') as fout:
+        outfolder = folder + '/derived'
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+
+        with open(outfolder + '/util', 'w') as fout:
             fout.write('# sample_id total_util_in_percent ecn_util_in_percent nonecn_util_in_percent\n')
 
-            f1 = open(folder + '/r_tot_ecn', 'r')
-            f2 = open(folder + '/r_tot_nonecn', 'r')
+            f1 = open(folder + '/ta/r_tot_ecn', 'r')
+            f2 = open(folder + '/ta/r_tot_nonecn', 'r')
 
             # all files should have the same amount of lines
             for line1 in f1:

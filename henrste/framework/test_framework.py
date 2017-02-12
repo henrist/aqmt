@@ -345,6 +345,9 @@ class Testbed():
         nbr_l4s_flows = 1      # used to generate rPDF and dmPDF, we don't use it now
         nbr_classic_flows = 1  # used to generate rPDF and dmPDF, we don't use it now
 
+        if not os.path.exists(testfolder + '/derived'):
+            os.makedirs(testfolder + '/derived')
+
         cmd = local['../traffic_analyzer/calc_henrste'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
         if verbose > 0:
             print(get_shell_cmd(cmd))
@@ -659,8 +662,8 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s' %d %s %d" %
-                   (self.testbed.get_ta_idle(), pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
+        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
+                   (self.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
 
         if self.testenv.dry_run:
             pid = -1
