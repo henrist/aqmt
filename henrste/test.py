@@ -544,6 +544,63 @@ def test_max_window():
         collection2.plot()
     collection1.plot()
 
+def test_sigcomm17():
+    testbed = Testbed()
+    testbed.bitrate = 100 * MBIT
+
+    testbed.ta_samples = 20
+    testbed.ta_delay = 500
+
+    testbed.aqm_pi2()
+
+    testbed.rtt_servera = 10
+    testbed.rtt_serverb = 10
+
+    testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
+    testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
+
+    aqm_set = [
+        # tag, title, fn
+        ['pi2',
+            'PI2: dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
+            lambda: testbed.aqm_pi2(params='dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')],
+    ]
+
+    udp_ect_set = [
+        # node, tag/flag, title
+        ['a', 'nonect', 'UDP=Non ECT'],
+        ['b', 'ect1', 'UDP=ECT(1)'],
+    ]
+
+    udp_rate_set = [0, 50, 70, 100, 140, 200, 400, 800]
+
+    collection1 = TestCollection('results/sigcomm17', TestEnv(retest=False), title='Sigcomm 17',
+        subtitle='Testrate: 100 Mb/s  Base RTT: 10 ms')
+
+    for aqmtag, aqmtitle, aqmfn in aqm_set:
+        aqmfn()
+        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+
+        for udp_node, udp_ect, udp_ect_title in udp_ect_set:
+            collection3 = TestCollection('udp-%s' % udp_ect, parent=collection2, title=udp_ect_title)
+
+            for udp_rate in udp_rate_set:
+
+                def my_test(testcase):
+                    for x in range(5):
+                        testcase.run_greedy(node='a', tag='CUBIC (no ECN)')
+                    for x in range(5):
+                        testcase.run_greedy(node='b', tag='DCTCP (ECN)')
+
+                    if udp_rate > 0:
+                        testcase.run_udp(node=udp_node, bitrate=udp_rate * MBIT, ect=udp_ect, tag=udp_ect_title)
+
+                collection3.run_test(my_test, testbed, tag='udp-rate-%d' % udp_rate, title=udp_rate, titlelabel='UDP rate')
+
+            collection3.plot(utilization_tags=True)
+        collection2.plot(utilization_tags=True)
+    collection1.plot(utilization_tags=True)
+
 
 if __name__ == '__main__':
     require_on_aqm_node()
@@ -560,4 +617,5 @@ if __name__ == '__main__':
     #test_fairness()
     #test_shifted_fifo()
     #test_dctth_paper()
-    test_max_window()
+    #test_max_window()
+    test_sigcomm17()
