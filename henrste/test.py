@@ -548,8 +548,8 @@ def test_sigcomm17():
     testbed = Testbed()
     testbed.bitrate = 100 * MBIT
 
-    testbed.ta_samples = 20
-    testbed.ta_delay = 500
+    testbed.ta_samples = 200
+    testbed.ta_delay = 1000
 
     testbed.aqm_pi2()
 
