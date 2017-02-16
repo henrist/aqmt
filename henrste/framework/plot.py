@@ -14,30 +14,11 @@ color_ecn_cubic = "black"
 color_reno = "brown"
 color_util = "orange"
 
-class HierarchyPlot():
-    """Plot a collection of test cases
-
-    It is assumed that all leafs are of the same structure,
-    but not necessary same amount of test cases inside
-    a leaf
-    """
-
-    def __init__(self, output_file, testmeta):
-        self.plotutils = Plot()
-        self.gpi = ''
-        self.testmeta = testmeta
-        self.output_file = output_file
-
-        self.n_sets, self.n_tests, self.n_depth, self.n_nodes = HierarchyPlot.get_num_testcases(testmeta)
-
-        self.tmargin_base = 1 * self.n_depth + 2
-        if 'subtitle' in self.testmeta and self.testmeta['subtitle']:
-            self.tmargin_base += .8
-
-        self.depth_sizes = HierarchyPlot.get_depth_sizes(testmeta)
+class TreeUtil():
 
     @staticmethod
     def get_depth_sizes(testmeta):
+        """Calculate the number of nodes at each tree level"""
         depths = {}
 
         def check_node(item, x, depth):
@@ -45,12 +26,12 @@ class HierarchyPlot():
                 depths[depth] = 0
             depths[depth] += 1
 
-        HierarchyPlot.walk_tree_set(testmeta, check_node)
+        TreeUtil.walk_tree(testmeta, check_node)
         return depths
 
     @staticmethod
     def get_num_testcases(testmeta):
-        """Returns a tuple of numbers sets, tests and depth"""
+        """Returns a tuple of number of sets, tests and depth"""
 
         sets = 0
         tests = 0
@@ -84,8 +65,22 @@ class HierarchyPlot():
         return (sets, tests, depth, nodes - depth)
 
     @staticmethod
-    def walk_tree_leaf_set(testmeta, fn):
-        """Walks the tree and calls fn for every leaf collection"""
+    def get_testcases(testmeta):
+        """Get list of testcases of a test collection
+
+        Returns [(title, testcase_folder), ...]
+        """
+        return [(item['title'], item['children'][0]['testcase']) for item in testmeta['children']]
+
+    @staticmethod
+    def walk_leaf(testmeta, fn):
+        """Walks the tree and calls fn for every leaf collection (collection of tests)
+
+        The arguments to fn:
+        - object: this subtree
+        - bool: true if first leaf node in tree
+        - number: the offset of this leaf node
+        """
 
         first_set = True
         x = 0
@@ -114,8 +109,17 @@ class HierarchyPlot():
         walk(testmeta)
 
     @staticmethod
-    def walk_tree_set_reverse(testmeta, fn):
-        """Walks the tree and calls fn for every collection in reverse order"""
+    def walk_tree_reverse(testmeta, fn):
+        """Walks the tree and calls fn for every subtree (collection) in reverse order
+
+        Excludes the leaf nodes (collection of tests)
+
+        The arguments to fn:
+        - object: the subtree
+        - number: ?
+        - number: ?
+        - number: ?
+        """
         x = 0
 
         def walk(testmeta, depth):
@@ -142,8 +146,17 @@ class HierarchyPlot():
         walk(testmeta, 0)
 
     @staticmethod
-    def walk_tree_set(testmeta, fn, include_test_node=False):
-        """Walks the tree and calls fn for every tree node"""
+    def walk_tree(testmeta, fn, include_test_node=False):
+        """Walks the tree and calls fn for every tree node (collection)
+
+        Includes the tree node that is a collection of tests if
+        the parameter is given.
+
+        The arguments to fn:
+        - object: tree node (collection)
+        - number: the offset of node
+        - number: depth of this node
+        """
         x = 0
 
         def walk(testmeta, depth):
@@ -180,16 +193,73 @@ class HierarchyPlot():
         walk(testmeta, 0)
 
     @staticmethod
-    def get_testcases(testmeta):
-        """Get list of testcases of a test set"""
-        return [(item['title'], item['children'][0]['testcase']) for item in testmeta['children']]
+    def swap_levels(spec, level=0):
+        """Swap vertical position of elements in the tree
+
+        This can be called to change the way nodes are grouped
+        to columns in the plots
+        """
+
+        if level > 0:
+            def walk(testmeta, depth):
+                if len(testmeta['children']) == 0:
+                    return
+
+                # is this a set of tests?
+                if 'testcase' in testmeta['children'][0]:
+                    return
+
+                for index, item in enumerate(testmeta['children']):
+                    if depth + 1 == level:
+                        testmeta['children'][index] = TreeUtil.swap_levels(item)
+                    else:
+                        walk(item, depth + 1)
+
+            walk(spec, 0)
+            return spec
+
+        titles = []
+        def check_level(item, x, depth):
+            nonlocal titles
+            if depth == 1 and item['title'] not in titles:
+                titles.append(item['title'])
+        TreeUtil.walk_tree(spec, check_level, include_test_node=True)
+
+        if len(titles) == 0:
+            return spec
+
+        new_children = OrderedDict()
+        parent = None
+
+        def build_swap(item, x, depth):
+            nonlocal parent, new_children
+            if depth == 0:
+                parent = item
+            elif depth == 1:
+                parentcopy = dict(parent)
+                if item['title'] in new_children:
+                    new_children[item['title']]['children'].append(parentcopy)
+                else:
+                    childcopy = dict(item)
+                    childcopy['children'] = [parentcopy]
+                    new_children[item['title']] = childcopy
+
+                parentcopy['children'] = item['children']
+
+        TreeUtil.walk_tree(spec, build_swap, include_test_node=True)
+
+        spec['children'] = [val for key, val in new_children.items()]
+        return spec
+
+
+class CollectionUtil():
 
     @staticmethod
     def merge_testcase_data(testmeta, statsname):
         # testmeta -> testcases
 
         out = []
-        for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
+        for title, testcase_folder in TreeUtil.get_testcases(testmeta):
             added = False
             with open(testcase_folder + '/' + statsname, 'r') as f:
                 for line in f:
@@ -214,7 +284,7 @@ class HierarchyPlot():
         out = OrderedDict()
 
         i_file = 0
-        for title, testcase_folder in HierarchyPlot.get_testcases(testmeta):
+        for title, testcase_folder in TreeUtil.get_testcases(testmeta):
             with open(testcase_folder + '/' + statsname, 'r') as f:
                 for line in f:
                     if line.startswith('#') or line == '\n':
@@ -241,12 +311,38 @@ class HierarchyPlot():
 
         return out
 
+
+class CollectionPlot():
+    """Plot a collection of test cases
+
+    It is assumed that all leafs are of the same structure,
+    but not necessary same amount of test cases inside
+    a leaf
+    """
+
+    def __init__(self, output_file, testmeta):
+        self.plotutils = Plot()
+        self.gpi = ''
+        self.testmeta = testmeta
+        self.output_file = output_file
+
+        self.n_sets, self.n_tests, self.n_depth, self.n_nodes = TreeUtil.get_num_testcases(testmeta)
+
+        self.tmargin_base = 1 * self.n_depth + 2
+        if 'subtitle' in self.testmeta and self.testmeta['subtitle']:
+            self.tmargin_base += .8
+
+        self.depth_sizes = TreeUtil.get_depth_sizes(testmeta)
+
     def plot_labels(self, testmeta, x, depth, width):
+        """Labels are text located above the graphs"""
         fontsize = fontsize = max(5, min(9, 10 - self.depth_sizes[depth] / 4.5))
 
+        centering = False
+        x_offset = x + (width - 2) / 2 if centering else x
+
         self.gpi += """
-            #set label '""" + testmeta['title'] + """' at first """ + str(x+(width-2)/2) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,9pt' tc rgb 'black' center
-            set label \"""" + testmeta['title'] + """\" at first """ + str(x) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
+            set label \"""" + testmeta['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.05 + 0.06 * (self.n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
 
     def plot_utilization_queues(self):
         """Plot graph of utilization for total, ECN and non-ECN flows"""
@@ -266,7 +362,7 @@ class HierarchyPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/util_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats') + """
                 EOD"""
 
             # total
@@ -287,7 +383,7 @@ class HierarchyPlot():
             #plot += "                      '' using ($0+" + str(x) + "+0.2):14  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             #plot += "                      '' using ($0+" + str(x) + "+0.2):16  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_util)
+        TreeUtil.walk_leaf(self.testmeta, data_util)
         self.gpi += """
             plot """ + plot + """
             unset arrow 100"""
@@ -309,7 +405,7 @@ class HierarchyPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/util_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats') + """
                 EOD"""
 
             # total
@@ -317,7 +413,7 @@ class HierarchyPlot():
             plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:6:4:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
 
-            tagged_flows = HierarchyPlot.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats')
+            tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats')
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -336,7 +432,7 @@ class HierarchyPlot():
                 plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100):($7*100):($5*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
                 plot += "                                     '' using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100) with lines lc rgb 'gray' title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_util_tags)
+        TreeUtil.walk_leaf(self.testmeta, data_util_tags)
 
         self.gpi += """
             set tmargin """ + str(self.tmargin_base + 1.3 * (len(titles_used)+1) / 4 - 1) + """
@@ -359,10 +455,10 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/qs_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_ecn_stats') + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
@@ -374,7 +470,7 @@ class HierarchyPlot():
             plot += "                              ''    using ($0+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($0+" + str(x) + "+0.15):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_rate)
+        TreeUtil.walk_leaf(self.testmeta, data_rate)
         self.gpi += """
             plot """ + plot
 
@@ -397,13 +493,13 @@ class HierarchyPlot():
 
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats') + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats') + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + HierarchyPlot.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats') + """
                 EOD"""
 
             plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.00):3:5:4 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
@@ -419,7 +515,7 @@ class HierarchyPlot():
             plot += "                                         '' using ($0+" + str(x) + "+0.20):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
             plot += "                                         '' using ($0+" + str(x) + "+0.20):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
-        HierarchyPlot.walk_tree_leaf_set(self.testmeta, data_drops)
+        TreeUtil.walk_leaf(self.testmeta, data_drops)
         self.gpi += """
             plot """ + plot
 
@@ -455,7 +551,7 @@ class HierarchyPlot():
         self.gpi += """
             set multiplot layout """ + str(n_height) + """,1 title \"""" + title + """\\n\" scale 1,1"""
 
-        HierarchyPlot.walk_tree_set_reverse(self.testmeta, self.plot_labels)
+        TreeUtil.walk_tree_reverse(self.testmeta, self.plot_labels)
 
         if utilization_queues:
             self.plot_utilization_queues()
@@ -534,7 +630,7 @@ class Plot():
             """
 
     def plot_compare_flows(self, folder, testfolders):
-        hp = HierarchyPlot(folder + '/analysis_compare', {
+        hp = CollectionPlot(folder + '/analysis_compare', {
             'title': folder,
             #'xlabel': 'something',
             'children': [{'testcase': x} for x in testfolders]
@@ -652,23 +748,81 @@ class Plot():
             Plot.generate(testfolder + '/analysis', self.gpi, self.size)
 
 
-def get_testcases_in_folder(folder):
-    testcases = []
+class FolderUtil():
 
-    for file in os.listdir(folder):
-        if file.startswith('test-') and os.path.isdir(os.path.join(folder, file)):
-            # verify the test contains analyzed data
-            with open(os.path.join(folder, file, 'details')) as f:
-                for line in f:
-                    if line == 'data_analyzed':
-                        testcases.append(os.path.join(folder, file))
-                        continue
+    @staticmethod
+    def get_testcases_in_folder(folder):
+        testcases = []
 
-    return sorted(testcases)
+        for file in os.listdir(folder):
+            if file.startswith('test-') and os.path.isdir(os.path.join(folder, file)):
+                # verify the test contains analyzed data
+                with open(os.path.join(folder, file, 'details')) as f:
+                    for line in f:
+                        if line == 'data_analyzed':
+                            testcases.append(os.path.join(folder, file))
+                            continue
+
+        return sorted(testcases)
+
+    @staticmethod
+    def generate_hierarchy_data_from_folder(folder):
+        """Generate a dict that can be sent to CollectionPlot by analyzing the directory
+
+        It will look in all the metadata stored while running test
+        to generate the final result
+        """
+
+        xlabel = None
+
+        def parse_folder(folder):
+            nonlocal xlabel
+
+            if not os.path.isdir(folder):
+                raise Exception('Non-existing directory: %s' % folder)
+
+            metadata_kv, metadata_lines = read_metadata(folder + '/details')
+
+            if 'type' not in metadata_kv:
+                raise Exception('Missing type in metadata for %s' % folder)
+
+            if metadata_kv['type'] in ['collection', 'set']:
+                node = {
+                    'title': metadata_kv['title'] if 'title' in metadata_kv else '',
+                    'subtitle': metadata_kv['subtitle'] if 'subtitle' in metadata_kv else '',
+                    'children': []
+                }
+
+                for metadata in metadata_lines:
+                    if metadata[0] == 'sub':
+                        node['children'].append(parse_folder(folder + '/' + metadata[1]))
+
+            elif metadata_kv['type'] == 'test':
+                node = {
+                    'title': metadata_kv['title'],
+                    'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
+                    'subtitle': '',
+                    'children': [
+                        {'testcase': folder}
+                    ]
+                }
+
+                if xlabel is None and 'titlelabel' in metadata_kv:
+                    xlabel = metadata_kv['titlelabel']
+
+            else:
+                raise Exception('Unknown metadata type %s' % metadata_kv['type'])
+
+            return node
+
+        root = parse_folder(folder)
+        root['xlabel'] = xlabel
+
+        return root
 
 
 def generate_hierarchy_data(folderspec, title, xlabel=''):
-    """Generate a dict that can be sent to HierarchyPlot
+    """Generate a dict that can be sent to CollectionPlot
 
     Example:
         data = generate_hierarchy_data({
@@ -708,7 +862,7 @@ def generate_hierarchy_data(folderspec, title, xlabel=''):
                 add_level(node, value)
 
             else:
-                for testcase in get_testcases_in_folder(value):
+                for testcase in FolderUtil.get_testcases_in_folder(value):
                     metadata_kv, metadata_lines = read_metadata(testcase + '/details')
 
                     node['children'].append({
@@ -724,6 +878,11 @@ def generate_hierarchy_data(folderspec, title, xlabel=''):
     return root
 
 def read_metadata(file):
+    """Reads metadata from a `details` file
+
+    Returns a map of the properties as well as a list of properties to be used
+    if properties of the same key is repeated
+    """
     if not os.path.isfile(file):
         raise Exception('Missing metadata file: ' + file)
 
@@ -740,125 +899,17 @@ def read_metadata(file):
 
     return (metadata, lines)
 
-def generate_hierarchy_data_from_folder(folder):
-    """Generate a dict that can be sent to HierarchyPlot by analyzing the directory
-
-    It will look in all the metadata stored while running test
-    to generate the final result
-    """
-
-    xlabel = None
-
-    def parse_folder(folder):
-        nonlocal xlabel
-
-        if not os.path.isdir(folder):
-            raise Exception('Non-existing directory: %s' % folder)
-
-        metadata_kv, metadata_lines = read_metadata(folder + '/details')
-
-        if 'type' not in metadata_kv:
-            raise Exception('Missing type in metadata for %s' % folder)
-
-        if metadata_kv['type'] in ['collection', 'set']:
-            node = {
-                'title': metadata_kv['title'] if 'title' in metadata_kv else '',
-                'subtitle': metadata_kv['subtitle'] if 'subtitle' in metadata_kv else '',
-                'children': []
-            }
-
-            for metadata in metadata_lines:
-                if metadata[0] == 'sub':
-                    node['children'].append(parse_folder(folder + '/' + metadata[1]))
-
-        elif metadata_kv['type'] == 'test':
-            node = {
-                'title': metadata_kv['title'],
-                'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
-                'subtitle': '',
-                'children': [
-                    {'testcase': folder}
-                ]
-            }
-
-            if xlabel is None and 'titlelabel' in metadata_kv:
-                xlabel = metadata_kv['titlelabel']
-
-        else:
-            raise Exception('Unknown metadata type %s' % metadata_kv['type'])
-
-        return node
-
-    root = parse_folder(folder)
-    root['xlabel'] = xlabel
-
-    return root
-
-def hierarchy_swap_levels(spec, level=0):
-    """Rotate order data is grouped to columns"""
-
-    if level > 0:
-        def walk(testmeta, depth):
-            if len(testmeta['children']) == 0:
-                return
-
-            # is this a set of tests?
-            if 'testcase' in testmeta['children'][0]:
-                return
-
-            for index, item in enumerate(testmeta['children']):
-                if depth + 1 == level:
-                    testmeta['children'][index] = hierarchy_swap_levels(item)
-                else:
-                    walk(item, depth + 1)
-
-        walk(spec, 0)
-        return spec
-
-    titles = []
-    def check_level(item, x, depth):
-        nonlocal titles
-        if depth == 1 and item['title'] not in titles:
-            titles.append(item['title'])
-    HierarchyPlot.walk_tree_set(spec, check_level, include_test_node=True)
-
-    if len(titles) == 0:
-        return spec
-
-    new_children = OrderedDict()
-    parent = None
-
-    def build_swap(item, x, depth):
-        nonlocal parent, new_children
-        if depth == 0:
-            parent = item
-        elif depth == 1:
-            parentcopy = dict(parent)
-            if item['title'] in new_children:
-                new_children[item['title']]['children'].append(parentcopy)
-            else:
-                childcopy = dict(item)
-                childcopy['children'] = [parentcopy]
-                new_children[item['title']] = childcopy
-
-            parentcopy['children'] = item['children']
-
-    HierarchyPlot.walk_tree_set(spec, build_swap, include_test_node=True)
-
-    spec['children'] = [val for key, val in new_children.items()]
-    return spec
-
 def plot_folder_compare(folder, swap_levels=[], **kwargs):
-    data = generate_hierarchy_data_from_folder(folder)
+    data = FolderUtil.generate_hierarchy_data_from_folder(folder)
 
     for level in swap_levels:
-        data = hierarchy_swap_levels(data, level)
+        data = TreeUtil.swap_levels(data, level)
 
-    hp = HierarchyPlot(folder + '/comparison', data)
+    hp = CollectionPlot(folder + '/comparison', data)
     hp.plot(**kwargs)
 
 def plot_folder_flows(folder):
-    data = generate_hierarchy_data_from_folder(folder)
+    data = FolderUtil.generate_hierarchy_data_from_folder(folder)
 
     def parse_set(testmeta, first_set, x):
         if len(testmeta['children']) == 0:
@@ -874,7 +925,7 @@ def plot_folder_flows(folder):
         plot = Plot()
         plot.plot_multiple_flows(testcases, output_path='%s/analysis_merged' % set_folder)
 
-    HierarchyPlot.walk_tree_leaf_set(data, parse_set)
+    TreeUtil.walk_leaf(data, parse_set)
 
 
 if __name__ == '__main__':
