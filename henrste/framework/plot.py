@@ -492,6 +492,8 @@ class CollectionPlot():
 
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
@@ -542,6 +544,8 @@ class CollectionPlot():
 
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
