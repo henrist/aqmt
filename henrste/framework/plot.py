@@ -256,6 +256,42 @@ class TreeUtil():
 class CollectionUtil():
 
     @staticmethod
+    def make_xtics(testmeta, xoffset, is_logarithmic):
+        """Generate a list of xtics
+
+        This can be passed on to `set xtics add (<here>)` to add xtics
+        to the graph.
+        """
+
+        arr = []
+
+        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, is_logarithmic)
+
+        numxtics = 10
+
+        def frange(start, stop, step):
+            i = start
+            while i < stop:
+                yield i
+                i += step
+
+        #print(minval, maxval)
+        #step = ((maxval - minval) / numxtics)
+        step = 20 # FIXME: this need to adopt to input
+        minval = math.ceil(minval / step) * step
+        maxval = math.floor(maxval / step) * step
+
+        #print(minval, maxval)
+
+        for x in frange(minval, maxval + step, step):
+            arr.append('"%s" %g' % (
+                x,
+                CollectionUtil.get_x_coordinate(testmeta, x, is_logarithmic) + xoffset
+            ))
+
+        return ', '.join(arr)
+
+    @staticmethod
     def line_at_x_offset(xoffset, value_at_x, testmeta, is_logarithmic):
         xpos = CollectionUtil.get_x_coordinate(testmeta, value_at_x, is_logarithmic)
 
@@ -265,13 +301,7 @@ class CollectionUtil():
         """
 
     @staticmethod
-    def get_x_coordinate(testmeta, value, is_logarithmic):
-        """Calculates the linear x position that a value will
-        be positioned"""
-
-        if not is_logarithmic:
-            raise Exception('Can\'t get x coordinate of category axis')
-
+    def get_testmeta_min_max_count(testmeta, is_logarithmic):
         # use derived/util_stats because we just have to select one...
         testcases = CollectionUtil.get_testcase_data(testmeta, 'derived/util_stats', is_logarithmic)
 
@@ -285,10 +315,21 @@ class CollectionUtil():
             if maxval is None or x > maxval:
                 maxval = x
 
+        return minval, maxval, len(testcases)
+
+    @staticmethod
+    def get_x_coordinate(testmeta, value, is_logarithmic):
+        """Calculates the linear x position that a value will
+        be positioned"""
+
+        if not is_logarithmic:
+            raise Exception('Can\'t get x coordinate of category axis')
+
+        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, is_logarithmic)
         minval = math.log10(minval)
         maxval = math.log10(maxval)
 
-        return (math.log10(float(value)) - minval) / (maxval - minval) * (len(testcases) - 1)
+        return (math.log10(float(value)) - minval) / (maxval - minval) * (count - 1)
 
     @staticmethod
     def merge_testcase_data_set_x(testcases, is_logarithmic):
@@ -435,12 +476,19 @@ class CollectionPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
+            # add xtics below, the empty list resets the tics
+            set xtics ()
+
             set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
 
         plot = ''
         titles_used = []
         def data_util(testmeta, is_first_set, x):
             nonlocal plot, titles_used
+
+            self.gpi += """
+                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+            """
 
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
@@ -457,7 +505,7 @@ class CollectionPlot():
             #plot += "                      '' using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
 
             # ecn
-            plot += "                      '' using ($1+" + str(x) + "+0.1):11:9:13:xtic(2)    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($1+" + str(x) + "+0.1):11:9:13    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($1+" + str(x) + "+0.1):11  with lines lc rgb 'gray'         title '', "
             #plot += "                      '' using ($1+" + str(x) + "+0.1):10   with points  ls 2 pointtype 1 pointsize 0.4        title '', "
             #plot += "                      '' using ($1+" + str(x) + "+0.1):12  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
@@ -488,6 +536,10 @@ class CollectionPlot():
         def data_util_tags(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
+            self.gpi += """
+                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+            """
+
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
 
@@ -498,7 +550,7 @@ class CollectionPlot():
 
             # total
             # 5:7:3
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5:xtic(2)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot += "                      '' using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
 
             tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_is_logarithmic)
@@ -543,6 +595,10 @@ class CollectionPlot():
         def data_rate(testmeta, is_first_set, x):
             nonlocal plot
 
+            self.gpi += """
+                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+            """
+
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
             self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
@@ -556,7 +612,7 @@ class CollectionPlot():
                 """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats', self.x_is_logarithmic) + """
                 EOD"""
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8:xtic(2)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
             plot += "                              ''    using ($1+" + str(x) + "+0.05):4  with lines lc rgb 'gray'         title '', "
             plot += "                              ''    using ($1+" + str(x) + "+0.05):6  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($1+" + str(x) + "+0.05):5  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
@@ -586,6 +642,10 @@ class CollectionPlot():
         def data_drops(testmeta, is_first_set, x):
             nonlocal plot
 
+            self.gpi += """
+                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+            """
+
             # FIXME: this 100 should be customizable
             self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
             self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
@@ -607,7 +667,7 @@ class CollectionPlot():
             plot += "                                         '' using ($1+" + str(x) + "+0.00):4     with lines lc rgb 'gray'         title '', "
             plot += "                                         '' using ($1+" + str(x) + "+0.00):6  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
             plot += "                                         '' using ($1+" + str(x) + "+0.00):5  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8:xtic(2) with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
+            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8 with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
             plot += "                                         '' using ($1+" + str(x) + "+0.10):4     with lines lc rgb 'gray'         title '', "
             plot += "                                         '' using ($1+" + str(x) + "+0.10):6  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
             plot += "                                         '' using ($1+" + str(x) + "+0.10):5  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
