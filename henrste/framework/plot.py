@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from plumbum import local
+import math
 import os.path
 import os
 import re
@@ -255,10 +256,83 @@ class TreeUtil():
 class CollectionUtil():
 
     @staticmethod
-    def merge_testcase_data(testmeta, statsname):
-        # testmeta -> testcases
+    def line_at_x_offset(xoffset, value_at_x, testmeta, is_logarithmic):
+        xpos = CollectionUtil.get_x_coordinate(testmeta, value_at_x, is_logarithmic)
+
+        return """
+            set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
+            set arrow from first """ + str(xpos+xoffset) + """, graph 0 to first """ + str(xpos+xoffset) + """, graph 1 nohead ls 100 back
+        """
+
+    @staticmethod
+    def get_x_coordinate(testmeta, value, is_logarithmic):
+        """Calculates the linear x position that a value will
+        be positioned"""
+
+        if not is_logarithmic:
+            raise Exception('Can\'t get x coordinate of category axis')
+
+        # use derived/util_stats because we just have to select one...
+        testcases = CollectionUtil.get_testcase_data(testmeta, 'derived/util_stats', is_logarithmic)
+
+        # logaritmic, we need to calculate the position
+        minval = None
+        maxval = None
+        for xval, line in testcases:
+            x = float(xval)
+            if minval is None or x < minval:
+                minval = x
+            if maxval is None or x > maxval:
+                maxval = x
+
+        minval = math.log10(minval)
+        maxval = math.log10(maxval)
+
+        return (math.log10(float(value)) - minval) / (maxval - minval) * (len(testcases) - 1)
+
+    @staticmethod
+    def merge_testcase_data_set_x(testcases, is_logarithmic):
+        """Takes in an array of data points for x axis for a single
+        series and appends the x position of the data points.
+
+        Each element in the array is an array itself:
+        - xvalue (might be text if linear scale)
+        - line (rest of line that is passed on)
+
+        It also concatenates the array and return a final string
+        """
+
+        if not is_logarithmic:
+            out = []
+            i = 0
+            for xval, line in testcases:
+                out.append('%d %s' % (i, line))
+                i += 1
+            return ''.join(out)
+
+        # logaritmic, we need to calculate the position
+        minval = None
+        maxval = None
+        for xval, line in testcases:
+            x = float(xval)
+            if minval is None or x < minval:
+                minval = x
+            if maxval is None or x > maxval:
+                maxval = x
+
+        minval = math.log10(minval)
+        maxval = math.log10(maxval)
 
         out = []
+        for xval, line in testcases:
+            x = (math.log10(float(xval)) - minval) / (maxval - minval) * (len(testcases) - 1)
+            out.append('%f %s' % (x, line))
+        return ''.join(out)
+
+    @staticmethod
+    def get_testcase_data(testmeta, statsname, is_logarithmic):
+
+        res = []
         for title, testcase_folder in TreeUtil.get_testcases(testmeta):
             added = False
             with open(testcase_folder + '/' + statsname, 'r') as f:
@@ -266,17 +340,22 @@ class CollectionUtil():
                     if line.startswith('#'):
                         continue
 
-                    out.append('"%s" %s' % (title, line))
+                    res.append([title, '"%s" %s' % (title, line)])
                     added = True
                     break  # only allow one line from each sample
 
             if not added:
-                out.append('"%s"' % title)
+                res.append([title, '"%s"' % title])
 
-        return ''.join(out)
+        return res
 
     @staticmethod
-    def merge_testcase_data_group(testmeta, statsname):
+    def merge_testcase_data(testmeta, statsname, is_logarithmic):
+        res = CollectionUtil.get_testcase_data(testmeta, statsname, is_logarithmic)
+        return CollectionUtil.merge_testcase_data_set_x(res, is_logarithmic)
+
+    @staticmethod
+    def merge_testcase_data_group(testmeta, statsname, is_logarithmic):
         """Similar to merge_testcase_data except it groups all data by first column
 
         There should only exist one data point in the files for each group
@@ -297,17 +376,17 @@ class CollectionUtil():
                         group_by = line.split()[0]
 
                     if group_by not in out:
-                        out[group_by] = ['"%s"\n' % title] * i_file
+                        out[group_by] = [[title, '"%s"\n' % title]] * i_file
 
-                    out[group_by].append('"%s" %s' % (title, line))
+                    out[group_by].append([title, '"%s" %s' % (title, line)])
 
             i_file += 1
             for key in out.keys():
                 if len(out[key]) != i_file:
-                    out[key].append('"%s"\n' % title)
+                    out[key].append([title, '"%s"\n' % title])
 
         for key in out.keys():
-            out[key] = ''.join(out[key])
+            out[key] = CollectionUtil.merge_testcase_data_set_x(out[key], is_logarithmic)
 
         return out
 
@@ -325,6 +404,9 @@ class CollectionPlot():
         self.gpi = ''
         self.testmeta = testmeta
         self.output_file = output_file
+
+        self.y_is_logarithmic = False  # TODO: should be able to configure this
+        self.x_is_logarithmic = True  # TODO: should be able to configure this
 
         self.n_sets, self.n_tests, self.n_depth, self.n_nodes = TreeUtil.get_num_testcases(testmeta)
 
@@ -360,28 +442,31 @@ class CollectionPlot():
         def data_util(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
+            # FIXME: this 100 should be customizable
+            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_is_logarithmic) + """
                 EOD"""
 
             # total
-            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:7:3       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.0):4  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.0):6  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:8:4       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.0):5  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
 
             # ecn
-            plot += "                      '' using ($0+" + str(x) + "+0.1):10:8:12:xtic(1)    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.1):10  with lines lc rgb 'gray'         title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.1):9   with points  ls 2 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.1):11  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "                      '' using ($1+" + str(x) + "+0.1):11:9:13:xtic(2)    with yerrorbars ls 2 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($1+" + str(x) + "+0.1):11  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.1):10   with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.1):12  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
 
             # nonecn
-            plot += "                      '' using ($0+" + str(x) + "+0.2):15:13:17  with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.2):15  with lines lc rgb 'gray'         title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.2):14  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($0+" + str(x) + "+0.2):16  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "                      '' using ($1+" + str(x) + "+0.2):16:14:18  with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($1+" + str(x) + "+0.2):16  with lines lc rgb 'gray'         title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.2):15  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            #plot += "                      '' using ($1+" + str(x) + "+0.2):17  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         TreeUtil.walk_leaf(self.testmeta, data_util)
         self.gpi += """
@@ -403,17 +488,20 @@ class CollectionPlot():
         def data_util_tags(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
+            # FIXME: this 100 should be customizable
+            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_is_logarithmic) + """
                 EOD"""
 
             # total
             # 5:7:3
-            plot += "$dataUtil" + str(x) + "  using ($0+" + str(x) + "+0.0):5:6:4:xtic(1)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
-            plot += "                      '' using ($0+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5:xtic(2)       with yerrorbars ls 1 pointtype 7 pointsize 0.5 lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "                      '' using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
 
-            tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats')
+            tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_is_logarithmic)
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -429,8 +517,8 @@ class CollectionPlot():
                     title = tagname
                 ls = str(titles_used.index(tagname) + 4)
 
-                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100):($7*100):($5*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
-                plot += "                                     '' using ($0+" + str(x+((i+1) * x_distance)) + "):($6*100) with lines lc rgb 'gray' title '', "
+                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100):($8*100):($6*100)       with yerrorbars ls " + ls + " pointtype 7 pointsize 0.5 lw 1.5 title '" + title + "', "
+                plot += "                                     '' using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100) with lines lc rgb 'gray' title '', "
 
         TreeUtil.walk_leaf(self.testmeta, data_util_tags)
 
@@ -445,7 +533,9 @@ class CollectionPlot():
         self.gpi += """
 
             # queueing delay
+            #set yrange [""" + ('1' if self.y_is_logarithmic else '0') + """:*]
             set yrange [0:*]
+            unset logscale
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             #set xtic offset first .1"""
 
@@ -453,22 +543,27 @@ class CollectionPlot():
         def data_rate(testmeta, is_first_set, x):
             nonlocal plot
 
+            # FIXME: this 100 should be customizable
+            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_ecn_stats', self.x_is_logarithmic) + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats', self.x_is_logarithmic) + """
                 EOD"""
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($0+" + str(x) + "+0.05):3:5:4:xtic(1)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.05):3  with lines lc rgb 'gray'         title '', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.05):6  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.05):7  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($0+" + str(x) + "+0.15):3:5:4  with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN packets' if is_first_set else '') + "', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.15):3  with lines lc rgb 'gray'         title '', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
-            plot += "                              ''    using ($0+" + str(x) + "+0.15):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8:xtic(2)   with yerrorbars ls 2 lw 1.5 pointtype 7 pointsize 0.5            title '" + ('ECN packets' if is_first_set else '') + "', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.05):4  with lines lc rgb 'gray'         title '', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.05):6  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.05):5  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4:7:8  with yerrorbars ls 3 lw 1.5 pointtype 7 pointsize 0.5           title '" + ('Non-ECN packets' if is_first_set else '') + "', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.15):4  with lines lc rgb 'gray'         title '', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.15):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "                              ''    using ($1+" + str(x) + "+0.15):5  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         TreeUtil.walk_leaf(self.testmeta, data_rate)
         self.gpi += """
@@ -491,45 +586,58 @@ class CollectionPlot():
         def data_drops(testmeta, is_first_set, x):
             nonlocal plot
 
+            # FIXME: this 100 should be customizable
+            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
+            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats', self.x_is_logarithmic) + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats', self.x_is_logarithmic) + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats') + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats', self.x_is_logarithmic) + """
                 EOD"""
 
-            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.00):3:5:4 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.00):3     with lines lc rgb 'gray'         title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.00):6  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.00):7  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($0+" + str(x) + "+0.10):3:5:4:xtic(1) with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.10):3     with lines lc rgb 'gray'         title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.10):6  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.10):7  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($0+" + str(x) + "+0.20):3:5:4 with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.20):3     with lines lc rgb 'gray'         title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.20):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($0+" + str(x) + "+0.20):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+                                                                                      # FIXME:  4:6:5
+            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4:7:8 with yerrorbars lc rgb 'red' pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.00):4     with lines lc rgb 'gray'         title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.00):6  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.00):5  with points  lc rgb 'red' pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8:xtic(2) with yerrorbars ls 8 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.10):4     with lines lc rgb 'gray'         title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.10):6  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.10):5  with points  ls 8 pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):4:7:8 with yerrorbars ls 3 pointtype 7 pointsize 0.5 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.20):4     with lines lc rgb 'gray'         title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.20):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "                                         '' using ($1+" + str(x) + "+0.20):5  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
 
         TreeUtil.walk_leaf(self.testmeta, data_drops)
         self.gpi += """
             plot """ + plot
 
     def common_header(self):
-        return """
+        ret = """
             unset bars
             set xtic rotate by -65 font ',""" + str(min(10, 15 - self.n_nodes / 18)) + """'
-            set key above
+            set key above"""
 
+        if self.y_is_logarithmic:
+            ret += """
+            set logscale y"""
+
+        ret += """
             set xrange [-2:""" + str(self.n_nodes + 1) + """]
-            set yrange [0:*<105]
+            set yrange [""" + ('0.1:105' if self.y_is_logarithmic else '0:*<105') + """]
             set boxwidth 0.2
             set tmargin """ + str(self.tmargin_base) + """
             set lmargin 13"""
+
+        return ret
 
     def plot(self, utilization_queues=True, utilization_tags=False):
         """Plot the test cases provided"""
@@ -694,6 +802,8 @@ class Plot():
             set format y "%.0f"
             set ylabel 'Rate per flow [b/s]'
             set key right center inside
+            set logscale y
+            set yrange [1000:]
             plot """
 
         if n_flows == 0:
@@ -712,6 +822,8 @@ class Plot():
             unset bars
             set key above
             set xtics out nomirror
+            unset logscale y
+            set yrange [0:]
             plot """
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
@@ -729,6 +841,8 @@ class Plot():
             set xlabel 'Sample #'
             set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in the queue}"
             set bars
+            set logscale y
+            set yrange [1:]
             set xtics in mirror
             set key above
             plot """
