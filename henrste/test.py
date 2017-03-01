@@ -548,33 +548,107 @@ def test_sigcomm17():
     testbed = Testbed()
     testbed.bitrate = 100 * MBIT
 
-    testbed.ta_samples = 200
+    testbed.ta_samples = 60
+    testbed.ta_idle = 7
     testbed.ta_delay = 1000
-
-    testbed.aqm_pi2()
 
     testbed.rtt_servera = 10
     testbed.rtt_serverb = 10
 
     testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-    testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
+    testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
 
     aqm_set = [
         # tag, title, fn
         ['pi2',
             'PI2: dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
             lambda: testbed.aqm_pi2(params='dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')],
+        #['pie', 'PIE', lambda: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')],
+        #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
+        #['fq_codel', 'fq_codel', lambda: testbed.aqm_pfifo()],
     ]
 
     udp_ect_set = [
         # node, tag/flag, title
-        ['a', 'nonect', 'UDP=Non ECT'],
+        #['a', 'nonect', 'UDP=Non ECT'],
         ['b', 'ect1', 'UDP=ECT(1)'],
     ]
 
-    udp_rate_set = [0, 50, 70, 100, 140, 200, 400, 800]
+    udp_rate_set = [
+        50,
+        70,
+        80,
+        85,
+        87,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        96.5,
+        97,
+        97.5,
+        98,
+        98.5,
+        99,
+        99.5,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        115.5,
+        116,
+        116.5,
+        117,
+        117.5,
+        118,
+        118.5,
+        119,
+        119.5,
+        120,
+        121,
+        122.5,
+        123,
+        124,
+        125,
+        127.5,
+        130,
+        132.5,
+        135,
+        136,
+        137.5,
+        140,
+        150,
+        160,
+        170,
+        180,
+        190,
+        200,
+        225,
+        250,
+        300,
+        350,
+        400,
+        500,
+        600,
+        800,
+    ]
 
-    collection1 = TestCollection('results/sigcomm17', TestEnv(retest=False), title='Sigcomm 17',
+    collection1 = TestCollection('results/sigcomm17-4', TestEnv(retest=False), title='Sigcomm 17',
         subtitle='Testrate: 100 Mb/s  Base RTT: 10 ms')
 
     for aqmtag, aqmtitle, aqmfn in aqm_set:
@@ -593,9 +667,10 @@ def test_sigcomm17():
                         testcase.run_greedy(node='b', tag='DCTCP (ECN)')
 
                     if udp_rate > 0:
+                        time.sleep(3)
                         testcase.run_udp(node=udp_node, bitrate=udp_rate * MBIT, ect=udp_ect, tag=udp_ect_title)
 
-                collection3.run_test(my_test, testbed, tag='udp-rate-%d' % udp_rate, title=udp_rate, titlelabel='UDP rate')
+                collection3.run_test(my_test, testbed, tag='udp-rate-%g' % udp_rate, title=udp_rate, titlelabel='UDP rate')
 
             collection3.plot(utilization_tags=True)
         collection2.plot(utilization_tags=True)
