@@ -219,9 +219,9 @@ class Testbed():
         self.aqm_name = 'dualq'
         self.aqm_params = 'l_thresh_us 1000 offset 0 l_slope 5 c_slope 4 l_smooth 0 c_smooth 5 l_power 1 c_power 2 l_shift 50'
 
-    def aqm_pie(self):
+    def aqm_pie(self, params=None):
         self.aqm_name = 'pie'
-        self.aqm_params = 'ecn'
+        self.aqm_params = 'ecn' if params is None else params
 
     def aqm_fq_codel(self):
         self.aqm_name = 'fq_codel'
