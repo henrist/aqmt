@@ -564,7 +564,7 @@ def test_sigcomm17():
             'PI2: dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
             lambda: testbed.aqm_pi2(params='dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')],
         ['pie', 'PIE', lambda: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')],
-        ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
+        #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
         #['fq_codel', 'fq_codel', lambda: testbed.aqm_pfifo()],
     ]
 
@@ -575,11 +575,11 @@ def test_sigcomm17():
     ]
 
     udp_rate_set = [
-        50,
+        #50,
         70,
         #75,
         80,
-        85,
+        #85,
         #86,
         #87,
         #88,
@@ -639,7 +639,7 @@ def test_sigcomm17():
         #137,
         #138,
         #139,
-        140,
+        #140,
         150,
         #160,
         #170,
@@ -658,7 +658,7 @@ def test_sigcomm17():
 
     flow_set = [
         # num normal in a, num normal in b
-        [1, 1],
+        #[1, 1],
         [1, 2],
         [2, 1],
         [5, 5],
