@@ -32,7 +32,7 @@ class Colors:
     UNKNOWN = "#00D2691E"
 
     DROPS_CLASSIC = RED
-    DROPS_L4S = LILAC
+    DROPS_L4S = BLUE
     MARKS_L4S = GRAY
 
     title_map = (
