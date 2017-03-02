@@ -577,6 +577,9 @@ class CollectionPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
+            # add xtics below, the empty list resets the tics
+            set xtics ()
+
             set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}" """
 
         plot = ''
@@ -639,6 +642,10 @@ class CollectionPlot():
             #set yrange [""" + ('1' if self.y_is_logarithmic else '0') + """:*]
             set yrange [0:*]
             unset logscale
+
+            # add xtics below, the empty list resets the tics
+            set xtics ()
+
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             #set xtic offset first .1"""
 
@@ -686,7 +693,11 @@ class CollectionPlot():
 
             # drops and marks
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
-            set xtic offset first 0"""
+            set xtic offset first 0
+
+            # add xtics below, the empty list resets the tics
+            set xtics ()
+            """
 
         # show xlabel at bottom of the multiplot
         if 'xlabel' in self.testmeta and self.testmeta['xlabel'] is not None and len(self.testmeta['xlabel']) > 0:
