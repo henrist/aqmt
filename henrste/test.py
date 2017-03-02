@@ -548,12 +548,15 @@ def test_sigcomm17():
     testbed = Testbed()
     testbed.bitrate = 100 * MBIT
 
-    testbed.ta_samples = 60
+    testbed.ta_samples = 30
     testbed.ta_idle = 7
-    testbed.ta_delay = 1000
+    testbed.ta_delay = 500
 
-    testbed.rtt_servera = 10
-    testbed.rtt_serverb = 10
+    rtt_set = [
+        2,
+        10,
+        50
+    ]
 
     aqm_set = [
         # tag, title, fn
@@ -561,7 +564,7 @@ def test_sigcomm17():
             'PI2: dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
             lambda: testbed.aqm_pi2(params='dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')],
         ['pie', 'PIE', lambda: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')],
-        #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
+        ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
         #['fq_codel', 'fq_codel', lambda: testbed.aqm_pfifo()],
     ]
 
@@ -574,75 +577,75 @@ def test_sigcomm17():
     udp_rate_set = [
         50,
         70,
-        75,
+        #75,
         80,
         85,
-        86,
-        87,
-        88,
-        89,
+        #86,
+        #87,
+        #88,
+        #89,
         90,
-        91,
+        #91,
         92,
-        93,
-        94,
+        #93,
+        #94,
         95,
         96,
-        #96.5,
+        #  96.5,
         97,
-        #97.5,
+        #  97.5,
         98,
-        #98.5,
+        #  98.5,
         99,
-        #99.5,
+        #  99.5,
         100,
-        #100.5,
+        #  100.5,
         101,
         102,
-        103,
-        104,
+        #103,
+        #104,
         105,
-        106,
+        #106,
         107,
-        108,
-        109,
+        #108,
+        #109,
         110,
-        111,
-        112,
-        113,
-        114,
+        #111,
+        #112,
+        #113,
+        #114,
         115,
-        116,
-        117,
-        118,
-        119,
+        #116,
+        #117,
+        #118,
+        #119,
         120,
-        121,
-        122,
-        123,
-        124,
+        #121,
+        #122,
+        #123,
+        #124,
         125,
-        126,
-        127,
-        128,
-        129,
+        #126,
+        #127,
+        #128,
+        #129,
         130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
+        #131,
+        #132,
+        #133,
+        #134,
+        #135,
+        #136,
+        #137,
+        #138,
+        #139,
         140,
         150,
-        160,
-        170,
-        180,
-        190,
-        200,
+        #160,
+        #170,
+        #180,
+        #190,
+        #200,
         #225,
         #250,
         #300,
@@ -653,42 +656,60 @@ def test_sigcomm17():
         #800,
     ]
 
-    collection1 = TestCollection('results/sigcomm17-5', TestEnv(retest=False), title='Sigcomm 17',
-        subtitle='Testrate: 100 Mb/s  Base RTT: 10 ms')
+    flow_set = [
+        # num normal in a, num normal in b
+        [1, 1],
+        [1, 2],
+        [2, 1],
+        [5, 5],
+    ]
 
-    for aqmtag, aqmtitle, aqmfn in aqm_set:
-        aqmfn()
-        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+    collection_root = TestCollection('results/sigcomm17-6', TestEnv(retest=False), title='Sigcomm 17',
+                                     subtitle='Testrate: 100 Mb/s')
 
-        testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-        nodeb_tag = ''
-        if aqmtag in ['pi2']:
-            testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
-            nodeb_tag = 'DCTCP (ECN)'
-        else:
-            testbed.cc('b', 'cubic', testbed.ECN_INITIATE)
-            nodeb_tag = 'ECN-CUBIC'
+    for rtt in rtt_set:
+        collection_rtt = TestCollection(folder='rtt-%d' % rtt, parent=collection_root, title='RTT: %d ms' % rtt)
+        testbed.rtt_servera = rtt
+        testbed.rtt_serverb = rtt
 
-        for udp_node, udp_ect, udp_ect_title in udp_ect_set:
-            collection3 = TestCollection('udp-%s' % udp_ect, parent=collection2, title=udp_ect_title)
+        for aqmtag, aqmtitle, aqmfn in aqm_set:
+            aqmfn()
+            collection_aqm = TestCollection(folder=aqmtag, parent=collection_rtt, title=aqmtitle)
 
-            for udp_rate in udp_rate_set:
+            testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
+            nodea_tag = 'CUBIC (no ECN)'
+            nodeb_tag = ''
+            if aqmtag in ['pi2']:
+                testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
+                nodeb_tag = 'DCTCP (ECN)'
+            else:
+                testbed.cc('b', 'cubic', testbed.ECN_INITIATE)
+                nodeb_tag = 'ECN-CUBIC'
 
-                def my_test(testcase):
-                    for x in range(5):
-                        testcase.run_greedy(node='a', tag='CUBIC (no ECN)')
-                    for x in range(5):
-                        testcase.run_greedy(node='b', tag=nodeb_tag)
+            for flows_a, flows_b in flow_set:
+                collection_flow = TestCollection('flow-%d-%d' % (flows_a, flows_b), parent=collection_aqm, title='%d x %s vs %d x %s' % (flows_a, nodea_tag, flows_b, nodeb_tag))
 
-                    if udp_rate > 0:
-                        time.sleep(3)
-                        testcase.run_udp(node=udp_node, bitrate=udp_rate * MBIT, ect=udp_ect, tag=udp_ect_title)
+                for udp_node, udp_ect, udp_ect_title in udp_ect_set:
+                    collection_udp_ect = TestCollection('udp-%s' % udp_ect, parent=collection_flow, title=udp_ect_title)
 
-                collection3.run_test(my_test, testbed, tag='udp-rate-%g' % udp_rate, title=udp_rate, titlelabel='UDP rate')
+                    for udp_rate in udp_rate_set:
 
-            collection3.plot(utilization_tags=True)
-        collection2.plot(utilization_tags=True)
-    collection1.plot(utilization_tags=True)
+                        def my_test(testcase):
+                            for x in range(flows_a):
+                                testcase.run_greedy(node='a', tag=nodea_tag)
+                            for x in range(flows_b):
+                                testcase.run_greedy(node='b', tag=nodeb_tag)
+
+                            if udp_rate > 0:
+                                time.sleep(3)
+                                testcase.run_udp(node=udp_node, bitrate=udp_rate * MBIT, ect=udp_ect, tag=udp_ect_title)
+
+                        collection_udp_ect.run_test(my_test, testbed, tag='udp-rate-%g' % udp_rate, title='%g' % (udp_rate / testbed.bitrate * MBIT * 100), titlelabel='UDP rate of link capacity (%)')
+                    collection_udp_ect.plot(utilization_tags=True, utilization_queues=False)
+                collection_flow.plot(utilization_tags=True, utilization_queues=False)
+            collection_aqm.plot(utilization_tags=True, utilization_queues=False)
+        collection_rtt.plot(utilization_tags=True, utilization_queues=False)
+    collection_root.plot(utilization_tags=True, utilization_queues=False)
 
 
 if __name__ == '__main__':
