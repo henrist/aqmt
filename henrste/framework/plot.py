@@ -329,7 +329,7 @@ class CollectionUtil():
 
         for x in frange(minval, maxval + step, step):
             arr.append('"%s" %g' % (
-                x,
+                round(x, 2),
                 CollectionUtil.get_x_coordinate(testmeta, x, is_logarithmic) + xoffset
             ))
 
@@ -374,7 +374,7 @@ class CollectionUtil():
             maxval = math.log10(maxval)
             pos = math.log10(pos)
 
-        return (pos - minval) / (maxval - minval) * (count - 1)
+        return (pos - minval) / (maxval - minval) * (count - 1) if minval != maxval else 0
 
     @staticmethod
     def merge_testcase_data_set_x(testcases, is_logarithmic):
@@ -413,7 +413,7 @@ class CollectionUtil():
             pos = float(xval)
             if is_logarithmic:
                 pos = math.log10(pos)
-            x = (pos - minval) / (maxval - minval) * (len(testcases) - 1)
+            x = (pos - minval) / (maxval - minval) * (len(testcases) - 1) if maxval != minval else 0
             out.append('%f %s' % (x, line))
         return ''.join(out)
 
