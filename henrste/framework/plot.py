@@ -366,14 +366,15 @@ class CollectionUtil():
         """Calculates the linear x position that a value will
         be positioned"""
 
-        if not is_logarithmic:
-            raise Exception('Can\'t get x coordinate of category axis')
-
         minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, is_logarithmic)
-        minval = math.log10(minval)
-        maxval = math.log10(maxval)
 
-        return (math.log10(float(value)) - minval) / (maxval - minval) * (count - 1)
+        pos = float(value)
+        if is_logarithmic:
+            minval = math.log10(minval)
+            maxval = math.log10(maxval)
+            pos = math.log10(pos)
+
+        return (pos - minval) / (maxval - minval) * (count - 1)
 
     @staticmethod
     def merge_testcase_data_set_x(testcases, is_logarithmic):
@@ -387,15 +388,7 @@ class CollectionUtil():
         It also concatenates the array and return a final string
         """
 
-        if not is_logarithmic:
-            out = []
-            i = 0
-            for xval, line in testcases:
-                out.append('%d %s' % (i, line))
-                i += 1
-            return ''.join(out)
-
-        # logaritmic, we need to calculate the position
+        # calculate minimum and maximum value
         minval = None
         maxval = None
         for xval, line in testcases:
@@ -405,12 +398,22 @@ class CollectionUtil():
             if maxval is None or x > maxval:
                 maxval = x
 
-        minval = math.log10(minval)
-        maxval = math.log10(maxval)
+        #if not is_logarithmic:
+        #    out = []
+        #    for xval, line in testcases:
+        #        out.append('%f %s' % (float(xval), line))
+        #    return ''.join(out)
+
+        if is_logarithmic:
+            minval = math.log10(minval)
+            maxval = math.log10(maxval)
 
         out = []
         for xval, line in testcases:
-            x = (math.log10(float(xval)) - minval) / (maxval - minval) * (len(testcases) - 1)
+            pos = float(xval)
+            if is_logarithmic:
+                pos = math.log10(pos)
+            x = (pos - minval) / (maxval - minval) * (len(testcases) - 1)
             out.append('%f %s' % (x, line))
         return ''.join(out)
 
@@ -492,6 +495,8 @@ class CollectionPlot():
 
         self.y_is_logarithmic = False  # TODO: should be able to configure this
         self.x_is_logarithmic = True  # TODO: should be able to configure this
+        self.custom_xtics = self.x_is_logarithmic
+        self.lines_at_x_offset = [100, 115, 130]
 
         self.n_sets, self.n_tests, self.n_depth, self.n_nodes = TreeUtil.get_num_testcases(testmeta)
 
@@ -520,24 +525,27 @@ class CollectionPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            # add xtics below, the empty list resets the tics
-            set xtics ()
+            set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
+            """
 
-            set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}" """
+        if self.custom_xtics:
+            self.gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
 
         plot = ''
         titles_used = []
         def data_util(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
-            self.gpi += """
-                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
-            """
+            if self.custom_xtics:
+                self.gpi += """
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    """
 
-            # FIXME: this 100 should be customizable
-            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+            for xoffset in self.lines_at_x_offset:
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
@@ -577,10 +585,14 @@ class CollectionPlot():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            # add xtics below, the empty list resets the tics
-            set xtics ()
+            set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
+            """
 
-            set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}" """
+        if self.custom_xtics:
+            self.gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
 
         plot = ''
         plot_lines = ''
@@ -588,14 +600,13 @@ class CollectionPlot():
         def data_util_tags(testmeta, is_first_set, x):
             nonlocal plot, plot_lines, titles_used
 
-            self.gpi += """
-                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
-            """
+            if self.custom_xtics:
+                self.gpi += """
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    """
 
-            # FIXME: this 100 should be customizable
-            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+            for xoffset in self.lines_at_x_offset:
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
@@ -641,26 +652,29 @@ class CollectionPlot():
             # queueing delay
             #set yrange [""" + ('1' if self.y_is_logarithmic else '0') + """:*]
             set yrange [0:*]
-            unset logscale
-
-            # add xtics below, the empty list resets the tics
-            set xtics ()
+            unset logscale y
 
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
-            #set xtic offset first .1"""
+            #set xtic offset first .1
+            """
+
+        if self.custom_xtics:
+            self.gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
 
         plot = ''
         def data_rate(testmeta, is_first_set, x):
             nonlocal plot
 
-            self.gpi += """
-                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
-            """
+            if self.custom_xtics:
+                self.gpi += """
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    """
 
-            # FIXME: this 100 should be customizable
-            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+            for xoffset in self.lines_at_x_offset:
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
@@ -694,10 +708,13 @@ class CollectionPlot():
             # drops and marks
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
             set xtic offset first 0
-
-            # add xtics below, the empty list resets the tics
-            set xtics ()
             """
+
+        if self.custom_xtics:
+            self.gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
 
         # show xlabel at bottom of the multiplot
         if 'xlabel' in self.testmeta and self.testmeta['xlabel'] is not None and len(self.testmeta['xlabel']) > 0:
@@ -708,14 +725,13 @@ class CollectionPlot():
         def data_drops(testmeta, is_first_set, x):
             nonlocal plot
 
-            self.gpi += """
-                set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
-            """
+            if self.custom_xtics:
+                self.gpi += """
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    """
 
-            # FIXME: this 100 should be customizable
-            self.gpi += CollectionUtil.line_at_x_offset(x, 100, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 115, testmeta, self.x_is_logarithmic)
-            self.gpi += CollectionUtil.line_at_x_offset(x, 130, testmeta, self.x_is_logarithmic)
+            for xoffset in self.lines_at_x_offset:
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
 
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
@@ -751,18 +767,21 @@ class CollectionPlot():
         ret = """
             unset bars
             set xtic rotate by -65 font ',""" + str(min(10, 15 - self.n_nodes / 18)) + """'
-            set key above"""
+            set key above
+            """
 
         if self.y_is_logarithmic:
             ret += """
-            set logscale y"""
+            set logscale y
+            """
 
         ret += """
             set xrange [-2:""" + str(self.n_nodes + 1) + """]
             set yrange [""" + ('0.1:105' if self.y_is_logarithmic else '0:*<105') + """]
             set boxwidth 0.2
             set tmargin """ + str(self.tmargin_base) + """
-            set lmargin 13"""
+            set lmargin 13
+            """
 
         return ret
 
