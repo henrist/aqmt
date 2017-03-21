@@ -7,6 +7,7 @@ for n in sch_fifo_qsize sch_pi2 sch_pie_qsize; do (
     echo "---- BUILDING AND LOADING: $n ----"
     echo
     cd $n
+    make clean
     make
     sudo make unload
     sudo make load
