@@ -1,0 +1,20 @@
+---
+
+# todo: sudo apt-get install build-essential linux-headers-`uname -r`
+
+- name: Ensure cdrom mount point exists
+  file:
+    path: /media/cdrom
+    state: directory
+
+- name: Mount cdrom
+  mount:
+    name: /media/cdrom
+    src: /dev/cdrom
+    fstype: iso9660
+    state: mounted
+
+- name: Install VBoxLinuxAdditions
+  command: ./VBoxLinuxAdditions.run
+  args:
+    chdir: /media/cdrom

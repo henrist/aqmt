@@ -1,0 +1,22 @@
+---
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+
+- name: Install docker-compose
+  get_url:
+    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+    dest: /usr/bin/docker-compose
+
+- name: Set permissions on docker-compose binary
+  file:
+    path: /usr/bin/docker-compose
+    mode: 0755
+
+- name: Add testbed to Docker group
+  user:
+    append: yes
+    name: testbed
+    groups: docker

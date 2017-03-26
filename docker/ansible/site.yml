@@ -1,0 +1,22 @@
+---
+
+- hosts: all
+  become: yes
+  connection: local
+
+  vars:
+    docker_compose_version: '1.11.1'
+
+    kernel_images:
+      - { tree: 'v4.10.4', file: 'linux-headers-4.10.4-041004_4.10.4-041004.201703180831_all.deb' }
+      - { tree: 'v4.10.4', file: 'linux-headers-4.10.4-041004-generic_4.10.4-041004.201703180831_amd64.deb' }
+      - { tree: 'v4.10.4', file: 'linux-image-4.10.4-041004-generic_4.10.4-041004.201703180831_amd64.deb' }
+      - { tree: 'v3.18.47', file: 'linux-headers-3.18.47-031847_3.18.47-031847.201701181631_all.deb' }
+      - { tree: 'v3.18.47', file: 'linux-headers-3.18.47-031847-generic_3.18.47-031847.201701181631_amd64.deb' }
+      - { tree: 'v3.18.47', file: 'linux-image-3.18.47-031847-generic_3.18.47-031847.201701181631_amd64.deb' }
+
+  roles:
+    - common
+    - docker
+    - kernel
+    #- vboxadditions

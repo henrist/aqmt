@@ -1,0 +1,17 @@
+---
+
+- name: Ensure download folder exists
+  file:
+    path: /opt/kernels
+    state: directory
+
+- name: Download kernel debs
+  get_url:
+    url: "http://kernel.ubuntu.com/~kernel-ppa/mainline/{{ item.tree }}/{{ item.file }}"
+    dest: "/opt/kernels/{{ item.file }}"
+  with_items: "{{ kernel_images }}"
+
+- name: Install kernel debs
+  apt:
+    deb: "/opt/kernels/{{ item.file }}"
+  with_items: "{{ kernel_images }}"
