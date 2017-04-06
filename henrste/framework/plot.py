@@ -486,6 +486,16 @@ class CollectionUtil():
 
         return out
 
+    @staticmethod
+    def get_xlabel(testmeta):
+        xlabel = None
+        def fn(testmeta, first_set, x):
+            nonlocal xlabel
+            if xlabel == None and len(testmeta['children']) > 0 and testmeta['children'][0]['titlelabel'] != '':
+                xlabel = testmeta['children'][0]['titlelabel']
+
+        TreeUtil.walk_leaf(testmeta, fn)
+        return xlabel
 
 class CollectionPlot():
     """Plot a collection of test cases
@@ -731,9 +741,10 @@ class CollectionPlot():
                 """
 
         # show xlabel at bottom of the multiplot
-        if 'xlabel' in self.testmeta and self.testmeta['xlabel'] is not None and len(self.testmeta['xlabel']) > 0:
+        xlabel = CollectionUtil.get_xlabel(self.testmeta)
+        if xlabel != None:
             self.gpi += """
-                set xlabel '""" + self.testmeta['xlabel'] + """'"""
+                set xlabel '""" + xlabel + """'"""
 
         plot = ''
         def data_drops(testmeta, is_first_set, x):
@@ -902,7 +913,6 @@ class Plot():
     def plot_compare_flows(self, folder, testfolders):
         hp = CollectionPlot(folder + '/analysis_compare', {
             'title': folder,
-            #'xlabel': 'something',
             'children': [{'testcase': x} for x in testfolders]
         })
         hp.plot()
@@ -1049,11 +1059,7 @@ class FolderUtil():
         to generate the final result
         """
 
-        xlabel = None
-
         def parse_folder(folder):
-            nonlocal xlabel
-
             if not os.path.isdir(folder):
                 raise Exception('Non-existing directory: %s' % folder)
 
@@ -1062,10 +1068,11 @@ class FolderUtil():
             if 'type' not in metadata_kv:
                 raise Exception('Missing type in metadata for %s' % folder)
 
-            if metadata_kv['type'] in ['collection', 'set']:
+            if metadata_kv['type'] in ['collection']:
                 node = {
                     'title': metadata_kv['title'] if 'title' in metadata_kv else '',
                     'subtitle': metadata_kv['subtitle'] if 'subtitle' in metadata_kv else '',
+                    'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
                     'children': []
                 }
 
@@ -1075,16 +1082,8 @@ class FolderUtil():
 
             elif metadata_kv['type'] == 'test':
                 node = {
-                    'title': metadata_kv['title'],
-                    'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
-                    'subtitle': '',
-                    'children': [
-                        {'testcase': folder}
-                    ]
+                    'testcase': folder
                 }
-
-                if xlabel is None and 'titlelabel' in metadata_kv:
-                    xlabel = metadata_kv['titlelabel']
 
             else:
                 raise Exception('Unknown metadata type %s' % metadata_kv['type'])
@@ -1092,66 +1091,9 @@ class FolderUtil():
             return node
 
         root = parse_folder(folder)
-        root['xlabel'] = xlabel
 
         return root
 
-
-def generate_hierarchy_data(folderspec, title, xlabel=''):
-    """Generate a dict that can be sent to CollectionPlot
-
-    Example:
-        data = generate_hierarchy_data({
-            '1 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-1/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-1/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-1/dctcp',
-            },
-            '2 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-2/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-2/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-2/dctcp',
-            },
-            '3 flow each': {
-                'cubic vs cubic': 'testset-simple/flows-3/cubic',
-                'cubic vs cubic-ecn': 'testset-simple/flows-3/cubic-ecn',
-                'cubic vs dctcp': 'testset-simple/flows-3/dctcp',
-            },
-        }, title='Testing cubic vs different flows', xlabel='RTT')
-
-    See also generate_hierarchy_data_from_folder which does
-    the similar process just from a directory structure with metadata
-    """
-
-    root = {
-        'title': title,
-        'xlabel': xlabel,
-        'children': []
-    }
-
-    def add_level(root, spec):
-        for key, value in spec.items():
-            node = {'title': key, 'children': []}
-            root['children'].append(node)
-
-            if isinstance(value, dict):
-                add_level(node, value)
-
-            else:
-                for testcase in FolderUtil.get_testcases_in_folder(value):
-                    metadata_kv, metadata_lines = read_metadata(testcase + '/details')
-
-                    node['children'].append({
-                        'title': metadata_kv['title'],
-                        'titlelabel': metadata_kv['titlelabel'] if 'titlelabel' in metadata_kv else '',
-                        'subtitle': '',
-                        'children': [
-                            {'testcase': testcase}
-                        ]
-                    })
-
-    add_level(root, folderspec)
-    return root
 
 def read_metadata(file):
     """Reads metadata from a `details` file

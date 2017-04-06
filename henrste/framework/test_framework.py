@@ -401,13 +401,9 @@ class Testbed():
 
 
 class TestCase():
-    def __init__(self, testenv, folder, tag=None, title=None, titlelabel=None):
+    def __init__(self, testenv, folder):
         self.testenv = testenv
         self.test_folder = folder
-        self.tag = tag
-
-        self.title = title
-        self.titlelabel = titlelabel
 
         self.directory_error = False
         self.data_collected = False
@@ -725,8 +721,6 @@ class TestCase():
         print()
 
         self.save_hint('type test')
-        self.save_hint('title %s' % ('' if self.title is None else self.title))
-        self.save_hint('titlelabel %s' % ('' if self.titlelabel is None else self.titlelabel))
         self.save_hint('ta_idle %s' % self.testenv.testbed.get_ta_idle())
         self.save_hint('ta_delay %s' % self.testenv.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testenv.testbed.ta_samples)
@@ -872,28 +866,20 @@ class TestCollection():
     """Organizes tests in collections and stores metadata used to automatically plot
 
     Test hierarchy looks like (from bottom up):
-    - single tests
-    - collection of tests
+    - collection of a single test
     - collection of collections, and so on
     """
 
-    def __init__(self, folder, testenv=None, title=None, subtitle=None, parent=None):
-        self.title = title
-
+    def __init__(self, folder, title=None, subtitle=None, titlelabel=None, parent=None):
         if parent:
             self.folder = parent.folder + '/' + folder
-            parent.add_collection(self)
-            if testenv is None:
-                testenv = parent.testenv
+            parent.add_collection_pre(self)
         else:
             self.folder = folder
-            if testenv is None:
-                raise Exception('Missing testenv object')
 
-        self.testenv = testenv
         self.tags_used = []
-        self.tests = []
-        self.have_sub = False
+        self.test = None
+        self.collections = []
         self.parent = parent
         self.parent_called = False
 
@@ -906,55 +892,62 @@ class TestCollection():
         if subtitle is not None:
             TestEnv.save_hint_to_folder(self.folder, 'subtitle %s' % subtitle)
 
+        if titlelabel is not None:
+            TestEnv.save_hint_to_folder(self.folder, 'titlelabel %s' % titlelabel)
+
     def check_and_add_tag(self, tag):
         if tag in self.tags_used:
-            raise Exception("Tag must be unique inside same collection/test (tag: %s)" % tag)
+            raise Exception("Tag must be unique inside same collection (tag: %s)" % tag)
 
         self.tags_used.append(tag)
 
-    def add_collection(self, collection):
+    def add_collection_pre(self, collection):
         self.check_and_add_tag(collection.folder)
 
-    def add_sub(self, folder):
-        self.have_sub = True
-        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(folder))
+    def add_collection_post(self, collection):
+        self.collections.append(collection)
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(collection.folder))
 
         if self.parent and not self.parent_called:
             self.parent_called = True
-            self.parent.add_sub(self.folder)
+            self.parent.add_collection_post(self)
 
-    def run_test(self, test_fn, tag, title=None, titlelabel=None):
+    def add_test(self, test_folder):
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(test_folder))
+
+        if self.parent and not self.parent_called:
+            self.parent_called = True
+            self.parent.add_collection_post(self)
+
+    def run_test(self, test_fn, testenv):
         """Run a single test (the smallest possible test)
 
         test_fn: Method that generates test data
-        tag: String appended to test case directory name
-        title: The x label value for this specific test when aggregated
-        titlelabel: Description of the title values
         """
 
-        self.check_and_add_tag(tag)
-        test = TestCase(testenv=self.testenv, folder=self.folder + '/test-' + str(tag),
-                        title=title, titlelabel=titlelabel)
+        if self.test:
+            raise Exception("A collection cannot contain multiple tests")
+        test = TestCase(testenv=testenv, folder=self.folder + '/test')
+        self.test = test
 
-        self.tests.append(test)
         if not test.should_skip():
             test.run(test_fn)
 
-        if (test.data_collected or test.already_exists) and not self.testenv.dry_run:
-            if self.testenv.reanalyze or not test.already_exists:
+        if (test.data_collected or test.already_exists) and not testenv.dry_run:
+            if testenv.reanalyze or not test.already_exists:
                 start = time.time()
                 test.analyze()
                 print('Analyzed test (%.2f s)' % (time.time()-start))
 
-            if self.testenv.reanalyze or self.testenv.replot or not test.already_exists:
+            if testenv.reanalyze or testenv.replot or not test.already_exists:
                 start = time.time()
                 test.plot()
                 print('Plotted test (%.2f s)' % (time.time()-start))
 
-            self.add_sub(test.test_folder)
+            self.add_test(test.test_folder)
 
         elif test.already_exists:
-            self.add_sub(test.test_folder)
+            self.add_test(test.test_folder)
 
     def plot(self, swap_levels=[], **kwargs):
         print('Plotting multiple flows..')
@@ -963,16 +956,16 @@ class TestCollection():
 
     def plot_tests_merged(self):
         testfolders = []
-        for test in self.tests:
-            if test.has_valid_data():
-                testfolders.append(test.test_folder)
+        for collection in self.collections:
+            if collection.test and collection.test.has_valid_data():
+                testfolders.append(collection.test.test_folder)
 
         if len(testfolders) > 0:
             p = Plot()
             p.plot_multiple_flows(testfolders, self.folder + '/analysis_merged')
 
     def plot_tests_compare(self, swap_levels=[], **kwargs):
-        if self.have_sub:
+        if len(self.collections) > 0:
             plot_folder_compare(self.folder, swap_levels=swap_levels, **kwargs)
 
 
