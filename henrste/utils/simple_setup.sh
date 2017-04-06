@@ -40,10 +40,10 @@ configure_server_edge $IP_SERVERB_MGMT $IP_AQM_SB $IFACE_SERVERB $IFACE_ON_SERVE
 #     reno 2
 #     dctcp 1
 #     cubic 1 (set as default when reset)
-configure_host_cc $IP_CLIENTA_MGMT dctcp 1
-configure_host_cc $IP_SERVERA_MGMT dctcp 1
-configure_host_cc $IP_CLIENTB_MGMT dctcp 1
-configure_host_cc $IP_SERVERB_MGMT dctcp 1
+configure_host_cc $IP_CLIENTA_MGMT dctcp-drop 1
+configure_host_cc $IP_SERVERA_MGMT dctcp-drop 1
+configure_host_cc $IP_CLIENTB_MGMT dctcp-drop 1
+configure_host_cc $IP_SERVERB_MGMT dctcp-drop 1
 
 clear
 echo "Configured testbed:"
