@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # arp config is done to avoid arp lookups that causes loss
 
@@ -76,13 +77,17 @@ setup_aqm() {
 
     disable_so $iface
 
+    # wait a bit for other nodes to come up before we try to connect
+    sleep 2
+
     names=(CLIENTA CLIENTB SERVERA SERVERB)
     nets=(10.25.1.0/24 10.25.1.0/24 10.25.2.0/24 10.25.3.0/24)
     for i in ${!names[@]}; do
         (
             . /tmp/testbed-vars.sh
             local ip_name="IP_${names[$i]}"
-            local iface=$(ssh ${!ip_name} "ip route show to ${nets[$i]} | awk '{print \$3}'")
+            local iface
+            iface=$(ssh ${!ip_name} "ip route show to ${nets[$i]} | awk '{print \$3}'")
             echo "export IFACE_ON_${names[$i]}=$iface" >>/tmp/testbed-vars-local.sh
         )
     done
