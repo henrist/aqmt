@@ -58,6 +58,11 @@ class Colors:
 
         return Colors.UNKNOWN
 
+class PlotAxis():
+    """Different ways to display x axis in each test"""
+    LOGARITHMIC='log'
+    NUMERIC='numeric'
+    CATEGORY='category'
 
 class TreeUtil():
 
@@ -300,7 +305,7 @@ class TreeUtil():
 class CollectionUtil():
 
     @staticmethod
-    def make_xtics(testmeta, xoffset, is_logarithmic):
+    def make_xtics(testmeta, xoffset, x_axis):
         """Generate a list of xtics
 
         This can be passed on to `set xtics add (<here>)` to add xtics
@@ -309,7 +314,7 @@ class CollectionUtil():
 
         arr = []
 
-        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, is_logarithmic)
+        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, x_axis)
 
         numxtics = 10
 
@@ -330,14 +335,14 @@ class CollectionUtil():
         for x in frange(minval, maxval + step, step):
             arr.append('"%s" %g' % (
                 round(x, 2),
-                CollectionUtil.get_x_coordinate(testmeta, x, is_logarithmic) + xoffset
+                CollectionUtil.get_x_coordinate(testmeta, x, x_axis) + xoffset
             ))
 
         return ', '.join(arr)
 
     @staticmethod
-    def line_at_x_offset(xoffset, value_at_x, testmeta, is_logarithmic):
-        xpos = CollectionUtil.get_x_coordinate(testmeta, value_at_x, is_logarithmic)
+    def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
+        xpos = CollectionUtil.get_x_coordinate(testmeta, value_at_x, x_axis)
 
         return """
             set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
@@ -345,9 +350,9 @@ class CollectionUtil():
         """
 
     @staticmethod
-    def get_testmeta_min_max_count(testmeta, is_logarithmic):
+    def get_testmeta_min_max_count(testmeta, x_axis):
         # use derived/util_stats because we just have to select one...
-        testcases = CollectionUtil.get_testcase_data(testmeta, 'derived/util_stats', is_logarithmic)
+        testcases = CollectionUtil.get_testcase_data(testmeta, 'derived/util_stats', x_axis)
 
         # logaritmic, we need to calculate the position
         minval = None
@@ -362,14 +367,14 @@ class CollectionUtil():
         return minval, maxval, len(testcases)
 
     @staticmethod
-    def get_x_coordinate(testmeta, value, is_logarithmic):
+    def get_x_coordinate(testmeta, value, x_axis):
         """Calculates the linear x position that a value will
         be positioned"""
 
-        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, is_logarithmic)
+        minval, maxval, count = CollectionUtil.get_testmeta_min_max_count(testmeta, x_axis)
 
         pos = float(value)
-        if is_logarithmic:
+        if x_axis == PlotAxis.LOGARITHMIC:
             minval = math.log10(minval)
             maxval = math.log10(maxval)
             pos = math.log10(pos)
@@ -377,7 +382,7 @@ class CollectionUtil():
         return (pos - minval) / (maxval - minval) * (count - 1) if minval != maxval else 0
 
     @staticmethod
-    def merge_testcase_data_set_x(testcases, is_logarithmic):
+    def merge_testcase_data_set_x(testcases, x_axis):
         """Takes in an array of data points for x axis for a single
         series and appends the x position of the data points.
 
@@ -387,6 +392,15 @@ class CollectionUtil():
 
         It also concatenates the array and return a final string
         """
+
+        # for category axis we don't calculate anything
+        if x_axis == PlotAxis.CATEGORY:
+            out = []
+            i = 0
+            for xval, line in testcases:
+                out.append('%d %s' % (i, line))
+                i += 1
+            return ''.join(out)
 
         # calculate minimum and maximum value
         minval = None
@@ -398,27 +412,21 @@ class CollectionUtil():
             if maxval is None or x > maxval:
                 maxval = x
 
-        #if not is_logarithmic:
-        #    out = []
-        #    for xval, line in testcases:
-        #        out.append('%f %s' % (float(xval), line))
-        #    return ''.join(out)
-
-        if is_logarithmic:
+        if x_axis == PlotAxis.LOGARITHMIC:
             minval = math.log10(minval)
             maxval = math.log10(maxval)
 
         out = []
         for xval, line in testcases:
             pos = float(xval)
-            if is_logarithmic:
+            if x_axis == PlotAxis.LOGARITHMIC:
                 pos = math.log10(pos)
             x = (pos - minval) / (maxval - minval) * (len(testcases) - 1) if maxval != minval else 0
             out.append('%f %s' % (x, line))
         return ''.join(out)
 
     @staticmethod
-    def get_testcase_data(testmeta, statsname, is_logarithmic):
+    def get_testcase_data(testmeta, statsname, x_axis):
 
         res = []
         for title, testcase_folder in TreeUtil.get_testcases(testmeta):
@@ -438,12 +446,12 @@ class CollectionUtil():
         return res
 
     @staticmethod
-    def merge_testcase_data(testmeta, statsname, is_logarithmic):
-        res = CollectionUtil.get_testcase_data(testmeta, statsname, is_logarithmic)
-        return CollectionUtil.merge_testcase_data_set_x(res, is_logarithmic)
+    def merge_testcase_data(testmeta, statsname, x_axis):
+        res = CollectionUtil.get_testcase_data(testmeta, statsname, x_axis)
+        return CollectionUtil.merge_testcase_data_set_x(res, x_axis)
 
     @staticmethod
-    def merge_testcase_data_group(testmeta, statsname, is_logarithmic):
+    def merge_testcase_data_group(testmeta, statsname, x_axis):
         """Similar to merge_testcase_data except it groups all data by first column
 
         There should only exist one data point in the files for each group
@@ -474,7 +482,7 @@ class CollectionUtil():
                     out[key].append([title, '"%s"\n' % title])
 
         for key in out.keys():
-            out[key] = CollectionUtil.merge_testcase_data_set_x(out[key], is_logarithmic)
+            out[key] = CollectionUtil.merge_testcase_data_set_x(out[key], x_axis)
 
         return out
 
@@ -494,9 +502,9 @@ class CollectionPlot():
         self.output_file = output_file
 
         self.y_is_logarithmic = False  # TODO: should be able to configure this
-        self.x_is_logarithmic = True  # TODO: should be able to configure this
-        self.custom_xtics = self.x_is_logarithmic
-        self.lines_at_x_offset = [100, 115, 130]
+        self.x_axis = PlotAxis.CATEGORY
+        self.custom_xtics = self.x_axis != PlotAxis.CATEGORY
+        self.lines_at_x_offset = []  # [100, 115, 130]
 
         self.n_sets, self.n_tests, self.n_depth, self.n_nodes = TreeUtil.get_num_testcases(testmeta)
 
@@ -541,15 +549,15 @@ class CollectionPlot():
 
             if self.custom_xtics:
                 self.gpi += """
-                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
 
             for xoffset in self.lines_at_x_offset:
-                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_axis)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_axis) + """
                 EOD"""
 
             # total
@@ -602,15 +610,15 @@ class CollectionPlot():
 
             if self.custom_xtics:
                 self.gpi += """
-                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
 
             for xoffset in self.lines_at_x_offset:
-                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_axis)
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_axis) + """
                 EOD"""
 
             # total
@@ -618,7 +626,7 @@ class CollectionPlot():
             plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
 
-            tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_is_logarithmic)
+            tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_axis)
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -670,18 +678,18 @@ class CollectionPlot():
 
             if self.custom_xtics:
                 self.gpi += """
-                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
 
             for xoffset in self.lines_at_x_offset:
-                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_axis)
 
             self.gpi += """
                 $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_ecn_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_ecn_stats', self.x_axis) + """
                 EOD
                 $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/qs_nonecn_stats', self.x_axis) + """
                 EOD"""
 
             ls_l4s = "ls 1 lc rgb '" + Colors.L4S + "'"
@@ -727,21 +735,21 @@ class CollectionPlot():
 
             if self.custom_xtics:
                 self.gpi += """
-                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_is_logarithmic) + """)
+                    set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
 
             for xoffset in self.lines_at_x_offset:
-                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_is_logarithmic)
+                self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_axis)
 
             self.gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_ecn_stats', self.x_axis) + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/m_percent_ecn_stats', self.x_axis) + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats', self.x_is_logarithmic) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/d_percent_nonecn_stats', self.x_axis) + """
                 EOD"""
 
                                                                                       # FIXME:  4:6:5
