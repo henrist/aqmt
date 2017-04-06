@@ -624,21 +624,24 @@ class TestCase():
         if not self.testenv.dry_run:
             TestEnv.save_hint_to_folder(self.test_folder, text)
 
-    def print_header(self, h1, h2):
+    def print_header(self):
+        """
+        Must be called after check_folder()
+        """
         print()
-        print('=' * len(h1) + ((' ' + '-' * len(h2)) if h2 is not None else ''))
-        print(h1 + ((' ' + h2) if h2 is not None else ''))
-        print('=' * len(h1) + ((' ' + '-' * len(h2)) if h2 is not None else ''))
+        print('=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else ''))
+        print(self.h1 + ((' ' + self.h2) if self.h2 is not None else ''))
+        print('=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else ''))
         print(str(datetime.datetime.now()))
         print()
 
     def check_folder(self):
-        h1 = 'TESTCASE %s' % self.test_folder
-        h2 = None
+        self.h1 = 'TESTCASE %s' % self.test_folder
+        self.h2 = None
 
         if os.path.exists(self.test_folder):
             if not os.path.isfile(self.test_folder + '/details'):
-                self.print_header(h1, 'Skipping existing and UNRECOGNIZED testcase directory')
+                self.h2 = 'Skipping existing and UNRECOGNIZED testcase directory'
                 self.directory_error = True
                 return
             else:
@@ -646,27 +649,17 @@ class TestCase():
                     with open(self.test_folder + '/details') as f:
                         for line in f:
                             if line.strip() == 'data_collected':
-                                self.print_header(h1, 'Skipping testcase with existing data')
                                 self.already_exists = True
                                 return
 
                     # clean up previous run
-                    h2 = 'Rerunning incomplete test'
+                    self.h2 = 'Rerunning incomplete test'
                 else:
-                    h2 = 'Repeating existing test'
-
-                if not self.testenv.dry_run:
-                    shutil.rmtree(self.test_folder)
+                    self.h2 = 'Repeating existing test'
 
         if self.testenv.skip_test:
-            self.print_header(h1, 'Skipping testcase because environment tells us to')
+            h2 = 'Skipping testcase because environment tells us to'
             self.is_skip_test = True
-            return
-
-        self.print_header(h1, h2)
-
-        if not self.testenv.dry_run:
-            os.makedirs(self.test_folder, exist_ok=True)
 
     def run_ta(self, bg=False):
         net_c = re.sub(r'\.[0-9]+$', '.0', os.environ['IP_AQM_C'])
@@ -697,13 +690,19 @@ class TestCase():
         return max(self.testenv.testbed.rtt_clients, self.testenv.testbed.rtt_servera, self.testenv.testbed.rtt_serverb) / 1000 * 5 + 2
 
     def calc_estimated_run_time(self):
-        return self.testenv.testbed.ta_samples * self.testenv.testbed.ta_delay / 1000 + self.testenv.testbed.get_ta_idle() + self.calc_post_wait_time()
+        # add one second for various delay
+        return self.testenv.testbed.ta_samples * self.testenv.testbed.ta_delay / 1000 + self.testenv.testbed.get_ta_idle() + self.calc_post_wait_time() + 1
 
     def run(self, test_fn):
         if self.directory_error:
             raise Exception('Cannot run a test with an unrecognized directory')
         if self.data_collected:
             raise Exception('Cannot run the same TestCase multiple times')
+
+        if not self.testenv.dry_run:
+            if os.path.exists(self.test_folder):
+                shutil.rmtree(self.test_folder)
+            os.makedirs(self.test_folder, exist_ok=True)
 
         start = time.time()
 
@@ -928,6 +927,7 @@ class TestCollection():
         if self.test:
             raise Exception("A collection cannot contain multiple tests")
         test = TestCase(testenv=testenv, folder=self.folder + '/test')
+        test.print_header()
         self.test = test
 
         if not test.should_skip():
@@ -948,6 +948,17 @@ class TestCollection():
 
         elif test.already_exists:
             self.add_test(test.test_folder)
+
+    def get_metadata(self, testenv):
+        """
+        Instead of running the test, this method can be called
+        to generate various metedata without actually running the test.
+        """
+        test = TestCase(testenv=testenv, folder=self.folder + '/test')
+        return {
+            'estimated_time': test.calc_estimated_run_time(),
+            'will_test': not test.should_skip(),
+        }
 
     def plot(self, swap_levels=[], **kwargs):
         print('Plotting multiple flows..')
