@@ -547,7 +547,9 @@ class CollectionPlot():
         def data_util(testmeta, is_first_set, x):
             nonlocal plot, titles_used
 
+            xtics = ":xtic(2)"
             if self.custom_xtics:
+                xtics = ""
                 self.gpi += """
                     set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
@@ -561,7 +563,7 @@ class CollectionPlot():
                 EOD"""
 
             # total
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:8:4       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:8:4" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             #plot += "                      '' using ($1+" + str(x) + "+0.0):5  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
             #plot += "                      '' using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
 
@@ -608,7 +610,9 @@ class CollectionPlot():
         def data_util_tags(testmeta, is_first_set, x):
             nonlocal plot, plot_lines, titles_used
 
+            xtics = ":xtic(2)"
             if self.custom_xtics:
+                xtics = ""
                 self.gpi += """
                     set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
@@ -623,7 +627,7 @@ class CollectionPlot():
 
             # total
             # 5:7:3
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
             plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
 
             tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_axis)
@@ -676,7 +680,9 @@ class CollectionPlot():
         def data_rate(testmeta, is_first_set, x):
             nonlocal plot
 
+            xtics = ":xtic(2)"
             if self.custom_xtics:
+                xtics = ""
                 self.gpi += """
                     set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
@@ -695,7 +701,7 @@ class CollectionPlot():
             ls_l4s = "ls 1 lc rgb '" + Colors.L4S + "'"
             ls_classic = "ls 1 lc rgb '" + Colors.CLASSIC + "'"
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', "
             plot += "                              ''    using ($1+" + str(x) + "+0.05):6  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', "
             plot += "                              ''    using ($1+" + str(x) + "+0.05):5  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', "
             plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4:7:8  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', "
@@ -733,7 +739,9 @@ class CollectionPlot():
         def data_drops(testmeta, is_first_set, x):
             nonlocal plot
 
+            xtics = ":xtic(2)"
             if self.custom_xtics:
+                xtics = ""
                 self.gpi += """
                     set xtics add (""" + CollectionUtil.make_xtics(testmeta, x, self.x_axis) + """)
                     """
@@ -753,7 +761,7 @@ class CollectionPlot():
                 EOD"""
 
                                                                                       # FIXME:  4:6:5
-            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4:7:8 with yerrorbars lc rgb '" + Colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
+            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4:7:8" + xtics + " with yerrorbars lc rgb '" + Colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
             plot += "                                         '' using ($1+" + str(x) + "+0.00):6  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', "
             plot += "                                         '' using ($1+" + str(x) + "+0.00):5  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', "
             plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8 with yerrorbars lc rgb '" + Colors.MARKS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
@@ -774,7 +782,7 @@ class CollectionPlot():
     def common_header(self):
         ret = """
             unset bars
-            set xtic rotate by -65 font ',""" + str(min(10, 15 - self.n_nodes / 18)) + """'
+            set xtic rotate by -65 font ',""" + str(max(3, min(10, 15 - self.n_nodes / 18))) + """'
             set key above
             """
 
