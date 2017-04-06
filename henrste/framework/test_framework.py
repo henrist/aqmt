@@ -412,6 +412,7 @@ class TestCase():
         self.directory_error = False
         self.data_collected = False
         self.already_exists = False
+        self.is_skip_test = False
 
         self.check_folder()
 
@@ -661,6 +662,11 @@ class TestCase():
                 if not self.testenv.dry_run:
                     shutil.rmtree(self.test_folder)
 
+        if self.testenv.skip_test:
+            self.print_header(h1, 'Skipping testcase because environment tells us to')
+            self.is_skip_test = True
+            return
+
         self.print_header(h1, h2)
 
         if not self.testenv.dry_run:
@@ -779,7 +785,10 @@ class TestCase():
 
 
 class TestEnv():
-    def __init__(self, testbed, is_interactive=None, dry_run=False, verbose=1, reanalyze=False, replot=False, retest=False):
+    def __init__(self, testbed, is_interactive=None, dry_run=False, verbose=1, reanalyze=False, replot=False, retest=False, skip_test=False):
+        """
+        skip_test: Will skip the test as if it already exists
+        """
         self.testbed = testbed
 
         self.tests = []  # list of tests that has been run
@@ -793,6 +802,7 @@ class TestEnv():
         self.reanalyze = reanalyze
         self.replot = replot
         self.retest = retest
+        self.skip_test = skip_test
 
         def exit_gracefully(signum, frame):
             kill_known_pids()
