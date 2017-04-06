@@ -22,6 +22,7 @@ import shutil
 import functools
 from plumbum import local, FG, BG
 from plumbum.cmd import bash, tmux, ssh
+from plumbum.commands.processes import ProcessExecutionError
 import subprocess
 
 from .calc_queuedelay import QueueDelay
@@ -38,7 +39,7 @@ def get_shell_cmd(cmd_object):
 
 def require_on_aqm_node():
     common = get_common_script_path()
-    bash['-c', 'source %s; require_on_aqm_node' % common] & FG
+    bash['-c', 'set -e; source %s; require_on_aqm_node' % common] & FG
 
 def kill_known_pids():
     if not hasattr(kill_known_pids, 'pids'):
@@ -249,6 +250,7 @@ class Testbed():
 
     def setup(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
+            set -e
             source """ + get_common_script_path() + """
 
             configure_clients_edge """ + '%s %s %s "%s" "%s"' % (self.bitrate, self.rtt_clients, self.aqm_name, self.aqm_params, self.netem_clients_params) + """
@@ -265,10 +267,16 @@ class Testbed():
             if verbose > 1:
                 print(get_shell_cmd(cmd))
         else:
-            cmd & FG
+            try:
+                cmd & FG
+            except ProcessExecutionError:
+                return False
+
+        return True
 
     def reset(self, dry_run=False, verbose=0):
         cmd = bash['-c', """
+            set -e
             source """ + get_common_script_path() + """
             kill_all_traffic
             reset_aqm_client_edge
@@ -281,7 +289,12 @@ class Testbed():
             if verbose > 1:
                 print(get_shell_cmd(cmd))
         else:
-            cmd & FG
+            try:
+                cmd & FG
+            except ProcessExecutionError:
+                return False
+
+        return True
 
     def get_next_traffic_port(self):
         tmp = self.traffic_port
@@ -291,7 +304,7 @@ class Testbed():
     @staticmethod
     def get_aqm_options(name):
         common = get_common_script_path()
-        res = bash['-c', 'source %s; get_aqm_options %s' % (common, name)]()
+        res = bash['-c', 'set -e; source %s; get_aqm_options %s' % (common, name)]()
         return res.strip()
 
     def print_setup(self):
@@ -317,7 +330,7 @@ class Testbed():
 
             print('  %s: ' % node.lower(), end='')
             common = get_common_script_path()
-            res = (bash['-c', 'source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
+            res = (bash['-c', 'set -e; source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
             print(res)
 
     @staticmethod
@@ -662,7 +675,7 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
+        cmd = bash['-c', "set -e; echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
                    (self.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
 
         if self.testenv.dry_run:
@@ -737,7 +750,8 @@ class TestCase():
         self.save_hint('data_collected')
         self.data_collected = True
 
-        self.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        if not self.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+            raise Exception('Reset failed')
         print('%.2f s: Testbed reset, waiting %.2f s for cooldown period' % (time.time()-start, self.calc_post_wait_time()))
 
         # in case there is a a queue buildup it should now free because the

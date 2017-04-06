@@ -27,7 +27,7 @@ ip() {
     fi
 }
 
-configure_host_cc() {
+configure_host_cc() {(set -e
     local host=$1
     local tcp_congestion_control=$2
     local tcp_ecn=$3
@@ -41,6 +41,7 @@ configure_host_cc() {
     # it needs to use congctl for a per route configuration
     # (congctl added in iproute2 v4.0.0)
     ssh root@$host '
+        set -e
         if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
             sysctl -q -w net.ipv4.tcp_congestion_control='$tcp_congestion_control'
         else
@@ -57,9 +58,9 @@ configure_host_cc() {
             fi
         fi
         sysctl -q -w net.ipv4.tcp_ecn='$tcp_ecn
-}
+) || (echo -e "\nERROR: Failed setting cc $2 (ecn = $3) on node $1\n"; exit 1)}
 
-configure_clients_edge_aqm_node() {
+configure_clients_edge_aqm_node() {(set -e
     local testrate=$1
     local rtt=$2
     local aqm_name=$3
@@ -105,9 +106,9 @@ configure_clients_edge_aqm_node() {
             tc qdisc  add dev $IFACE_CLIENTS parent 3:10 handle 15: $aqm_name $aqm_params
         fi
     fi
-}
+) || (echo -e "\nERROR: Failed configuring AQM clients edge (aqm = $3)\n"; exit 1)}
 
-configure_clients_node() {
+configure_clients_node() {(set -e
     local rtt=$1
     local netem_params=$2  # optional
 
@@ -120,6 +121,7 @@ configure_clients_node() {
         ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB)
         for i in ${!hosts[@]}; do
             ssh root@${hosts[$i]} "
+                set -e
                 # if possible update the delay rather than destroying the existing qdisc
                 if tc qdisc show dev ${ifaces[$i]} | grep -q 'qdisc netem 12:'; then
                     tc qdisc change dev ${ifaces[$i]} handle 12: netem delay ${delay}ms $netem_params
@@ -136,6 +138,7 @@ configure_clients_node() {
         ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB)
         for i in ${!hosts[@]}; do
             ssh root@${hosts[$i]} "
+                set -e
                 # skip if already set up
                 if ! tc qdisc show dev ${ifaces[$i]} | grep -q 'qdisc pfifo_fast 1:'; then
                     tc qdisc del dev ${ifaces[$i]} root 2>/dev/null || true
@@ -143,9 +146,9 @@ configure_clients_node() {
                 fi"
         done
     fi
-}
+) || (echo -e "\nERROR: Failed configuring client nodes\n"; exit 1)}
 
-configure_clients_edge() {
+configure_clients_edge() {(set -e
     local testrate=$1
     local rtt=$2
     local aqm_name=$3
@@ -154,9 +157,9 @@ configure_clients_edge() {
 
     configure_clients_edge_aqm_node $testrate $rtt $aqm_name "$aqm_params" "$netem_params"
     configure_clients_node $rtt "$netem_params"
-}
+)}
 
-configure_server_edge() {
+configure_server_edge() {(set -e
     local ip_server_mgmt=$1
     local ip_aqm_s=$2
     local iface_server=$3
@@ -179,6 +182,7 @@ configure_server_edge() {
     fi
 
     ssh root@$ip_server_mgmt "
+        set -e
         if tc qdisc show dev $iface_on_server | grep -q 'qdisc netem 12:'; then
             tc qdisc change dev $iface_on_server handle 12: netem delay ${delay}ms $netem_params
         else
@@ -187,48 +191,49 @@ configure_server_edge() {
             tc qdisc  add dev $iface_on_server parent 1:2 handle 12: netem delay ${delay}ms $netem_params
             tc filter add dev $iface_on_server parent 1:0 protocol ip prio 1 u32 match ip dst $ip_aqm_s flowid 1:1
         fi"
-}
+) || (echo -e "\nERROR: Failed configuring server edge for server $1\n"; exit 1)}
 
-reset_aqm_client_edge() {
+reset_aqm_client_edge() {(set -e
     # reset qdisc at client side
     tc qdisc del dev $IFACE_CLIENTS root 2>/dev/null || true
     tc qdisc add dev $IFACE_CLIENTS root handle 1: pfifo_fast 2>/dev/null || true
-}
+)}
 
-reset_aqm_server_edge() {
+reset_aqm_server_edge() {(set -e
     # reset qdisc at server side
     for iface in $IFACE_SERVERA $IFACE_SERVERB; do
         tc qdisc del dev $iface root 2>/dev/null || true
         tc qdisc add dev $iface root handle 1: pfifo_fast 2>/dev/null || true
     done
-}
+)}
 
-reset_host() {
+reset_host() {(set -e
     local host=$1
     local iface=$2 # the iface is the one that test traffic to aqm is going on
                    # e.g. $IFACE_ON_CLIENTA
     ssh root@$host "
+        set -e
         tc qdisc del dev $iface root 2>/dev/null || true
         tc qdisc add dev $iface root handle 1: pfifo_fast 2>/dev/null || true"
-}
+)}
 
-reset_all_hosts_edge() {
+reset_all_hosts_edge() {(set -e
     hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
     ifaces=($IFACE_ON_CLIENTA $IFACE_ON_CLIENTB $IFACE_ON_SERVERA $IFACE_ON_SERVERB)
 
     for i in ${!hosts[@]}; do
         reset_host ${hosts[$i]} ${ifaces[$i]}
     done
-}
+)}
 
-reset_all_hosts_cc() {
+reset_all_hosts_cc() {(set -e
     for host in CLIENTA CLIENTB SERVERA SERVERB; do
         name="IP_${host}_MGMT"
         configure_host_cc ${!name} cubic 2
     done
-}
+)}
 
-set_offloading() {
+set_offloading() {(set -e
     onoff=$1
 
     hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
@@ -236,6 +241,7 @@ set_offloading() {
 
     for i in ${!hosts[@]}; do
         ssh root@${hosts[$i]} "
+            set -e
             ethtool -K ${ifaces[$i]} gso $onoff
             ethtool -K ${ifaces[$i]} tso $onoff"
     done
@@ -244,24 +250,26 @@ set_offloading() {
         sudo ethtool -K $iface gso $onoff
         sudo ethtool -K $iface tso $onoff
     done
-}
+)}
 
-kill_all_traffic() {
+kill_all_traffic() {(set -e
     hosts=($IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT)
 
     for host in ${hosts[@]}; do
         ssh root@$host '
-            killall -9 iperf 2>/dev/null
-            killall -9 greedy 2>/dev/null'
+            set -e
+            killall -9 iperf 2>/dev/null || :
+            killall -9 greedy 2>/dev/null || :'
     done
-}
+)}
 
-get_host_cc() {
+get_host_cc() {(set -e
     local host=$1
 
     # see configure_host_cc for more details on setup
 
     ssh root@$host '
+        set -e
         if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
             sysctl -n net.ipv4.tcp_congestion_control
             sysctl -n net.ipv4.tcp_ecn
@@ -278,9 +286,9 @@ get_host_cc() {
             ip route show $route | awk -F"congctl " "{print \$2}" | cut -d" " -f1
             ip route show $route | grep -q "ecn" && echo "1" || echo "2"
         fi'
-}
+)}
 
-get_aqm_options() {
+get_aqm_options() {(set -e
     local aqm_name=$1
 
     if [ -n "$aqm_name" ]; then
@@ -288,7 +296,7 @@ get_aqm_options() {
     else
         echo '(no aqm)'
     fi
-}
+)}
 
 # method that will abort the script if we are not on the aqm-machine
 require_on_aqm_node() {

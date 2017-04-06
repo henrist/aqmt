@@ -14,18 +14,23 @@ fi
 
 error=0
 for check in \
-             IP_AQM_MGMT \
+             IFACE_ON_CLIENTA \
+             IFACE_ON_CLIENTB \
+             IFACE_ON_SERVERA \
+             IFACE_ON_SERVERB \
              IP_AQM_C \
+             IP_AQM_MGMT \
              IP_AQM_SA \
              IP_AQM_SB \
-             IP_CLIENTA_MGMT \
              IP_CLIENTA \
-             IP_CLIENTB_MGMT \
+             IP_CLIENTA_MGMT \
              IP_CLIENTB \
-             IP_SERVERA_MGMT \
+             IP_CLIENTB_MGMT \
              IP_SERVERA \
+             IP_SERVERA_MGMT \
+             IP_SERVERB \
              IP_SERVERB_MGMT \
-             IP_SERVERB; do
+             ; do
     if [ -z $(printenv "$check") ]; then
         echo "Missing environment variable $check"
         error=1
