@@ -61,7 +61,7 @@ class Colors:
 class PlotAxis():
     """Different ways to display x axis in each test"""
     LOGARITHMIC='log'
-    NUMERIC='numeric'
+    LINEAR='linear'
     CATEGORY='category'
 
 class TreeUtil():
@@ -505,14 +505,14 @@ class CollectionPlot():
     a leaf
     """
 
-    def __init__(self, output_file, testmeta):
+    def __init__(self, output_file, testmeta, x_axis=PlotAxis.CATEGORY):
         self.plotutils = Plot()
         self.gpi = ''
         self.testmeta = testmeta
         self.output_file = output_file
 
         self.y_is_logarithmic = False  # TODO: should be able to configure this
-        self.x_axis = PlotAxis.CATEGORY
+        self.x_axis = x_axis
         self.custom_xtics = self.x_axis != PlotAxis.CATEGORY
         self.lines_at_x_offset = []  # [100, 115, 130]
 
@@ -1117,13 +1117,13 @@ def read_metadata(file):
 
     return (metadata, lines)
 
-def plot_folder_compare(folder, swap_levels=[], **kwargs):
+def plot_folder_compare(folder, swap_levels=[], x_axis=PlotAxis.CATEGORY, **kwargs):
     data = FolderUtil.generate_hierarchy_data_from_folder(folder)
 
     for level in swap_levels:
         data = TreeUtil.swap_levels(data, level)
 
-    hp = CollectionPlot(folder + '/comparison', data)
+    hp = CollectionPlot(folder + '/comparison', data, x_axis=x_axis)
     hp.plot(**kwargs)
 
 def plot_folder_flows(folder):
