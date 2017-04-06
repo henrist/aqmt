@@ -401,9 +401,8 @@ class Testbed():
 
 
 class TestCase():
-    def __init__(self, testenv, testbed, folder, tag=None, title=None, titlelabel=None):
+    def __init__(self, testenv, folder, tag=None, title=None, titlelabel=None):
         self.testenv = testenv
-        self.testbed = testbed
         self.test_folder = folder
         self.tag = tag
 
@@ -420,7 +419,7 @@ class TestCase():
         """
         Run TCP traffic with netcat (nc)
         """
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.testenv.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
@@ -453,7 +452,7 @@ class TestCase():
         """
         Run TCP traffic with iperf2
         """
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.testenv.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
@@ -534,7 +533,7 @@ class TestCase():
 
         Returns a lambda to stop the traffic
         """
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.testenv.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
@@ -583,7 +582,7 @@ class TestCase():
         else:
             ect = 'nonect'
 
-        server_port = self.testbed.get_next_traffic_port()
+        server_port = self.testenv.testbed.get_next_traffic_port()
 
         node = 'A' if node == 'a' else 'B'
 
@@ -676,7 +675,8 @@ class TestCase():
         ipclass = 'f'
 
         cmd = bash['-c', "set -e; echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
-                   (self.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder, self.testbed.ta_delay, ipclass, self.testbed.ta_samples)]
+                   (self.testenv.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder,
+                    self.testenv.testbed.ta_delay, ipclass, self.testenv.testbed.ta_samples)]
 
         if self.testenv.dry_run:
             pid = -1
@@ -692,27 +692,27 @@ class TestCase():
 
     def calc_post_wait_time(self):
         """The time it will idle after the test is run"""
-        return max(self.testbed.rtt_clients, self.testbed.rtt_servera, self.testbed.rtt_serverb) / 1000 * 5 + 2
+        return max(self.testenv.testbed.rtt_clients, self.testenv.testbed.rtt_servera, self.testenv.testbed.rtt_serverb) / 1000 * 5 + 2
 
     def calc_estimated_run_time(self):
-        return self.testbed.ta_samples * self.testbed.ta_delay / 1000 + self.testbed.get_ta_idle() + self.calc_post_wait_time()
+        return self.testenv.testbed.ta_samples * self.testenv.testbed.ta_delay / 1000 + self.testenv.testbed.get_ta_idle() + self.calc_post_wait_time()
 
     def run(self, test_fn):
         if self.directory_error:
-            raise('Cannot run a test with an unrecognized directory')
+            raise Exception('Cannot run a test with an unrecognized directory')
         if self.data_collected:
-            raise('Cannot run the same TestCase multiple times')
-        if self.already_exists:
-            return
+            raise Exception('Cannot run the same TestCase multiple times')
 
         start = time.time()
 
-        self.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+            raise Exception('Reset failed')
         print('%.2f s: Testbed reset' % (time.time()-start))
 
-        self.testbed.setup(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        if not self.testenv.testbed.setup(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+            raise Exception('Setup failed')
         if not self.testenv.dry_run:
-            self.testbed.print_setup()
+            self.testenv.testbed.print_setup()
 
         print()
         print('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
@@ -721,11 +721,11 @@ class TestCase():
         self.save_hint('type test')
         self.save_hint('title %s' % ('' if self.title is None else self.title))
         self.save_hint('titlelabel %s' % ('' if self.titlelabel is None else self.titlelabel))
-        self.save_hint('ta_idle %s' % self.testbed.get_ta_idle())
-        self.save_hint('ta_delay %s' % self.testbed.ta_delay)
-        self.save_hint('ta_samples %s' % self.testbed.ta_samples)
+        self.save_hint('ta_idle %s' % self.testenv.testbed.get_ta_idle())
+        self.save_hint('ta_delay %s' % self.testenv.testbed.ta_delay)
+        self.save_hint('ta_samples %s' % self.testenv.testbed.ta_samples)
 
-        hint = self.testbed.get_hint(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        hint = self.testenv.testbed.get_hint(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
         if self.testenv.verbose > 1:
             print(hint)
         if not self.testenv.dry_run:
@@ -736,7 +736,7 @@ class TestCase():
 
         if self.testenv.is_interactive and not self.testenv.dry_run:
             self.testenv.run_monitor_setup()
-            self.testenv.run_speedometer(self.testbed.bitrate * 1.1, delay=0.05)
+            self.testenv.run_speedometer(self.testenv.testbed.bitrate * 1.1, delay=0.05)
 
         test_fn(self)
 
@@ -750,7 +750,7 @@ class TestCase():
         self.save_hint('data_collected')
         self.data_collected = True
 
-        if not self.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
             raise Exception('Reset failed')
         print('%.2f s: Testbed reset, waiting %.2f s for cooldown period' % (time.time()-start, self.calc_post_wait_time()))
 
@@ -763,7 +763,7 @@ class TestCase():
         self.testenv.get_terminal().cleanup()
 
     def should_skip(self):
-        return self.directory_error or self.data_collected or self.already_exists
+        return self.directory_error or self.data_collected or self.already_exists or self.is_skip_test
 
     def has_valid_data(self):
         return self.already_exists or (not self.testenv.dry_run and self.data_collected)
@@ -779,7 +779,9 @@ class TestCase():
 
 
 class TestEnv():
-    def __init__(self, is_interactive=None, dry_run=False, verbose=1, reanalyze=False, replot=False, retest=False):
+    def __init__(self, testbed, is_interactive=None, dry_run=False, verbose=1, reanalyze=False, replot=False, retest=False):
+        self.testbed = testbed
+
         self.tests = []  # list of tests that has been run
         self.terminal = None
 
@@ -911,18 +913,17 @@ class TestCollection():
             self.parent_called = True
             self.parent.add_sub(self.folder)
 
-    def run_test(self, test_fn, testbed, tag, title=None, titlelabel=None):
+    def run_test(self, test_fn, tag, title=None, titlelabel=None):
         """Run a single test (the smallest possible test)
 
         test_fn: Method that generates test data
-        testbed: Instance of Testbed with the desired configuration
         tag: String appended to test case directory name
         title: The x label value for this specific test when aggregated
         titlelabel: Description of the title values
         """
 
         self.check_and_add_tag(tag)
-        test = TestCase(testenv=self.testenv, testbed=testbed, folder=self.folder + '/test-' + str(tag),
+        test = TestCase(testenv=self.testenv, folder=self.folder + '/test-' + str(tag),
                         title=title, titlelabel=titlelabel)
 
         self.tests.append(test)
