@@ -6,6 +6,8 @@
  * should not be included.
  */
 
+#include <net/inet_ecn.h>
+
 /* This constant defines whether to include drop/queue level report and other
  * testbed related stuff we only want while developing our scheduler.
  */
