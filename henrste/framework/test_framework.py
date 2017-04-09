@@ -203,14 +203,9 @@ class Testbed():
         self.aqm_name = ''
         self.aqm_params = ''
 
-    def aqm_pi2(self, params = '', params_append=True):
+    def aqm_pi2(self, params = ''):
         self.aqm_name = 'pi2'
-        if params_append:
-            self.aqm_params = 'dualq limit 1000'  # l_thresh 10000"
-        else:
-            self.aqm_params = ''
-
-        self.aqm_params += ' ' + str(params)
+        self.aqm_params = str(params)
 
     def aqm_red(self):
         self.aqm_name = 'red'
