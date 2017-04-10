@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
+from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
-from framework.test_utils import *
+from framework.test_utils import Step, run_test
 import time
 
 def test():
@@ -84,17 +85,22 @@ def test():
         subtitle='Testrate: 500 Mb/s',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            plot_logarithmic,
-            branch_rtt([
+            Step.plot_compare(
+                utilization_tags=True,
+                utilization_queues=True,
+                swap_levels=[],
+                x_axis=PlotAxis.LOGARITHMIC,
+            ),
+            Step.branch_rtt([
                 2,
                 10,
                 50,
             ]),
-            branch_sched([
+            Step.branch_sched([
                 # tag, title, fn
                 #('pi2',
-                #    'PI2: dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
-                #    lambda testbed: testbed.aqm_pi2(params='dualq target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')),
+                #    'PI2: l4s_dualq l4s_ecn target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t\\\\_shift 30ms l\\\\_drop 100',
+                #    lambda testbed: testbed.aqm_pi2(params='l4s_dualq l4s_ecn target 15ms tupdate 15ms alpha 5 beta 50 sojourn k 2 t_shift 30ms l_drop 100')),
                 #('pie', 'PIE', lambda testbed: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
                 ('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
             ]),
@@ -109,13 +115,12 @@ def test():
                 [5, 5],
                 [10, 10],
             ]),
-            plot_swap(),
             branch_udp_ect([
                 # node, tag/flag, title
                 ['a', 'nonect', 'UDP=Non ECT'],
                 ['b', 'ect1', 'UDP=ECT(1)'],
             ]),
-            branch_udp_rate([x + 400 for x in [
+            Step.branch_define_udp_rate([x + 400 for x in [
                 50,
                 70,
                 75,
