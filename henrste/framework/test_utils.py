@@ -14,106 +14,110 @@ def base_testbed():
     testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
     return testbed
 
-def branch_sched(sched_list):
-    def step(testdef):
-        for sched in sched_list:
-            tag = sched[0]
-            title = sched[1]
-            sched_fn = sched[2]
 
-            sched_fn(testdef.testenv.testbed)
+class Step():
 
-            yield {
-                'tag': 'sched-%s' % tag,
-                'title': title,
-                'titlelabel': 'Scheduler',
-            }
-    return step
+    @staticmethod
+    def branch_sched(sched_list):
+        def step(testdef):
+            for sched in sched_list:
+                tag = sched[0]
+                title = sched[1]
+                sched_fn = sched[2]
 
-def branch_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
-        def branch(testdef):
-            for rate in rate_list:
-                testdef.udp_rate = rate
+                sched_fn(testdef.testenv.testbed)
+
                 yield {
-                    'tag': 'udp-rate-%s' % rate,
-                    'title': title % rate,
-                    'titlelabel': 'UDP Rate [Mb/s]',
+                    'tag': 'sched-%s' % tag,
+                    'title': title,
+                    'titlelabel': 'Scheduler',
                 }
-        return branch
+        return step
 
-def branch_repeat(num, title='Test %d'):
-    def step(testdef):
-        for i in range(num):
-            yield {
-                'tag': 'repeat-%d' % i,
-                'title': title % i,
-                'titlelabel': 'Test #',
-            }
-    return step
+    def branch_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
+            def branch(testdef):
+                for rate in rate_list:
+                    testdef.udp_rate = rate
+                    yield {
+                        'tag': 'udp-rate-%s' % rate,
+                        'title': title % rate,
+                        'titlelabel': 'UDP Rate [Mb/s]',
+                    }
+            return branch
 
-def branch_rtt(rtt_list, title='RTT: %d ms'):
-    def step(testdef):
-        for rtt in rtt_list:
-            testdef.testenv.testbed.rtt_servera = rtt
-            testdef.testenv.testbed.rtt_serverb = rtt
-            yield {
-                'tag': 'rtt-%d' % rtt,
-                'title': title % rtt,
-                'titlelabel': 'RTT',
-            }
-    return step
+    def branch_repeat(num, title='Test %d'):
+        def step(testdef):
+            for i in range(num):
+                yield {
+                    'tag': 'repeat-%d' % i,
+                    'title': title % i,
+                    'titlelabel': 'Test #',
+                }
+        return step
 
-def branch_bitrate(bitrate_list, title='%d Mb/s'):
-    def step(testdef):
-        for bitrate in bitrate_list:
-            testdef.testenv.testbed.bitrate = bitrate * MBIT
-            yield {
-                'tag': 'linkrate-%d' % bitrate,
-                'title': title % bitrate,
-                'titlelabel': 'Linkrate',
-            }
-    return step
+    def branch_rtt(rtt_list, title='RTT: %d ms'):
+        def step(testdef):
+            for rtt in rtt_list:
+                testdef.testenv.testbed.rtt_servera = rtt
+                testdef.testenv.testbed.rtt_serverb = rtt
+                yield {
+                    'tag': 'rtt-%d' % rtt,
+                    'title': title % rtt,
+                    'titlelabel': 'RTT',
+                }
+        return step
+
+    def branch_bitrate(bitrate_list, title='%d Mb/s'):
+        def step(testdef):
+            for bitrate in bitrate_list:
+                testdef.testenv.testbed.bitrate = bitrate * MBIT
+                yield {
+                    'tag': 'linkrate-%d' % bitrate,
+                    'title': title % bitrate,
+                    'titlelabel': 'Linkrate',
+                }
+        return step
 
 
-def branch_runif(checks):
-    def step(testdef):
-        for tag, fn, title in checks:
+    def branch_runif(checks):
+        def step(testdef):
+            for tag, fn, title in checks:
+                prev = testdef.testenv.skip_test
+                testdef.testenv.skip_test = not fn(testdef.testenv)
+
+                yield {
+                    'tag': 'runif-%s' % tag,
+                    'title': title,
+                    'titlelabel': 'Run if',
+                }
+
+                testdef.testenv.skip_test = prev
+        return step
+
+    def skipif(fn):
+        def step(testdef):
             prev = testdef.testenv.skip_test
-            testdef.testenv.skip_test = not fn(testdef.testenv)
+            testdef.testenv.skip_test = fn(testdef.testenv)
 
-            yield {
-                'tag': 'runif-%s' % tag,
-                'title': title,
-                'titlelabel': 'Run if',
-            }
+            yield
 
             testdef.testenv.skip_test = prev
-    return step
 
-def step_skipif(fn):
-    def step(testdef):
-        prev = testdef.testenv.skip_test
-        testdef.testenv.skip_test = fn(testdef.testenv)
+        return step
 
-        yield
+    def plot_compare(**plot_args):
+        def step(testdef):
+            yield
+            if not testdef.dry_run:
+                plot_folder_compare(testdef.collection.folder, **plot_args)
+        return step
 
-        testdef.testenv.skip_test = prev
-
-    return step
-
-def plot_compare(**plot_args):
-    def step(testdef):
-        yield
-        if not testdef.dry_run:
-            plot_folder_compare(testdef.collection.folder, **plot_args)
-    return step
-
-def plot_flows(**plot_args):
-    def step(testdef):
-        yield
-        if not testdef.dry_run:
-            plot_folder_flows(testdef.collection.folder)
-    return step
+    def plot_flows(**plot_args):
+        def step(testdef):
+            yield
+            if not testdef.dry_run:
+                plot_folder_flows(testdef.collection.folder)
+        return step
 
 class Testdef():
     def __init__(self, testenv):
