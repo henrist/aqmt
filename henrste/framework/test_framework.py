@@ -215,17 +215,17 @@ class Testbed():
         self.aqm_name = 'dualq'
         self.aqm_params = 'l_thresh_us 1000 offset 0 l_slope 5 c_slope 4 l_smooth 0 c_smooth 5 l_power 1 c_power 2 l_shift 50'
 
-    def aqm_pie(self, params=None):
+    def aqm_pie(self, params='ecn'):
         self.aqm_name = 'pie'
-        self.aqm_params = 'ecn' if params is None else params
+        self.aqm_params = params
 
-    def aqm_fq_codel(self):
+    def aqm_fq_codel(self, params='ecn'):
         self.aqm_name = 'fq_codel'
-        self.aqm_params = 'ecn'
+        self.aqm_params = params
 
-    def aqm_pfifo(self):
+    def aqm_pfifo(self, params=''):
         self.aqm_name = 'pfifo_qsize'
-        self.aqm_params = ''
+        self.aqm_params = params
 
     def cc(self, node, cc, ecn):
         if node != 'a' and node != 'b':
