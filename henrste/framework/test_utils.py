@@ -1,6 +1,6 @@
 import sys
-from framework.test_framework import TestCollection
-from framework.plot import PlotAxis, plot_folder_flows, plot_folder_compare
+from .test_framework import TestCollection
+from .plot import PlotAxis, plot_folder_flows, plot_folder_compare
 
 MBIT=1000*1000
 
