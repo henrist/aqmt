@@ -4,7 +4,8 @@ MAINTAINER Henrik Steen <henrist@henrist.net>
 # set up custom iproute2
 # (patch is originally written for branch v3.16.0 of iproute2,
 #  using v4.6.0 for support of 'ip route congctl'
-#  using v4.8.0 because of kernel changes)
+#  using v4.8.0 because of kernel changes
+#  using v4.10.0 because of targeting this kernel)
 ADD container/iproute2.patch /opt/
 WORKDIR /opt
 RUN apt-get update \
@@ -18,7 +19,7 @@ RUN apt-get update \
          patch \
          pkg-config \
     && rm -rf /var/lib/apt/lists/* \
-    && git clone --depth=1 --branch=v4.8.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
+    && git clone --depth=1 --branch=v4.10.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
     && cd iproute2 \
     && patch -p1 <../iproute2.patch \
     && make \
