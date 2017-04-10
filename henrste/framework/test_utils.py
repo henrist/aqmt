@@ -34,16 +34,20 @@ class Step():
                 }
         return step
 
-    def branch_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
-            def branch(testdef):
-                for rate in rate_list:
-                    testdef.udp_rate = rate
-                    yield {
-                        'tag': 'udp-rate-%s' % rate,
-                        'title': title % rate,
-                        'titlelabel': 'UDP Rate [Mb/s]',
-                    }
-            return branch
+    def branch_define_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
+        """
+        This method don't actually change the setup, it only sets a variable
+        that can be used when running the actual test.
+        """
+        def branch(testdef):
+            for rate in rate_list:
+                testdef.udp_rate = rate
+                yield {
+                    'tag': 'udp-rate-%s' % rate,
+                    'title': title % rate,
+                    'titlelabel': 'UDP Rate [Mb/s]',
+                }
+        return branch
 
     def branch_repeat(num, title='Test %d'):
         def step(testdef):
@@ -77,7 +81,6 @@ class Step():
                     'titlelabel': 'Linkrate',
                 }
         return step
-
 
     def branch_runif(checks):
         def step(testdef):
