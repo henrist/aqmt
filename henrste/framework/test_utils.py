@@ -43,7 +43,8 @@ class Step():
                 }
         return step
 
-    def branch_define_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
+    @staticmethod
+    def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s'):
         """
         This method don't actually change the setup, it only sets a variable
         that can be used when running the actual test.
