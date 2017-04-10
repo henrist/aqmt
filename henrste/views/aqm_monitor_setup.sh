@@ -5,6 +5,8 @@
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . ../common.sh
 
+require_on_aqm_node
+
 if [ -z $TMUX ]; then
     echo "Run this inside tmux!"
     exit 1

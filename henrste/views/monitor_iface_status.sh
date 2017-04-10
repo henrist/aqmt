@@ -3,7 +3,7 @@
 # this script reports the delta of number of (non-dropped) packets on the
 # interfaces as well as number of dropped packets
 #
-# run it on the relevant servers to watch status
+# run it on the relevant machines to watch status
 
 sleeptime=1
 
@@ -12,6 +12,7 @@ get_num() {
 }
 
 if ! [[ $(ip addr show to $IP_AQM_C) ]]; then
+    # reporting from client/server
     last=(0 0 0 0)
 
     while true; do
@@ -35,6 +36,7 @@ if ! [[ $(ip addr show to $IP_AQM_C) ]]; then
         sleep $sleeptime
     done
 else
+    # reporting from AQM
     last=(0 0 0 0 0 0 0 0)
 
     while true; do

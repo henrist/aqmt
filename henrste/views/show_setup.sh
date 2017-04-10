@@ -11,18 +11,21 @@ verbose=
 show_ip=0
 show_link=0
 show_route=0
+show_filter=0
 
-while getopts "hilrv" opt; do
+while getopts "fhilrv" opt; do
     case $opt in
         h)
             echo "Usage: ./show_setup.sh [-hilrv] [interface ...]"
             echo "  -h  show help"
+            echo "  -f  show ip filter details"
             echo "  -i  show ip addr details"
             echo "  -l  show ip link details"
             echo "  -r  show ip route details"
             echo "  -v  show statistics"
             exit
             ;;
+        f) show_filter=1 ;;
         i) show_ip=1 ;;
         l) show_link=1 ;;
         r) show_route=1 ;;
@@ -59,10 +62,12 @@ show() {
             echo_indent "$out"
         fi
 
-        out=$(tc filter show dev $link)
-        if ! [ -z "$out" ]; then
-            echo "filter:"
-            echo_indent "$out"
+        if [ $show_filter -eq 1 ]; then
+            out=$(tc filter show dev $link)
+            if ! [ -z "$out" ]; then
+                echo "filter:"
+                echo_indent "$out"
+            fi
         fi
 
         if [ $show_ip -eq 1 ]; then
