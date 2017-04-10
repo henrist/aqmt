@@ -28,7 +28,7 @@ import subprocess
 from .calc_queuedelay import QueueDelay
 from .calc_tagged_rate import TaggedRate
 from .calc_utilization import Utilization
-from .plot import Plot, plot_folder_compare, plot_folder_flows
+from .plot import Plot
 
 def get_common_script_path():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/common.sh'
@@ -954,25 +954,6 @@ class TestCollection():
             'estimated_time': test.calc_estimated_run_time(),
             'will_test': not test.should_skip(),
         }
-
-    def plot(self, swap_levels=[], **kwargs):
-        print('Plotting multiple flows..')
-        self.plot_tests_merged()
-        self.plot_tests_compare(swap_levels=swap_levels, **kwargs)
-
-    def plot_tests_merged(self):
-        testfolders = []
-        for collection in self.collections:
-            if collection.test and collection.test.has_valid_data():
-                testfolders.append(collection.test.test_folder)
-
-        if len(testfolders) > 0:
-            p = Plot()
-            p.plot_multiple_flows(testfolders, self.folder + '/analysis_merged')
-
-    def plot_tests_compare(self, swap_levels=[], **kwargs):
-        if len(self.collections) > 0:
-            plot_folder_compare(self.folder, swap_levels=swap_levels, **kwargs)
 
 
 if __name__ == '__main__':

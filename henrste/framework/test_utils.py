@@ -1,6 +1,6 @@
 import sys
 from framework.test_framework import TestCollection
-from framework.plot import PlotAxis
+from framework.plot import PlotAxis, plot_folder_flows, plot_folder_compare
 
 MBIT=1000*1000
 
@@ -101,42 +101,29 @@ def step_skipif(fn):
 
     return step
 
-def plot_swap(offset=0):
-    processed = False
+def plot_compare(**plot_args):
     def step(testdef):
-        nonlocal processed
-        if not processed:
-            level = testdef.level - 1 + offset
-            testdef.swap_levels.append(level)
-            processed = True
         yield
+        if not testdef.dry_run:
+            plot_folder_compare(testdef.collection.folder, **plot_args)
     return step
 
-def plot_logarithmic(testdef):
-    testdef.plot_x_axis = PlotAxis.LOGARITHMIC
-    yield
-
-def plot_linear(testdef):
-    testdef.plot_x_axis = PlotAxis.LINEAR
-    yield
+def plot_flows(**plot_args):
+    def step(testdef):
+        yield
+        if not testdef.dry_run:
+            plot_folder_flows(testdef.collection.folder)
+    return step
 
 class Testdef():
     def __init__(self, testenv):
+        self.collection = None  # set by run_test
+        self.dry_run = False  # if dry run no side effects should be caused
         self.testenv = testenv
         self.testbed = testenv.testbed  # shortcut to above
         self.level = 0
-        self.swap_levels = []
-        self.plot_x_axis = PlotAxis.CATEGORY
 
-    def gen_swap_levels(self, level):
-        l = []
-        for item in self.swap_levels:
-            n = item - level
-            if n >= 0:
-                l.append(n)
-        return l
-
-def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, swap_levels=[], ask_confirmation=True):
+def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, ask_confirmation=True):
     testdef = Testdef(testenv)
 
     # Save testdef to testenv so we can pull it from the test case we are running.
@@ -153,12 +140,13 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, s
         num_tests += 1 if meta['will_test'] else 0
         num_tests_total += 1
 
-    def walk(parent, steps, only_meta=False, level=0, parent_step=None):
+    def walk(parent, steps, level=0):
         plot = True
+        testdef.collection = parent
 
         # The last step should be the actual traffic generator
         if len(steps) == 1:
-            if only_meta:
+            if testdef.dry_run:
                 get_metadata(parent, testenv)
             else:
                 parent.run_test(
@@ -172,8 +160,7 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, s
             testdef.level = level
             for step in steps[0](testdef):
                 if not step:
-                    walk(parent, steps[1:], only_meta, level, parent_step)
-                    plot = False
+                    walk(parent, steps[1:], level)
                     continue
 
                 child = parent
@@ -184,15 +171,10 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, s
                         folder=step['tag'],
                         parent=parent
                     )
-                walk(child, steps[1:], only_meta, level + 1, step)
+                walk(child, steps[1:], level + 1)
 
-        if plot and not only_meta:
-            parent.plot(
-                utilization_tags=True,
-                utilization_queues=False,
-                swap_levels=testdef.gen_swap_levels(level),
-                x_axis=testdef.plot_x_axis,
-            )
+                # the walk function have replaced our collection, so put it back
+                testdef.collection = parent
 
     def get_root():
         return TestCollection(
@@ -201,7 +183,8 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, s
             subtitle=subtitle,
         )
 
-    walk(get_root(), steps, only_meta=True)
+    testdef.dry_run = True
+    walk(get_root(), steps)
     print('Estimated time: %d seconds for running %d (of %d) tests (average %g sec/test)\n' % (
         estimated_time, num_tests, num_tests_total, estimated_time / num_tests if num_tests > 0 else 0))
 
@@ -211,4 +194,5 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, s
         run_test = input().lower() == 'y'
 
     if run_test:
+        testdef.dry_run = False
         walk(get_root(), steps)
