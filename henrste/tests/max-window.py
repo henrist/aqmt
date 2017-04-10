@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
-from framework.test_utils import Step, run_test
+from framework.test_utils import MBIT, Step, run_test
 
 def test():
     """
@@ -44,7 +44,7 @@ def test():
         folder='results/max-window',
         title='Testing to achieve a high TCP window',
         subtitle='AQM: pfifo   testrate: 200 Mb/s   sample interval: 400 ms',
-        testenv=TestEnv(testbed),
+        testenv=TestEnv(testbed, retest=True),
         steps=[
             Step.plot_compare(),
             Step.plot_flows(),

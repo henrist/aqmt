@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
-from framework.test_utils import Step, run_test
+from framework.test_utils import MBIT, Step, run_test
 
 def test():
     """
@@ -14,11 +14,8 @@ def test():
     """
     testbed = Testbed()
     testbed.bitrate = 10 * MBIT
-    testbed.aqm_pi2()
     testbed.rtt_servera = 25
     testbed.rtt_serverb = 25
-    testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-    testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
 
     testbed.ta_samples = 60
     testbed.ta_delay = 500
@@ -71,15 +68,15 @@ def test():
         title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera,
         testenv=TestEnv(testbed),
         steps=[
-            Step.plot_combine(
+            Step.plot_compare(
                 swap_levels=[1],
                 utilization_tags=True,
             ),
             branch_custom_cc([
                 # cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2
-                #('dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'),
-                #('cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'),
-                ('mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'),
+                #('dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'TCP'),
+                #('cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'TCP'),
+                ('mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'DCTCP'),
             ]),
             Step.branch_sched([
                 ('pi2', 'PI2 l\\\\_thresh=1000', lambda testbed: testbed.aqm_pi2(params='l_thresh 1000')),
@@ -90,7 +87,7 @@ def test():
                 ('nonect', 'UDP with Non-ECT'),
                 ('ect1', 'UDP with ECT(1)'),
             ]),
-            Step.branch_define_udp_bitrate([
+            Step.branch_define_udp_rate([
                 2.5,
                 5,
                 8,
