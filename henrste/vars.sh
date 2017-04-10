@@ -12,12 +12,25 @@ if ! [[ "$PATH" = *iproute2-l4s* ]] && [ -f "$(dirname $(readlink -f $BASH_SOURC
     export PATH="$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc:$PATH"
 fi
 
+ADDITIONAL_VARS=""
+if ip a show | grep -q "$IP_AQM_C/"; then
+    # additional vars on the AQM
+    ADDITIONAL_VARS="
+             IFACE_ON_CLIENTA
+             IFACE_ON_CLIENTB
+             IFACE_ON_SERVERA
+             IFACE_ON_SERVERB
+             "
+else
+    # additional vars on client/servers
+    ADDITIONAL_VARS="
+             IFACE_AQM
+             "
+fi
+
 error=0
 for check in \
-             IFACE_ON_CLIENTA \
-             IFACE_ON_CLIENTB \
-             IFACE_ON_SERVERA \
-             IFACE_ON_SERVERB \
+             $ADDITIONAL_VARS \
              IP_AQM_C \
              IP_AQM_MGMT \
              IP_AQM_SA \
