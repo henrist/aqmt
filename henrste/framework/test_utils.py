@@ -31,6 +31,18 @@ class Step():
                 }
         return step
 
+    @staticmethod
+    def branch_custom(list, fn_testdef, fn_tag, fn_title, titlelabel=''):
+        def step(testdef):
+            for item in list:
+                fn_testdef(testdef, item)
+                yield {
+                    'tag': 'custom-%s' % fn_tag(item),
+                    'title': fn_title(item),
+                    'titlelabel': titlelabel,
+                }
+        return step
+
     def branch_define_udp_rate(rate_list, title='UDP-rate: %d Mb/s'):
         """
         This method don't actually change the setup, it only sets a variable
