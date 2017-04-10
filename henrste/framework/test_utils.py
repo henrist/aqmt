@@ -59,6 +59,7 @@ class Step():
                 }
         return branch
 
+    @staticmethod
     def branch_repeat(num, title='Test %d'):
         def step(testdef):
             for i in range(num):
@@ -69,6 +70,7 @@ class Step():
                 }
         return step
 
+    @staticmethod
     def branch_rtt(rtt_list, title='RTT: %d ms'):
         def step(testdef):
             for rtt in rtt_list:
@@ -81,6 +83,7 @@ class Step():
                 }
         return step
 
+    @staticmethod
     def branch_bitrate(bitrate_list, title='%d Mb/s'):
         def step(testdef):
             for bitrate in bitrate_list:
@@ -92,6 +95,7 @@ class Step():
                 }
         return step
 
+    @staticmethod
     def branch_runif(checks):
         def step(testdef):
             for tag, fn, title in checks:
@@ -107,6 +111,7 @@ class Step():
                 testdef.testenv.skip_test = prev
         return step
 
+    @staticmethod
     def skipif(fn):
         def step(testdef):
             prev = testdef.testenv.skip_test
@@ -118,6 +123,7 @@ class Step():
 
         return step
 
+    @staticmethod
     def plot_compare(**plot_args):
         def step(testdef):
             yield
@@ -125,6 +131,7 @@ class Step():
                 plot_folder_compare(testdef.collection.folder, **plot_args)
         return step
 
+    @staticmethod
     def plot_flows(**plot_args):
         def step(testdef):
             yield
