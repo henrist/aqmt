@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# add path to library root
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
 from framework.test_utils import Step, run_test
