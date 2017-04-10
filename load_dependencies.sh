@@ -18,7 +18,7 @@ cd "$(dirname $(readlink -f $BASH_SOURCE))"
     make
 )
 
-for n in sch_fifo_qsize sch_pi2 sch_pie_qsize tcp_dctcp; do (
+for n in sch_fifo_latest_qsize sch_pi2 sch_pie_latest_qsize sch_fq_codel_latest_qsize tcp_dctcp; do (
     echo
     echo "---- BUILDING AND LOADING: $n ----"
     echo
