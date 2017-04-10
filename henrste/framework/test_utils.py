@@ -20,12 +20,9 @@ class Step():
     @staticmethod
     def branch_sched(sched_list):
         def step(testdef):
-            for sched in sched_list:
-                tag = sched[0]
-                title = sched[1]
-                sched_fn = sched[2]
-
+            for tag, title, sched_fn in sched_list:
                 sched_fn(testdef.testenv.testbed)
+                testdef.sched_tag = tag  # to allow substeps to filter it
 
                 yield {
                     'tag': 'sched-%s' % tag,
