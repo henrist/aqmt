@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+# we mount ssh setup in a specific template directory
+# now we copy this so it is effective
+mkdir -p /root/.ssh/
+cp /ssh-template/* /root/.ssh/
+chown -R root:root /root/.ssh/
+chmod 600 /root/.ssh/*
+
 # arp config is done to avoid arp lookups that causes loss
 
 disable_so() {

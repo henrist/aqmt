@@ -1,40 +1,9 @@
 FROM ubuntu:xenial
 MAINTAINER Henrik Steen <henrist@henrist.net>
 
-# set up custom iproute2
-# (patch is originally written for branch v3.16.0 of iproute2,
-#  using v4.6.0 for support of 'ip route congctl'
-#  using v4.8.0 because of kernel changes
-#  using v4.10.0 because of targeting this kernel)
-ADD container/iproute2.patch /opt/
-WORKDIR /opt
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-         bison \
-         build-essential \
-         flex \
-         git \
-         iptables-dev \
-         libdb5.3-dev \
-         patch \
-         pkg-config \
-    && rm -rf /var/lib/apt/lists/* \
-    && git clone --depth=1 --branch=v4.10.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
-    && cd iproute2 \
-    && patch -p1 <../iproute2.patch \
-    && make \
-    && make install \
-    && rm -rf /opt/iproute2 \
-    && apt-get remove -y bison build-essential flex git iptables-dev libdb5.3-dev patch pkg-config \
-    && apt-get autoremove -y
-
 # set up ssh and custom packages
-ADD container/id_rsa /root/.ssh/
-ADD container/id_rsa.pub /root/.ssh/
-ADD container/id_rsa.pub /root/.ssh/authorized_keys
 ADD container/speedometer.patch /opt/
-RUN chmod 600 /root/.ssh/* \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends \
          bc \
          ca-certificates \
@@ -86,6 +55,33 @@ RUN chmod 600 /root/.ssh/* \
     && echo ". /tmp/testbed-vars.sh" >>/etc/bash.bashrc \
     && echo "cd /opt/testbed" >>/etc/bash.bashrc \
     && echo ". /tmp/testbed-vars.sh" >>/etc/profile.d/testbed.sh
+
+# set up custom iproute2
+# (patch is originally written for branch v3.16.0 of iproute2,
+#  using v4.6.0 for support of 'ip route congctl'
+#  using v4.8.0 because of kernel changes
+#  using v4.10.0 because of targeting this kernel)
+ADD container/iproute2.patch /opt/
+WORKDIR /opt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+         bison \
+         build-essential \
+         flex \
+         git \
+         iptables-dev \
+         libdb5.3-dev \
+         patch \
+         pkg-config \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --depth=1 --branch=v4.10.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
+    && cd iproute2 \
+    && patch -p1 <../iproute2.patch \
+    && make \
+    && make install \
+    && rm -rf /opt/iproute2 \
+    && apt-get remove -y bison build-essential flex git iptables-dev libdb5.3-dev patch pkg-config \
+    && apt-get autoremove -y
 
 ADD container/entrypoint.sh /entrypoint.sh
 

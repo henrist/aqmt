@@ -1,6 +1,7 @@
 version: '2'
 
 services:
+
   aqm:
     build: .
     image: testbed
@@ -19,7 +20,11 @@ services:
         ipv4_address: 10.25.3.2
     volumes:
       - ../:/opt/testbed/
-      - .vars.sh:/tmp/testbed-vars.sh
+      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ./container/id_rsa:/ssh-template/id_rsa
+      - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
+      - ./container/id_rsa.pub:/ssh-template/authorized_keys
+
   clienta:
     build: .
     image: testbed
@@ -34,7 +39,11 @@ services:
         ipv4_address: 10.25.1.11
     volumes:
       - ../:/opt/testbed/
-      - .vars.sh:/tmp/testbed-vars.sh
+      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ./container/id_rsa:/ssh-template/id_rsa
+      - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
+      - ./container/id_rsa.pub:/ssh-template/authorized_keys
+
   clientb:
     build: .
     image: testbed
@@ -49,7 +58,11 @@ services:
         ipv4_address: 10.25.1.12
     volumes:
       - ../:/opt/testbed/
-      - .vars.sh:/tmp/testbed-vars.sh
+      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ./container/id_rsa:/ssh-template/id_rsa
+      - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
+      - ./container/id_rsa.pub:/ssh-template/authorized_keys
+
   servera:
     build: .
     image: testbed
@@ -64,7 +77,11 @@ services:
         ipv4_address: 10.25.2.21
     volumes:
       - ../:/opt/testbed/
-      - .vars.sh:/tmp/testbed-vars.sh
+      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ./container/id_rsa:/ssh-template/id_rsa
+      - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
+      - ./container/id_rsa.pub:/ssh-template/authorized_keys
+
   serverb:
     build: .
     image: testbed
@@ -79,7 +96,11 @@ services:
         ipv4_address: 10.25.3.31
     volumes:
       - ../:/opt/testbed/
-      - .vars.sh:/tmp/testbed-vars.sh
+      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ./container/id_rsa:/ssh-template/id_rsa
+      - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
+      - ./container/id_rsa.pub:/ssh-template/authorized_keys
+
   fix_permissions:
     build: .
     image: testbed
