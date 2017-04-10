@@ -1038,21 +1038,6 @@ class Plot():
 class FolderUtil():
 
     @staticmethod
-    def get_testcases_in_folder(folder):
-        testcases = []
-
-        for file in os.listdir(folder):
-            if file.startswith('test-') and os.path.isdir(os.path.join(folder, file)):
-                # verify the test contains analyzed data
-                with open(os.path.join(folder, file, 'details')) as f:
-                    for line in f:
-                        if line == 'data_analyzed':
-                            testcases.append(os.path.join(folder, file))
-                            continue
-
-        return sorted(testcases)
-
-    @staticmethod
     def generate_hierarchy_data_from_folder(folder, swap_levels=[]):
         """Generate a dict that can be sent to CollectionPlot by analyzing the directory
 
