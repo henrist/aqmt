@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 from framework.test_framework import Testbed, TestEnv, TestCase, TestCollection, require_on_aqm_node
+from framework.test_utils import MBIT, Step, run_test
 import time
 
-MBIT=1000*1000
-
-def base_testbed():
+def test_speeds():
+    """
+    Test one UDP-flow vs TCP-greedy flows) with different UDP speeds and UDP ECT-flags
+    """
     testbed = Testbed()
     testbed.bitrate = 10 * MBIT
     testbed.aqm_pi2()
@@ -13,276 +15,324 @@ def base_testbed():
     testbed.rtt_serverb = 25
     testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
     testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
-    return testbed
 
-def test_speeds():
-    """Test one UDP-flow vs TCP-greedy flows) with different UDP speeds and UDP ECT-flags"""
-    testbed = base_testbed()
     testbed.ta_samples = 60
     testbed.ta_delay = 500
 
-    collection1 = TestCollection('results/speeds', TestEnv(), title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera)
+    def branch_custom_cc(cc_set):
+        def step(testdef):
+            for cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2 in cc_set:
+                testdef.testbed.cc(node1, cc1, ecn1)
+                testdef.testbed.cc(node2, cc2, ecn2)
 
-    cc_set = [
-        #['dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'],
-        #['cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'],
-        ['mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-    ]
+                testdef.cc1n = cc1n
+                testdef.cc2n = cc2n
+                testdef.node1 = node1
+                testdef.node2 = node2
+                testdef.cctag1 = cctag1
+                testdef.cctag2 = cctag2
 
-    aqm_set = [
-        ['pi2', 'PI2 l\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000 sojourn')],
-        ['pie', 'PIE', lambda: testbed.aqm_pie()],
-        ['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
-    ]
+                yield {
+                    'tag': 'cc-%s' % cctag,
+                    'title': cctitle,
+                    'titlelabel': 'Congestion control setup',
+                }
+        return step
 
-    ect_set = [
-        ('nonect', 'UDP with Non-ECT'),
-        ('ect1', 'UDP with ECT(1)'),
-    ]
-
-    for cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2 in cc_set:
-        testbed.cc(node1, cc1, ecn1)
-        testbed.cc(node2, cc2, ecn2)
-
-        collection2 = TestCollection(folder=cctag, parent=collection1, title=cctitle)
-
-        for aqmtag, aqmtitle, aqmfn in aqm_set:
-            aqmfn()
-            collection3 = TestCollection(folder=aqmtag, parent=collection2, title=aqmtitle)
-
+    def branch_ect(ect_set):
+        def step(testdef):
             for ect, title in ect_set:
-                collection4 = TestCollection(ect, parent=collection3, title=title)
+                testdef.ect = ect
 
-                speeds = [
-                    2500,
-                    5000,
-                    8000,
-                    8500,
-                    9000,
-                    9250,
-                    9500,
-                    9600,
-                    9700,
-                    9800,
-                    9900,
-                    10000,
-                    10100,
-                    #10200,
-                    #10300,
-                    #10400,
-                    #10500,
-                    11000,
-                    #12000,
-                    #12500,
-                    #13000,
-                    #13100,
-                    #13200,
-                    #13400,
-                    #13500,
-                    #14000,
-                    20000,
-                    40000,
-                    #50000,
-                    #500000,
-                ]
+                yield {
+                    'tag': 'ect-%s' % ect,
+                    'title': title,
+                    'titlelabel': '',
+                }
+        return step
 
-                for speed in speeds:
-                    def my_test(testcase):
-                        for i in range(cc1n):
-                            testcase.run_greedy(node=node1, tag=cctag1)
+    def my_test(testcase):
+        testdef = testcase.testenv.testdef
 
-                        for i in range(cc2n):
-                            testcase.run_greedy(node=node2, tag=cctag2)
+        for i in range(testdef.cc1n):
+            testcase.run_greedy(node=testdef.node1, tag=testdef.cctag1)
 
-                        testcase.run_udp(node='a', bitrate=speed*1000, ect=ect, tag='Unresponsive UDP')
+        for i in range(testdef.cc2n):
+            testcase.run_greedy(node=testdef.node2, tag=testdef.cctag2)
 
-                    collection4.run_test(my_test, testbed, tag=speed, title=speed, titlelabel='UDP bitrate [kb/s]')
-                collection4.plot_tests_merged()
+        testcase.run_udp(node='a', bitrate=testdef.udp_rate*MBIT, ect=testdef.ect, tag='Unresponsive UDP')
 
-    collection1.plot(utilization_queues=True, utilization_tags=True, swap_levels=[1])
+    run_test(
+        folder='results/speeds',
+        title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera,
+        testenv=TestEnv(testbed),
+        steps=[
+            Step.plot_combine(
+                swap_levels=[1],
+                utilization_tags=True,
+            ),
+            branch_custom_cc([
+                # cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2
+                #('dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'),
+                #('cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp', testbed.ECN_INITIATE, 'TCP'),
+                ('mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'),
+            ]),
+            Step.branch_sched([
+                ('pi2', 'PI2 l\\\\_thresh=1000', lambda testbed: testbed.aqm_pi2(params='l_thresh 1000')),
+                ('pie', 'PIE', lambda testbed: testbed.aqm_pie()),
+                ('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
+            ]),
+            branch_ect([
+                ('nonect', 'UDP with Non-ECT'),
+                ('ect1', 'UDP with ECT(1)'),
+            ]),
+            Step.branch_define_udp_bitrate([
+                2.5,
+                5,
+                8,
+                8.5,
+                9,
+                9.25,
+                9.5,
+                9.6,
+                9.7,
+                9.8,
+                9.9,
+                10,
+                10.1,
+                #10.2,
+                #10.3,
+                #10.4,
+                #10.5,
+                11,
+                #12,
+                #12.5,
+                #13,
+                #13.1,
+                #13.2,
+                #13.4,
+                #13.5,
+                #14,
+                20,
+                40,
+                #50,
+                #500,
+            ], title='%g'),
+            my_test,
+        ],
+    )
 
 
 def test_fairness():
-    """Test different combinations of congestion controls on different qdiscs
+    """
+    Test different combinations of congestion controls on different qdiscs
 
     - Single flows in different congestion controls
     - No overload
     """
-    testbed = base_testbed()
+    testbed = Testbed()
+    testbed.bitrate = 10 * MBIT
+    testbed.aqm_pi2()
+    testbed.rtt_servera = 25
+    testbed.rtt_serverb = 25
+    testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
+    testbed.cc('b', 'dctcp', testbed.ECN_INITIATE)
+
     testbed.ta_samples = 250
     testbed.ta_delay = 1000
 
-    aqms = [
-        ['pie', 'PIE', lambda: testbed.aqm_pie()],
-        ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda: testbed.aqm_pi2(params='l_thresh 1000 sojourn')],
-        ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda: testbed.aqm_pi2(params='l_thresh 10000 sojourn')],
-        ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda: testbed.aqm_pi2(params='l_thresh 50000 sojourn')],
-        #['pfifo', 'pfifo', lambda: testbed.aqm_pfifo()],
-    ]
+    def branch_cc_matrix(cc_matrix_set):
+        def step(testdef):
+            for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix_set:
+                testdef.cctag1 = cctag1
+                testdef.cctag2 = cctag2
 
-    cc_matrix = [
-        #['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
-        ['reno-vs-dctcp', 'Reno/DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-        ['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
-        #['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
-        ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-        ['cubic-vs-cubic-ecn', 'Cubic/CubECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
-        ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
-    ]
+                testdef.testbed.cc(node1, cc1, ecn1)
+                testdef.testbed.cc(node2, cc2, ecn2)
 
-    rtts = [2, 20, 100, 200]
+                yield {
+                    'tag': 'cc-matrix-%s' % cctag,
+                    'title': cctitle,
+                    'titlelabel': '',
+                }
+        return step
 
-    collection1 = TestCollection('results/fairness-sojourn', TestEnv(reanalyze=False, dry_run=False), title='Testing traffic fairness')
+    def my_test(testcase):
+        testdef = testcase.testenv.testdef
 
-    for aqmtag, aqmtitle, aqmfn in aqms:
-        aqmfn()
-        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
+        testcase.run_greedy(node='a', tag=testdef.cctag1)
+        testcase.run_greedy(node='b', tag=testdef.cctag2)
 
-        for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix:
-            if aqmtag == 'pi2-l_thresh-50000' and cctag != 'dctcp-vs-dctcp' and cctag != 'cubic-vs-dctcp':
-                continue
-
-            testbed.cc(node1, cc1, ecn1)
-            testbed.cc(node2, cc2, ecn2)
-
-            collection3 = TestCollection(folder=cctag, parent=collection2, title=cctitle)
-
-            for rtt in rtts:
-                testbed.rtt_servera = testbed.rtt_serverb = rtt
-
-                def my_test(testcase):
-                    testcase.run_greedy(node='a', tag=cctag1)
-                    testcase.run_greedy(node='b', tag=cctag2)
-
-                collection3.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
-
-            collection3.plot(utilization_queues=False, utilization_tags=True)
-        collection2.plot(utilization_queues=False, utilization_tags=True)
-    collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[0])
+    run_test(
+        folder='results/fairness',
+        title='Testing traffic fairness',
+        testenv=TestEnv(testbed),
+        steps=[
+            Step.plot_compare(
+                swap_levels=[0],
+                utilization_queues=False,
+                utilization_tags=True,
+            ),
+            Step.branch_sched([
+                ['pie', 'PIE', lambda testbed: testbed.aqm_pie()],
+                ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda testbed: testbed.aqm_pi2(params='l_thresh 1000')],
+                ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda testbed: testbed.aqm_pi2(params='l_thresh 10000')],
+                ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda testbed: testbed.aqm_pi2(params='l_thresh 50000')],
+                #['pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()],
+            ]),
+            branch_cc_matrix([
+                #['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],
+                ['reno-vs-dctcp', 'Reno/DCTCP', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+                ['reno-vs-cubic', 'Reno/Cubic', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic'],
+                #['cubic-vs-cubic', 'Cubic/Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_ALLOW, 'Cubic 2nd'],
+                ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
+                ['cubic-vs-cubic-ecn', 'Cubic/CubECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
+                ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
+            ]),
+            Step.skipif(
+                lambda testenv: testenv.testdef.sched_tag == 'pi2-l_thresh-50000' and \
+                    testenv.testdef.cctag != 'dctcp-vs-dctcp' and \
+                    testenv.testdef.cctag != 'cubic-vs-dctcp'
+            ),
+            Step.branch_rtt([
+                2,
+                20,
+                100,
+                200,
+            ])
+        ],
+    )
 
 
 def test_dctth_paper():
-    """Testing similar to page 8 of the DCttH-paper"""
-    testbed = base_testbed()
+    """
+    Testing similar to page 8 of the DCttH-paper
+    """
+    testbed = Testbed()
     testbed.ta_samples = 250
     testbed.ta_delay = 1000
     #testbed.ta_idle = 0
 
-    bitrates = [
-        ['4mbit', '4 mbit', 4*1000*1000],
-        ['12mbit', '12 mbit', 12*1000*1000],
-        ['40mbit', '40 mbit', 40*1000*1000],
-        ['120mbit', '120 mbit', 120*1000*1000],
-        ['200mbit', '200 mbit', 200*1000*1000],
-    ]
+    def branch_cc_matrix(cc_matrix_set):
+        def step(testdef):
+            for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix_set:
+                testdef.cctag1 = cctag1
+                testdef.cctag2 = cctag2
+                testdef.cc_tag = cctag
 
-    aqms = [
-        ['pie', 'PIE', lambda: testbed.aqm_pie()],
-        ['pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda: testbed.aqm_pi2(params='t_shift 40000 sojourn')],
-    ]
+                testdef.testbed.cc(node1, cc1, ecn1)
+                testdef.testbed.cc(node2, cc2, ecn2)
 
-    cc_matrix = [
-        ['cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'],
-        ['cubic-vs-cubic-ecn', 'Cubic/ECN-Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'ECN-Cubic'],
-    ]
+                yield {
+                    'tag': 'cc-matrix-%s' % cctag,
+                    'title': cctitle,
+                    'titlelabel': '',
+                }
+        return step
 
-    rtts = [
-        2, # extra, not in paper
-        5, 10, 20, 50, 100,
-    ]
+    def my_test(testcase):
+        testdef = testcase.testenv.testdef
+        testcase.run_greedy(node='a', tag=testdef.cctag1)
+        testcase.run_greedy(node='b', tag=testdef.cctag2)
 
-    collection1 = TestCollection('results/dctth-paper-page-8', TestEnv(), title='Testing similar to page 8 of DCttH paper')
-
-    for aqmtag, aqmtitle, aqmfn in aqms:
-        aqmfn()
-        collection2 = TestCollection(folder=aqmtag, parent=collection1, title=aqmtitle)
-
-        for cctag, cctitle, node1, cc1, ecn1, cctag1, node2, cc2, ecn2, cctag2 in cc_matrix:
-            if aqmtag == 'pie' and cctag == 'cubic-vs-dctcp':
-                continue
-            if aqmtag != 'pie' and cctag == 'cubic-vs-cubic-ecn':
-                continue
-
-            testbed.cc(node1, cc1, ecn1)
-            testbed.cc(node2, cc2, ecn2)
-
-            collection3 = TestCollection(folder=cctag, parent=collection2, title=cctitle)
-
-            for bitratetag, bitratetitle, bitrate in bitrates:
-                testbed.bitrate = bitrate
-
-                collection4 = TestCollection(folder=bitratetag, parent=collection3, title=bitratetitle)
-
-                for rtt in rtts:
-                    testbed.rtt_servera = testbed.rtt_serverb = rtt
-
-                    def my_test(testcase):
-                        testcase.run_greedy(node='a', tag=cctag1)
-                        testcase.run_greedy(node='b', tag=cctag2)
-
-                    collection4.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
-                    #collection4.run_test(my_test, testbed, tag='rtt-%d-2' % rtt, title=rtt, titlelabel='RTT')
-
-                collection4.plot(utilization_queues=False, utilization_tags=True)
-            collection3.plot(utilization_queues=False, utilization_tags=True)
-        collection2.plot(utilization_queues=False, utilization_tags=True)
-    collection1.plot(utilization_queues=False, utilization_tags=True, swap_levels=[])
+    run_test(
+        folder='results/dctth-paper-page-8',
+        title='Testing similar to page 8 of DCttH paper',
+        testenv=TestEnv(testbed),
+        steps=[
+            Step.plot_compare(
+                utilization_queues=False,
+                utilization_tags=True,
+            ),
+            Step.branch_sched([
+                ('pie', 'PIE', lambda testbed: testbed.aqm_pie()),
+                ('pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda testbed: testbed.aqm_pi2(params='t_shift 40000')),
+            ]),
+            branch_cc_matrix([
+                ('cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'),
+                ('cubic-vs-cubic-ecn', 'Cubic/ECN-Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'ECN-Cubic'),
+            ]),
+            Step.skipif(lambda testenv: testenv.testdef.sched_tag == 'pie' and testenv.testdef.cc_tag == 'cubic-vs-dctcp'),
+            Step.skipif(lambda testenv: testenv.testdef.sched_tag != 'pie' and testenv.testdef.cc_tag == 'cubic-vs-cubic-ecn'),
+            Step.branch_bitrate([
+                4,
+                12,
+                40,
+                120,
+                200,
+            ]),
+            Step.branch_rtt([
+                2, # extra, not in paper
+                5,
+                10,
+                20,
+                50,
+                100,
+            ]),
+            my_test,
+        ],
+    )
 
 def test_max_window():
-    """Tests the maximum window size we can achieve
+    """
+    Tests the maximum window size we can achieve
 
     requirement outside this test:
-    - adjust wmem, see set_sysctl_tcp_mem.sh
+    - adjust wmem:
+      ./utils/set_sysctl_tcp_mem.sh 200000
       (when in Docker, this must be done outside the Docker container)
     """
 
-    testbed = base_testbed()
-    testbed.ta_samples = 300
+    testbed = Testbed()
+    testbed.ta_samples = 600
     testbed.ta_delay = 400
     testbed.ta_idle = 0
-    testbed.bitrate = 1200 * MBIT
-    testbed.aqm_pi2('limit 50000 target 500000 ecn no_scal tupdate 500000 sojourn')
-    #testbed.aqm_pfifo()
+    #testbed.bitrate = 1200 * MBIT
+    testbed.bitrate = 200 * MBIT
 
+    testbed.netem_clients_params = "limit 200000"
+    testbed.netem_servera_params = "limit 200000"
+    testbed.netem_serverb_params = "limit 200000"
 
-    cc_set = [
-        #('reno', testbed.ECN_ALLOW, 'reno', 'reno'),
-        ('cubic', testbed.ECN_INITIATE, 'cubic', 'cubic'),
-        #('dctcp', testbed.ECN_INITIATE, 'dctcp', 'dctcp')
-    ]
+    #testbed.aqm_pi2('no_dualq classic_ecn limit 200000 target 50000000 tupdate 500000')
+    testbed.aqm_pfifo('limit 200000')
 
-    rtt_set = [
-        #50, 100, 200, 400,
-        50,
-        100,
-        200,
-        400,
-        800,
-    ]
+    def my_test(testcase):
+        testcase.run_greedy(node='a')
+        #testcase.run_greedy(node='a')
+        #testcase.run_udp(node='a', bitrate=800000000, ect='ect0', tag='UDP')
+        #testcase.run_udp(node='a', bitrate=800000000, ect='ect1', tag='UDP')
+        #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
+        #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
 
-    collection1 = TestCollection('results/max-window', TestEnv(retest=False), title='Testing to achieve a high TCP window',
-        subtitle='AQM: pi2 ecn no\\\\_scal 500 ms target   testrate: 1,2 Gb/s   sample interval: 400 ms')
-
-    for cc, ecn, foldername, title in cc_set:
-        testbed.cc('a', cc, ecn)
-
-        collection2 = TestCollection(foldername, parent=collection1, title=title)
-
-        for rtt in rtt_set:
-            testbed.rtt_servera = rtt
-
-            def my_test(testcase):
-                testcase.run_greedy(node='a')
-                #testcase.run_greedy(node='a')
-                #testcase.run_udp(node='a', bitrate=800000000, ect='ect0', tag='UDP')
-                #testcase.run_udp(node='a', bitrate=800000000, ect='ect1', tag='UDP')
-                #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
-                #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
-
-            collection2.run_test(my_test, testbed, tag='rtt-%d' % rtt, title=rtt, titlelabel='RTT')
-
-        collection2.plot()
-    collection1.plot()
+    run_test(
+        folder='results/max-window',
+        title='Testing to achieve a high TCP window',
+        subtitle='AQM: pfifo   testrate: 200 Mb/s   sample interval: 400 ms',
+        testenv=TestEnv(testbed),
+        steps=[
+            Step.plot_compare(),
+            Step.plot_flows(),
+            Step.branch_custom(
+                list=[
+                    #('reno', testbed.ECN_ALLOW, 'reno'),
+                    ('cubic', testbed.ECN_INITIATE, 'cubic'),
+                    #('dctcp', testbed.ECN_INITIATE, 'dctcp'),
+                ],
+                fn_testdef=lambda testdef, item: testdef.testenv.testbed.cc('a', item[0], item[1]),
+                fn_tag=lambda item: item[2],
+                fn_title=lambda item: item[2],
+            ),
+            Step.branch_rtt([
+                #50,
+                #100,
+                #200,
+                #400,
+                800,
+            ]),
+            my_test,
+        ],
+    )
 
 
 if __name__ == '__main__':
@@ -291,5 +341,4 @@ if __name__ == '__main__':
     #test_speeds()
     #test_fairness()
     #test_dctth_paper()
-    #test_max_window()
-    test_sigcomm17()
+    test_max_window()
