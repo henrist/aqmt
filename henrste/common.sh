@@ -305,3 +305,11 @@ require_on_aqm_node() {
         exit 1
     fi
 }
+
+# method that will abort the script if we are on the aqm-machine
+require_not_on_aqm_node() {
+    if [[ $(ip addr show to $IP_AQM_C) ]]; then
+        echo "The program cannot be run on the AQM-machine"
+        exit 1
+    fi
+}
