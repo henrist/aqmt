@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 from plumbum import local
 import math
 import os.path
@@ -1052,7 +1053,7 @@ class FolderUtil():
         return sorted(testcases)
 
     @staticmethod
-    def generate_hierarchy_data_from_folder(folder):
+    def generate_hierarchy_data_from_folder(folder, swap_levels=[]):
         """Generate a dict that can be sent to CollectionPlot by analyzing the directory
 
         It will look in all the metadata stored while running test
@@ -1092,6 +1093,10 @@ class FolderUtil():
 
         root = parse_folder(folder)
 
+        # rearrange levels in the tree so the grouping is different
+        for level in swap_levels:
+            root = TreeUtil.swap_levels(root, level)
+
         return root
 
 
@@ -1118,58 +1123,94 @@ def read_metadata(file):
     return (metadata, lines)
 
 def plot_folder_compare(folder, swap_levels=[], x_axis=PlotAxis.CATEGORY, **kwargs):
-    data = FolderUtil.generate_hierarchy_data_from_folder(folder)
+    data = FolderUtil.generate_hierarchy_data_from_folder(folder, swap_levels)
 
-    for level in swap_levels:
-        data = TreeUtil.swap_levels(data, level)
+    cp = CollectionPlot(folder + '/comparison', data, x_axis=x_axis)
+    cp.plot(**kwargs)
+    print('Plotted comparison of %s' % folder)
 
-    hp = CollectionPlot(folder + '/comparison', data, x_axis=x_axis)
-    hp.plot(**kwargs)
+def plot_folder_flows(folder, swap_levels=[]):
+    data = FolderUtil.generate_hierarchy_data_from_folder(folder, swap_levels)
 
-def plot_folder_flows(folder):
-    data = FolderUtil.generate_hierarchy_data_from_folder(folder)
-
-    def parse_set(testmeta, first_set, x):
+    testcases = []
+    def parse_leaf(testmeta, first_set, x):
+        nonlocal testcases
         if len(testmeta['children']) == 0:
             return
+        testcases += [item['children'][0]['testcase'] for item in testmeta['children']]
+    TreeUtil.walk_leaf(data, parse_leaf)
 
-        testcases = [item['children'][0]['testcase'] for item in testmeta['children']]
-
-        # assume all tests referred to is in the same folder, so use the parent folder
-        set_folder = os.path.dirname(testcases[0].rstrip('/'))
-        if set_folder == '':
-            set_folder = '.'
-
+    if len(testcases) > 0:
+        output_path = '%s/analysis_merged' % folder
         plot = Plot()
-        plot.plot_multiple_flows(testcases, output_path='%s/analysis_merged' % set_folder)
+        plot.plot_multiple_flows(testcases, output_path=output_path)
+        print('Plotted merge of %s' % folder)
 
-    TreeUtil.walk_leaf(data, parse_set)
+def plot_tests(folder):
+    data = FolderUtil.generate_hierarchy_data_from_folder(folder)
 
+    testcases = []
+    def parse_leaf(testmeta, first_set, x):
+        nonlocal testcases
+        if len(testmeta['children']) == 0:
+            return
+        testcases += [item['children'][0]['testcase'] for item in testmeta['children']]
+    TreeUtil.walk_leaf(data, parse_leaf)
+
+    for testcase in testcases:
+        p = Plot()
+        p.plot_flow(testcase)
+        print('Plotted %s' % testcase)
 
 if __name__ == '__main__':
-    if len(sys.argv) >= 3 and sys.argv[1] == 'collection':
-        folder = sys.argv[2]
-        swap_levels = []
-        if len(sys.argv) >= 4 and sys.argv[3] != '':
-            swap_levels = [int(x) for x in sys.argv[3].split(',')]
+    def command_comparison(args):
+        x_axis = PlotAxis.CATEGORY
+        if args.logarithmic:
+            x_axis = PlotAxis.LOGARITHMIC
+        elif args.linear:
+            x_axis = PlotAxis.LINEAR
 
-        utilization_queues = True
-        utilization_tags = False
+        plot_folder_compare(
+            args.folder,
+            swap_levels=[] if args.swap == '' else [int(x) for x in args.swap.split(',')],
+            x_axis=x_axis,
+            utilization_queues=not args.nouq,
+            utilization_tags=args.ut,
+        )
 
-        if len(sys.argv) >= 5:
-            if 'nouq' in sys.argv[4].split(','):
-                utilization_queues = False
-            if 'ut' in sys.argv[4].split(','):
-                utilization_tags = True
+    def command_merge(args):
+        plot_folder_flows(
+            args.folder,
+            swap_levels=[] if args.swap == '' else [int(x) for x in args.swap.split(',')],
+        )
 
-        plot_folder_compare(folder, swap_levels=swap_levels,
-                            utilization_queues=utilization_queues, utilization_tags=utilization_tags)
+    def command_plot_tests(args):
+        plot_tests(args.folder)
 
-    elif len(sys.argv) >= 3 and sys.argv[1] == 'flows':
-        folder = sys.argv[2]
-        plot_folder_flows(folder)
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help='sub-command help')
 
+    parser_a = subparsers.add_parser('comparison', help='plot a comparison for collections')
+    parser_a.add_argument('folder', help='directory containing collections to include')
+    parser_a.add_argument('-s', '--swap', help='list of levels to swap', default='')
+    parser_a.add_argument('--nouq', help='skip utilization plot for each queue', action='store_true')
+    parser_a.add_argument('--ut', help='include utilization plot for each tag', action='store_true')
+    axis = parser_a.add_mutually_exclusive_group()
+    axis.add_argument('--logarithmic', help='plot X axis logarithmic instead of by category', action='store_true')
+    axis.add_argument('--linear', help='plot X axis linearly instead of by category', action='store_true')
+    parser_a.set_defaults(func=command_comparison)
+
+    parser_b = subparsers.add_parser('merge', help='merge plots from multiple tests')
+    parser_b.add_argument('folder', help='directory containing collections to include')
+    parser_b.add_argument('-s', '--swap', help='list of levels to swap', default='')
+    parser_b.set_defaults(func=command_merge)
+
+    parser_c = subparsers.add_parser('tests', help='individual plots for tests')
+    parser_c.add_argument('folder', help='directory containg collections to inclued')
+    parser_c.set_defaults(func=command_plot_tests)
+
+    args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
     else:
-        print('Syntax:')
-        print('  ./plot.py collection <topdirectory> [<swap level>,..] [nouq,ut]')
-        print('  ./plot.py flows <topdirectory> [<swap level>,..]')
+        parser.print_help()
