@@ -9,7 +9,7 @@ from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
 from framework.test_utils import Step, run_test
 from framework.plot import PlotAxis
 
-def test():
+def test(result_folder):
 
     def my_test(testcase):
         testcase.run_greedy(node='a', tag='CUBIC')
@@ -25,10 +25,11 @@ def test():
     testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
 
     run_test(
-        folder='results/pi2-api-2',
+        folder=result_folder,
         title='Testing new pi2 API',
-        testenv=TestEnv(testbed, retest=True),
+        testenv=TestEnv(testbed, retest=False),
         steps=(
+            Step.plot_flows(swap_levels=[1]),
             Step.plot_compare(swap_levels=[1], x_axis=PlotAxis.LINEAR),
             Step.branch_sched([
                 ('pi2-1',
@@ -59,4 +60,9 @@ def test():
 
 if __name__ == '__main__':
     require_on_aqm_node()
-    test()
+
+    result_folder = 'results/pi2-api'
+    if len(sys.argv) >= 2:
+        result_folder = sys.argv[1]
+
+    test(result_folder)
