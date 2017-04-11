@@ -15,8 +15,8 @@
     path: /usr/bin/docker-compose
     mode: 0755
 
-- name: Add testbed to Docker group
+- name: Add {{ testbed_user }} to Docker group
   user:
     append: yes
-    name: testbed
+    name: "{{ testbed_user }}"
     groups: docker

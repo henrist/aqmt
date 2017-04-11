@@ -15,7 +15,7 @@
 - name: Add SSH key for remote login (testbed)
   authorized_key:
     key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDPHEXfnk4idh16KHKe3GHpHRpNlXxCaY/zGO9VFTZODMlvQoAy1jEXpJUFVEXrayiFeQ5owArSa3GiYlvMW9e72dRf+w9l1jpnPMM+0BoZEluZX/DceOd3DLSMcCg5Z9LKZbYDwe94erZBtGuWSAEd8ue+bkSkBhbQdJyPlU36e2i2+WoIVroZjPzemoKXICMNEKXhHzewivpEC88pCSoQKjHz42vTplkB60D/TgdZriOZbs0JL60mxOyNLje9dK81npVy8+YpfCLae3yw3hY8W4OsFnZ9z+MLxBJVQnblrc/tE9mgq3BAKQOBi7RY6vdgr3aMbmkRCnUn0JlYkh/h henrist@henrist.net
-    user: testbed
+    user: "{{ testbed_user }}"
 
 - name: Add SSH key for remote login (root)
   authorized_key:

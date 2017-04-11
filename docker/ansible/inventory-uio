@@ -1,0 +1,14 @@
+[server1]
+158.37.63.159 ansible_ssh_user=ubuntu testbed_user=ubuntu
+
+[server2]
+158.37.63.150 ansible_ssh_user=ubuntu testbed_user=ubuntu
+
+[server3]
+158.37.63.163 ansible_ssh_user=ubuntu testbed_user=ubuntu
+
+[server4]
+158.37.63.160 ansible_ssh_user=ubuntu testbed_user=ubuntu
+
+[server5]
+158.37.63.156 ansible_ssh_user=ubuntu testbed_user=ubuntu

@@ -2,10 +2,12 @@
 
 - hosts: all
   become: yes
-  connection: local
+  remote_user: testbed
+  #connection: local
 
   vars:
     docker_compose_version: '1.11.1'
+    testbed_user: 'testbed'
 
     kernel_images:
       - { tree: 'v4.10.4', file: 'linux-headers-4.10.4-041004_4.10.4-041004.201703180831_all.deb' }
