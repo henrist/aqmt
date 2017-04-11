@@ -54,13 +54,17 @@ u16 testbed_get_drops(struct iphdr *iph, struct testbed_metrics *testbed)
 
     if ((iph->tos & 3)) {
         drops = testbed->drops_ecn;
-        if (drops >= 31)
+        if (drops > 31) {
+            pr_info("Large ecn drops:  %hu\n", drops);
             drops = 31; /* since we can only use 5 bits, max is 32 */
+        }
         testbed->drops_ecn -= drops; /* subtract drops we can report, rest is for the following packet */
     } else {
         drops = testbed->drops_nonecn;
-        if (drops >= 31)
+        if (drops > 31) {
+            pr_info("Large nonecn drops:  %hu\n", drops);
             drops = 31; /* since we can only use 5 bits, max is 32 */
+        }
         testbed->drops_nonecn -= drops; /* subtract drops we can report, rest is for the following packet */
     }
     return drops;
