@@ -356,7 +356,7 @@ class Testbed():
         if not os.path.exists(testfolder + '/derived'):
             os.makedirs(testfolder + '/derived')
 
-        cmd = local['../traffic_analyzer/calc_henrste'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
+        cmd = local['./framework/calc_basic'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
         if verbose > 0:
             print(get_shell_cmd(cmd))
 
@@ -664,7 +664,7 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "set -e; echo 'Idling a bit before running ta...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ../traffic_analyzer/ta $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
+        cmd = bash['-c', "set -e; echo 'Idling a bit before running analyzer...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
                    (self.testenv.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder,
                     self.testenv.testbed.ta_delay, ipclass, self.testenv.testbed.ta_samples)]
 
