@@ -6,7 +6,7 @@
 # showing their current bandwidth
 
 # example:
-# ./aqm_monitor_traffic.sh 0.05 $((1000*1000*5))
+# ./aqm_monitor_traffic.sh 0.05 <number-mbit>
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 . ../common.sh
@@ -31,7 +31,7 @@ if ! [ -z $1 ]; then
 fi
 
 if ! [ -z $2 ]; then
-    max=$2
+    max=$((1024*1024*$2/8))
 fi
 
 sn="monitor-$(date +%s)"
