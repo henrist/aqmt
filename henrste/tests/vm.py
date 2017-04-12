@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
 from framework.test_utils import MBIT, Step, run_test
 import time
-import socket
+from utils import hostname
 
 def test(result_folder):
 
@@ -40,9 +40,9 @@ def test(result_folder):
         steps=(
             Step.plot_compare(),
             Step.branch_runif([
-                ('simula', lambda testenv: socket.gethostname() == 'ford', 'Simula testbed'),
-                # TODO: can we identify hostname of docker host?
-                ('x250', lambda testenv: socket.gethostname() == 'aqm', 'Henriks laptop'),
+                ('simula', lambda testenv: hostname() == 'ford', 'Simula testbed'),
+                ('x250', lambda testenv: hostname() == 'DARASK-X250', 'Henriks laptop'),
+                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'KVM host'),
             ]),
             Step.branch_sched([
                 ('pi2',
