@@ -1016,14 +1016,15 @@ class Plot():
             """
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
-        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
-        self.gpi +=                                          "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', \\\n"
+        #             4     6     2         9    10
+        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):2:4:9 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):2 with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):10 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
         self.gpi +=                                          "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi +=                                          "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
-        self.gpi +=                                             "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):2:4:9 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):2 with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):10 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
         self.gpi +=                                             "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi +=                                             "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
 
         self.gpi += """
 

@@ -20,13 +20,19 @@ class QueueDelay():
 
     def generateStats(self, numbers):
         if numbers.size == 0:
-            res = ['0', '0', '0', '0', '0']
+            res = ['0', '0', '0', '0', '0', '0', '0', '0', '0']
         else:
-            res = [np.min(numbers).astype('str'),
-                   np.percentile(numbers, 25, interpolation='lower').astype('str'),
-                   np.average(numbers).astype('str'),
-                   np.percentile(numbers, 99, interpolation='lower').astype('str'),
-                   np.max(numbers).astype('str')]
+            res = [
+                np.average(numbers).astype('str'),
+                '-', # not used: np.std(numbers).astype('str'),
+                np.min(numbers).astype('str'),
+                np.percentile(numbers, 1, interpolation='lower').astype('str'),
+                np.percentile(numbers, 25, interpolation='lower').astype('str'),
+                np.percentile(numbers, 50, interpolation='lower').astype('str'),
+                np.percentile(numbers, 75, interpolation='lower').astype('str'),
+                np.percentile(numbers, 99, interpolation='lower').astype('str'),
+                np.max(numbers).astype('str'),
+            ]
 
         return ' '.join(res)
 
@@ -36,7 +42,7 @@ class QueueDelay():
             os.makedirs(outfolder)
 
         with open(outfolder + '/qs_samples_nonecn', 'w') as fout:
-            fout.write('# min p25 average p99 max\n')
+            fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
             with open(folder + '/ta/qs_ecn00_s', 'r') as f:
                 f.readline()  # skip header
 
@@ -45,7 +51,7 @@ class QueueDelay():
                             self.parseLine(line))))
 
         with open(outfolder + '/qs_samples_ecn', 'w') as fout:
-            fout.write('# min p26 average p99 max\n')
+            fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
 
             f1 = open(folder + '/ta/qs_ecn01_s', 'r')
             f2 = open(folder + '/ta/qs_ecn10_s', 'r')
