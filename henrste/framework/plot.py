@@ -574,28 +574,30 @@ class CollectionPlot():
                 EOD"""
 
             # total
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:8:4" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.0):5  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:8:4" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.0):5  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
 
             # ecn
-            plot += "                      '' using ($1+" + str(x) + "+0.1):11:9:13    with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + Colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.1):10   with points  ls 2 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.1):12  with points  ls 2 pointtype 1 pointsize 0.4        title '', "
+            plot += "''                       using ($1+" + str(x) + "+0.1):11:9:13    with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + Colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.1):10   with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.1):12  with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
 
             # nonecn
-            plot += "                      '' using ($1+" + str(x) + "+0.2):16:14:18  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + Colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.2):15  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
-            #plot += "                      '' using ($1+" + str(x) + "+0.2):17  with points  ls 3 pointtype 1 pointsize 0.4        title '', "
+            plot += "''                       using ($1+" + str(x) + "+0.2):16:14:18  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + Colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.2):15  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                       using ($1+" + str(x) + "+0.2):17  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
 
             # gray lines total, ecn, nonecn
-            plot += "                      '' using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
-            plot += "                      '' using ($1+" + str(x) + "+0.1):11  with lines lc rgb 'gray'         title '', "
-            plot += "                      '' using ($1+" + str(x) + "+0.2):16  with lines lc rgb 'gray'         title '', "
+            plot += "''                       using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "''                       using ($1+" + str(x) + "+0.1):11  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "''                       using ($1+" + str(x) + "+0.2):16  with lines lc rgb 'gray'         title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_util)
         self.gpi += """
-            plot """ + plot + """
+            plot \\
+            """ + plot + """
+
             unset arrow 100"""
 
     def plot_utilization_tags(self):
@@ -638,8 +640,8 @@ class CollectionPlot():
 
             # total
             # 5:7:3
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', "
-            plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', "
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6:7:5" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):6  with lines lc rgb 'gray'         title '', \\\n"
 
             tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_axis)
             x_distance = .4 / len(tagged_flows)
@@ -657,15 +659,17 @@ class CollectionPlot():
                     title = tagname
                 ls = str(titles_used.index(tagname) + 4)
 
-                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100):($8*100):($6*100)       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', "
-                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100) with lines lc rgb 'gray' title '', "
+                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100):($8*100):($6*100)       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', \\\n"
+                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($7*100) with lines lc rgb 'gray' title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_util_tags)
 
         self.gpi += """
             set tmargin """ + str(self.tmargin_base + 1.3 * (len(titles_used)+1) / 4 - 1) + """
 
-            plot """ + plot + plot_lines + """
+            plot \\
+            """ + plot + plot_lines + """
+
             unset arrow 100"""
 
     def plot_queueing_delay(self):
@@ -712,19 +716,20 @@ class CollectionPlot():
             ls_l4s = "ls 1 lc rgb '" + Colors.L4S + "'"
             ls_classic = "ls 1 lc rgb '" + Colors.CLASSIC + "'"
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', "
-            plot += "                              ''    using ($1+" + str(x) + "+0.05):6  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', "
-            plot += "                              ''    using ($1+" + str(x) + "+0.05):5  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4:7:8  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', "
-            plot += "                              ''    using ($1+" + str(x) + "+0.15):6  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', "
-            plot += "                              ''    using ($1+" + str(x) + "+0.15):5  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4:7:8" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.05):6  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.05):5  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4:7:8  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.15):6  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.15):5  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4  with lines lc rgb 'gray'         title '', "
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4  with lines lc rgb 'gray'         title '', "
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):4  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):4  with lines lc rgb 'gray'         title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_rate)
         self.gpi += """
-            plot """ + plot
+            plot \\
+            """ + plot
 
     def plot_drops_marks(self):
         self.gpi += self.common_header()
@@ -773,23 +778,25 @@ class CollectionPlot():
                 EOD"""
 
                                                                                       # FIXME:  4:6:5
-            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4:7:8" + xtics + " with yerrorbars lc rgb '" + Colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.00):6  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.00):5  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8 with yerrorbars lc rgb '" + Colors.MARKS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.10):6  with points  lc rgb '" + Colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.10):5  with points  lc rgb '" + Colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', "
-            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):4:7:8 with yerrorbars lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.20):6  with points  lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', "
-            plot += "                                         '' using ($1+" + str(x) + "+0.20):5  with points  lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', "
+            # 1 =
+            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4:7:8" + xtics + " with yerrorbars lc rgb '" + Colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.00):6  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.00):5  with points  lc rgb '" + Colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4:7:8 with yerrorbars lc rgb '" + Colors.MARKS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.10):6  with points  lc rgb '" + Colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.10):5  with points  lc rgb '" + Colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):4:7:8 with yerrorbars lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.20):6  with points  lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                          using ($1+" + str(x) + "+0.20):5  with points  lc rgb '" + Colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
 
-            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4     with lines lc rgb 'gray'         title '', "
-            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4     with lines lc rgb 'gray'         title '', "
-            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):4     with lines lc rgb 'gray'         title '', "
+            plot += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):4     with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):4     with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):4     with lines lc rgb 'gray'         title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_drops)
         self.gpi += """
-            plot """ + plot
+            plot \\
+            """ + plot
 
     def common_header(self):
         ret = """
@@ -960,14 +967,15 @@ class Plot():
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
             stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
-            plot """
+            plot \\
+            """
 
         #ls 1 lw 1.5 lc variable
-        self.gpi += "'" + testfolder + "/derived/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', "
-        self.gpi += "                               ''    using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', "
-        self.gpi += "                               ''    using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', "
+        self.gpi += "'" + testfolder + "/derived/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', \\\n"
+        self.gpi += "''                                   using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', \\\n"
+        self.gpi += "''                                   using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', \\\n"
 
-        self.gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/derived/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1),"
+        self.gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/derived/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1), \\\n"
 
         self.gpi += """
 
@@ -977,7 +985,8 @@ class Plot():
             set key right center inside
             set logscale y
             set yrange [1000:]
-            plot """
+            plot \\
+            """
 
         if n_flows == 0:
             self.gpi += "0 title '',"
@@ -987,29 +996,32 @@ class Plot():
             for flow in items:
                 pt = 2 if type == 'ecn' else 6
                 ls = 2 if type == 'ecn' else 3
-                self.gpi += "'" + testfolder + "/ta/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', "
+                self.gpi += "'" + testfolder + "/ta/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', \\\n"
                 j += 1
 
         self.gpi += """
+
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             unset bars
             set key above
             set xtics out nomirror
             unset logscale y
             set yrange [0:]
-            plot """
+            plot \\
+            """
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
-        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', "
-        self.gpi +=                                          "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', "
-        self.gpi +=                                          "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi +=                                          "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', "
-        self.gpi +=                                             "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', "
-        self.gpi +=                                             "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
-        self.gpi +=                                             "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', "
+        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):4:2:5 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):4 with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):3 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):4:2:5 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):4 with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):3 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
 
         self.gpi += """
+
             set format y "%g"
             set xlabel 'Sample #'
             set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in the queue}"
@@ -1018,16 +1030,18 @@ class Plot():
             set yrange [1:]
             set xtics in mirror
             set key above
-            plot """
+            plot \\
+            """
 
-        self.gpi += "'" + testfolder + "/ta/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', "
-        self.gpi += "'" + testfolder + "/ta/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', "
-        self.gpi += "'" + testfolder + "/ta/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', "
+        self.gpi += "'" + testfolder + "/ta/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', \\\n"
+        self.gpi += "'" + testfolder + "/ta/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', \\\n"
+        self.gpi += "'" + testfolder + "/ta/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', \\\n"
 
-        #self.gpi += "'" + testfolder + "/ta/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
-        #self.gpi += "'" + testfolder + "/ta/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', "
+        #self.gpi += "'" + testfolder + "/ta/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
+        #self.gpi += "'" + testfolder + "/ta/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
 
         self.gpi += """
+
             unset multiplot
             reset"""
 
