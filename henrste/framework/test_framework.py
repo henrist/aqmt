@@ -30,6 +30,9 @@ from .calc_tagged_rate import TaggedRate
 from .calc_utilization import Utilization
 from .plot import Plot
 
+is_exiting = False
+pid_ta = None
+
 def get_common_script_path():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/common.sh'
 
@@ -732,6 +735,7 @@ class TestCase():
             with open(self.test_folder + '/details', 'a') as f:
                 f.write(hint + "\n")
 
+        global pid_ta
         pid_ta = self.run_ta(bg=not self.testenv.is_interactive)
 
         if self.testenv.is_interactive and not self.testenv.dry_run:
@@ -743,6 +747,7 @@ class TestCase():
         if not self.testenv.dry_run:
             waitpid(pid_ta)  # wait until 'ta' quits
 
+        pid_ta = None
         kill_known_pids()
 
         print()
@@ -799,9 +804,16 @@ class TestEnv():
         self.skip_test = skip_test
 
         def exit_gracefully(signum, frame):
-            kill_known_pids()
-            self.get_terminal().cleanup()
-            sys.exit()
+            if pid_ta is not None:
+                # we are running analyzer - let us terminate it but have its caller clean up
+                global is_exiting
+                is_exiting = True
+                kill_pid(pid_ta)
+
+            else:
+                kill_known_pids()
+                self.get_terminal().cleanup()
+                sys.exit()
 
         signal.signal(signal.SIGINT, exit_gracefully)
         signal.signal(signal.SIGTERM, exit_gracefully)
@@ -949,6 +961,13 @@ class TestCollection():
 
         elif test.already_exists:
             self.add_test(test.test_folder)
+
+        # if we have received a SIGTERM we will terminate TA but allow the plotting
+        global is_exiting
+        if is_exiting:
+            kill_known_pids()
+            testenv.get_terminal().cleanup()
+            sys.exit()
 
     def get_metadata(self, testenv):
         """
