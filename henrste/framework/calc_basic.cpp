@@ -68,6 +68,22 @@ class Statistics {
         return NAN;
     }
 
+    double front() {
+        if (_samples != NULL && _samples->size() > 0) {
+            return _samples->front();
+        }
+
+        return NAN;
+    }
+
+    double back() {
+        if (_samples != NULL && _samples->size() > 0) {
+            return _samples->back();
+        }
+
+        return NAN;
+    }
+
     double variance() {
         if (_samples != NULL && !calculated_variance) {
             calculate_variance();
@@ -206,10 +222,12 @@ void writeToFile(std::string filename, std::string data) {
 
 void writeStatistics(std::string filename, Statistics *stats) {
     std::stringstream out;
-    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << "# average stddev min p1 p25 p50 p75 p99 max" << std::endl;
     out << stats->average() << " " << stats->stddev() << " "
+        << stats->front() << " "
         << stats->p(1) << " " << stats->p(25) << " " << stats->p(50) << " "
-        << stats->p(75) << " " << stats->p(99) << std::endl;
+        << stats->p(75) << " " << stats->p(99)
+        << stats->back() << "" << std::endl;
     writeToFile(filename, out.str()); out.str("");
 }
 
