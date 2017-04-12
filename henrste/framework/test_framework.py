@@ -81,6 +81,10 @@ def waitpid(pid):
     while is_running(pid):
         time.sleep(0.3)
 
+def print_cmd(cmd):
+    if not isinstance(cmd, str):
+        cmd = get_shell_cmd(cmd)
+    print('SHELL: %s' % cmd)
 
 class Terminal():
     def __init__(self):
@@ -92,7 +96,7 @@ class Terminal():
     def run_fg(self, cmd, verbose=False):
         cmd = get_shell_cmd(cmd)
         if verbose:
-            print(cmd)
+            print_cmd(cmd)
 
         p = bash['-c', cmd].popen(stdin=None, stdout=None, stderr=None, close_fds=True)
         return p.pid
@@ -100,7 +104,7 @@ class Terminal():
     def run_bg(self, cmd, verbose=False):
         cmd = get_shell_cmd(cmd)
         if verbose:
-            print(cmd)
+            print_cmd(cmd)
 
         p = bash['-c', cmd].popen(stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
         return p.pid
@@ -133,7 +137,7 @@ class Tmux(Terminal):
     def run_fg(self, cmd, verbose=False):
         cmd = get_shell_cmd(cmd)
         if verbose:
-            print(cmd)
+            print_cmd(cmd)
 
         pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_id), '-F', '#{pane_pid}', cmd]().strip()
 
@@ -143,7 +147,7 @@ class Tmux(Terminal):
     def run_bg(self, cmd, verbose=False):
         cmd = get_shell_cmd(cmd)
         if verbose:
-            print(cmd)
+            print_cmd(cmd)
 
         # create the window if needed
         # output in the end should be the new pid of the running command
@@ -262,7 +266,7 @@ class Testbed():
 
         if dry_run:
             if verbose > 1:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
         else:
             try:
                 cmd & FG
@@ -284,7 +288,7 @@ class Testbed():
 
         if dry_run:
             if verbose > 1:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
         else:
             try:
                 cmd & FG
@@ -360,7 +364,7 @@ class Testbed():
 
         cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
         if verbose > 0:
-            print(get_shell_cmd(cmd))
+            print_cmd(cmd)
 
         if dry_run:
             if verbose > 0:
@@ -424,8 +428,8 @@ class TestCase():
 
         if self.testenv.dry_run:
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd1))
-                print(get_shell_cmd(cmd2))
+                print_cmd(cmd1)
+                print_cmd(cmd2)
 
             def stopTest():
                 pass
@@ -457,8 +461,8 @@ class TestCase():
 
         if self.testenv.dry_run:
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd1))
-                print(get_shell_cmd(cmd2))
+                print_cmd(cmd1)
+                print_cmd(cmd2)
 
             def stopTest():
                 pass
@@ -500,7 +504,7 @@ class TestCase():
 
         if self.testenv.dry_run:
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
 
             def stopTest():
                 pass
@@ -538,8 +542,8 @@ class TestCase():
 
         if self.testenv.dry_run:
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd1))
-                print(get_shell_cmd(cmd2))
+                print_cmd(cmd1)
+                print_cmd(cmd2)
 
             def stopTest():
                 pass
@@ -595,8 +599,8 @@ class TestCase():
 
         if self.testenv.dry_run:
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd_server))
-                print(get_shell_cmd(cmd_client))
+                print_cmd(cmd_server)
+                print_cmd(cmd_client)
 
             def stopTest():
                 pass
@@ -673,7 +677,7 @@ class TestCase():
         if self.testenv.dry_run:
             pid = -1
             if self.testenv.verbose > 0:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
         else:
             pid = self.testenv.run(cmd, verbose=self.testenv.verbose > 0, bg=bg)
 
@@ -766,7 +770,7 @@ class TestCase():
 
     def analyze(self):
         TestEnv.remove_hint(self.test_folder, ['data_analyzed'])
-        Testbed.analyze_results(self.test_folder, dry_run=self.testenv.dry_run)
+        Testbed.analyze_results(self.test_folder, dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
         self.save_hint('data_analyzed')
 
     def plot(self):
@@ -820,7 +824,7 @@ class TestEnv():
 
         if self.dry_run:
             if self.verbose > 0:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
         else:
             pid = self.run(cmd, verbose=self.verbose > 0)
             add_known_pid(pid)
@@ -830,7 +834,7 @@ class TestEnv():
 
         if self.dry_run:
             if self.verbose > 0:
-                print(get_shell_cmd(cmd))
+                print_cmd(cmd)
         else:
             pid = self.run(cmd, verbose=self.verbose > 0)
             add_known_pid(pid)
