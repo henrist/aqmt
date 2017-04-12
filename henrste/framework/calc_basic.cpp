@@ -424,40 +424,40 @@ int main(int argc, char **argv) {
 
     std::stringstream out;
 
-    out << "# average p99 p1 p25 p75 stddev" << std::endl;
-    out << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
+    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << res->qs_ecn->average() << " " << res->qs_ecn->stddev() << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(50) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->p(99) << std::endl;
     writeToFile("qs_ecn_stats", out.str()); out.str("");
 
-    out << "# average p99 p1 p25 p75 stddev" << std::endl;
-    out << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
+    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << res->qs_nonecn->average() << " " << res->qs_nonecn->stddev() << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(50) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->p(99) << std::endl;
     writeToFile("qs_nonecn_stats", out.str()); out.str("");
 
-    //out << "# average p99 p1 stddev" << std::endl;
-    //out << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
+    //out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    //out << res->rate_ecn->average() << " " << res->rate_ecn->stddev() << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->p(25) << " " << res->rate_ecn->p(50) << " " << res->rate_ecn->p(75) << " " << res->rate_ecn->p(99) << std::endl;
     //writeToFile("r_tot_ecn_stats", out.str()); out.str("");
 
-    //out << "# average p99 p1 stddev" << std::endl;
-    //out << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
+    //out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    //out << res->rate_nonecn->average() << " " << res->rate_nonecn->stddev() << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->p(25) << " " << res->rate_nonecn->p(50) << " " << res->rate_nonecn->p(75) << " " << res->rate_nonecn->p(99) << std::endl;
     //writeToFile("r_tot_nonecn_stats", out.str()); out.str("");
 
-    //out << "# average p99 p1 stddev" << std::endl;
-    //out << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
+    //out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    //out << res->win_ecn->average() << " " << res->win_ecn->stddev() << " " << res->win_ecn->p(1) << " " << res->win_ecn->p(25) << " " << res->win_ecn->p(50) << " " << res->win_ecn->p(75) << " " << res->win_ecn->p(99) << std::endl;
     //writeToFile("win_ecn_stats", out.str()); out.str("");
 
-    //out << "# average p99 p1 stddev" << std::endl;
-    //out << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
+    //out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    //out << res->win_nonecn->average() << " " << res->win_nonecn->stddev() << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->p(25) << " " << res->win_nonecn->p(50) << " " << res->win_nonecn->p(75) << " " << res->win_nonecn->p(99) << std::endl;
     //writeToFile("win_nonecn_stats", out.str()); out.str("");
 
-    out << "# average p99 p1 p25 p75 stddev" << std::endl;
-    out << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->p(25) << " " << res->drops_qs_ecn->p(75) << " " << res->drops_qs_ecn->stddev() << std::endl;
+    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->stddev() << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->p(25) << " " << res->drops_qs_ecn->p(50) << " " << res->drops_qs_ecn->p(75) << " " << res->drops_qs_ecn->p(99) << std::endl;
     writeToFile("d_percent_ecn_stats", out.str()); out.str("");
 
-    out << "# average p99 p1 p25 p75 stddev" << std::endl;
-    out << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->p(25) << " " << res->drops_qs_nonecn->p(75) << " " << res->drops_qs_nonecn->stddev() << std::endl;
+    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->stddev() << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->p(25) << " " << res->drops_qs_nonecn->p(50) << " " << res->drops_qs_nonecn->p(75) << " " << res->drops_qs_nonecn->p(99) << std::endl;
     writeToFile("d_percent_nonecn_stats", out.str()); out.str("");
 
-    out << "# average p99 p1 p25 p75 stddev" << std::endl;
-    out << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->p(25) << " " << res->marks_ecn->p(75) << " " << res->marks_ecn->stddev() << std::endl;
+    out << "# average stddev p1 p25 p50 p75 p99" << std::endl;
+    out << res->marks_ecn->average() << " " << res->marks_ecn->stddev() << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->p(25) << " " << res->marks_ecn->p(50) << " " << res->marks_ecn->p(75) << " " << res->marks_ecn->p(99) << std::endl;
     writeToFile("m_percent_ecn_stats", out.str()); out.str("");
 
     //out << res->rr_static << std::endl;
