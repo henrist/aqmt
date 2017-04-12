@@ -534,9 +534,9 @@ int main(int argc, char **argv) {
     getSamplesRateMarksDrops();
     getSamplesUtilization();
 
-    if (params->n_ecn > 0) {
-        res->rr_static = res->rate_nonecn->average() / res->rate_ecn->average();
-        res->wr_static = res->win_nonecn->average() / res->win_ecn->average();
+    if (params->n_nonecn > 0) {
+        res->rr_static = res->rate_ecn->average() / res->rate_nonecn->average();
+        res->wr_static = res->win_ecn->average() / res->win_nonecn->average();
     }
 
     //rPDF(res->rate_ecn, res->rate_nonecn, params->fairness[0], params->n_ecn, params->n_nonecn, params->nbrf);
