@@ -1,3 +1,11 @@
+/* we store drops in 5 bits */
+#define DROPS_M 2
+#define DROPS_E 3
+
+/* we store queue length in 11 bits */
+#define QDELAY_M 7
+#define QDELAY_E 4
+
 /* Decode float value
  *
  * fl: Float value

@@ -55,13 +55,13 @@ u32 testbed_get_drops(struct iphdr *iph, struct testbed_metrics *testbed)
 	u32 drops_remainder;
 
 	if ((iph->tos & 3)) {
-		drops = int2fl(testbed->drops_ecn, 2, 3, &drops_remainder);
+		drops = int2fl(testbed->drops_ecn, DROPS_M, DROPS_E, &drops_remainder);
 		if (drops_remainder > 10) {
 			pr_info("High (>10) drops ecn remainder:  %u\n", drops_remainder);
 		}
 		testbed->drops_ecn = (__force __u16) drops_remainder;
 	} else {
-		drops = int2fl(testbed->drops_nonecn, 2, 3, &drops_remainder);
+		drops = int2fl(testbed->drops_nonecn, DROPS_M, DROPS_E, &drops_remainder);
 		if (drops_remainder > 10) {
 			pr_info("High (>10) drops nonecn remainder:  %u\n", drops_remainder);
 		}
@@ -91,7 +91,7 @@ void testbed_add_metrics(struct sk_buff *skb, struct testbed_metrics *testbed)
 
 		/* queue delay is converted from ns to units of 32 us and encoded as float */
 		qdelay = ((__force __u64)(ktime_get_real_ns() - ktime_to_ns(skb_get_ktime(skb)))) >> 15;
-		qdelay = int2fl(qdelay, 7, 4, &qdelay_remainder);
+		qdelay = int2fl(qdelay, QDELAY_M, QDELAY_E, &qdelay_remainder);
 		if (qdelay_remainder > 10) {
 			pr_info("High (>10) queue delay remainder:  %u\n", qdelay_remainder);
 		}
