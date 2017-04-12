@@ -352,14 +352,17 @@ class CollectionUtil():
 
     @staticmethod
     def get_testmeta_min_max_count(testmeta, x_axis):
-        # use derived/util_stats because we just have to select one...
-        testcases = CollectionUtil.get_testcase_data(testmeta, 'derived/util_stats', x_axis)
+        """
+        This function expects all x label titles to be numeric value
+        so we can calculate the minimum and maximum of them.
+        """
+        testcases = TreeUtil.get_testcases(testmeta)
 
         # logaritmic, we need to calculate the position
         minval = None
         maxval = None
-        for xval, line in testcases:
-            x = float(xval)
+        for title, testcase_folder in testcases:
+            x = float(title)
             if minval is None or x < minval:
                 minval = x
             if maxval is None or x > maxval:
@@ -427,7 +430,7 @@ class CollectionUtil():
         return ''.join(out)
 
     @staticmethod
-    def get_testcase_data(testmeta, statsname, x_axis):
+    def get_testcase_data(testmeta, statsname):
 
         res = []
         for title, testcase_folder in TreeUtil.get_testcases(testmeta):
@@ -448,7 +451,7 @@ class CollectionUtil():
 
     @staticmethod
     def merge_testcase_data(testmeta, statsname, x_axis):
-        res = CollectionUtil.get_testcase_data(testmeta, statsname, x_axis)
+        res = CollectionUtil.get_testcase_data(testmeta, statsname)
         return CollectionUtil.merge_testcase_data_set_x(res, x_axis)
 
     @staticmethod
