@@ -549,12 +549,6 @@ int main(int argc, char **argv) {
 
     std::stringstream out;
 
-    out << res->rate_ecn->average() << std::endl;
-    writeToFile("r_tot_ecn_avg", out.str()); out.str("");
-
-    out << res->rate_nonecn->average() << std::endl;
-    writeToFile("r_tot_nonecn_avg", out.str()); out.str("");
-
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
     out << "s" << params->n_ecn << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
     writeToFile("qs_ecn_stats", out.str()); out.str("");
