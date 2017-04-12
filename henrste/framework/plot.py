@@ -572,29 +572,33 @@ class CollectionPlot():
                 self.gpi += CollectionUtil.line_at_x_offset(x, xoffset, testmeta, self.x_axis)
 
             self.gpi += """
-                $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_axis) + """
+                $data_util_total""" + str(x) + """ << EOD
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_total_stats', self.x_axis) + """
+                EOD
+                $data_util_ecn""" + str(x) + """ << EOD
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_ecn_stats', self.x_axis) + """
+                EOD
+                $data_util_nonecn""" + str(x) + """ << EOD
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_nonecn_stats', self.x_axis) + """
                 EOD"""
 
             # total
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):5:7:3" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.0):4  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.0):6  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_util_total" + str(x) + "  using ($1+" + str(x) + "+0.0):3:9:5" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                              using ($1+" + str(x) + "+0.0):6  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                              using ($1+" + str(x) + "+0.0):8  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                              using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
 
             # ecn
-            plot += "''                       using ($1+" + str(x) + "+0.1):10:8:12    with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + Colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.1):9   with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.1):11  with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_util_ecn" + str(x) + "  using ($1+" + str(x) + "+0.1):3:9:5    with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + Colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                            using ($1+" + str(x) + "+0.1):6   with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                            using ($1+" + str(x) + "+0.1):8  with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                            using ($1+" + str(x) + "+0.1):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
 
             # nonecn
-            plot += "''                       using ($1+" + str(x) + "+0.2):15:13:17  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + Colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.2):14  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot += "''                       using ($1+" + str(x) + "+0.2):16  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
-
-            # gray lines total, ecn, nonecn
-            plot += "''                       using ($1+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', \\\n"
-            plot += "''                       using ($1+" + str(x) + "+0.1):10  with lines lc rgb 'gray'         title '', \\\n"
-            plot += "''                       using ($1+" + str(x) + "+0.2):15  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_util_nonecn" + str(x) + "  using ($1+" + str(x) + "+0.2):3:9:5  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + Colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
+            #plot += "''                               using ($1+" + str(x) + "+0.2):6  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
+            #plot += "''                               using ($1+" + str(x) + "+0.2):8  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                               using ($1+" + str(x) + "+0.2):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
 
         TreeUtil.walk_leaf(self.testmeta, data_util)
         self.gpi += """
@@ -638,13 +642,12 @@ class CollectionPlot():
 
             self.gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_stats', self.x_axis) + """
+                """ + CollectionUtil.merge_testcase_data(testmeta, 'derived/util_total_stats', self.x_axis) + """
                 EOD"""
 
             # total
-            # 4:6:2
-            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):5:6:4" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
-            plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):5  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3:8:6" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n"
 
             tagged_flows = CollectionUtil.merge_testcase_data_group(testmeta, 'derived/util_tagged_stats', self.x_axis)
             x_distance = .4 / len(tagged_flows)
