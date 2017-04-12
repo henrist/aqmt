@@ -468,7 +468,7 @@ int main(int argc, char **argv) {
 
     out << "# total_p1 total_p25 total_average total_p75 total_p99 ecn_p1 ecn_p25 ecn_average ecn_p75 ecn_p99 nonecn_p1 nonecn_p25 nonecn_average total_p75 nonecn_p99" << std::endl;
     out
-                    << " " << res->util->p(1) << " " << res->util->p(25) << " " << res->util->average() << " " << res->util->p(75) << " " << res->util->p(99)
+                    << res->util->p(1) << " " << res->util->p(25) << " " << res->util->average() << " " << res->util->p(75) << " " << res->util->p(99)
                     << " " << res->util_ecn->p(1) << " " << res->util_ecn->p(25) << " " << res->util_ecn->average() << " " << res->util_ecn->p(75) << " " << res->util_ecn->p(99)
                     << " " << res->util_nonecn->p(1) << " " << res->util_nonecn->p(25) << " " << res->util_nonecn->average() << " " << res->util_nonecn->p(75) << " " << res->util_nonecn->p(99)
                     << std::endl;
