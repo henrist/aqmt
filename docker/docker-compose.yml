@@ -19,6 +19,7 @@ services:
       serverb:
         ipv4_address: 10.25.3.2
     volumes:
+      - /etc/hostname:/tmp/dockerhost-hostname # to get real hostname inside docker
       - ../:/opt/testbed/
       - ./.vars.sh:/tmp/testbed-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
