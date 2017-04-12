@@ -41,6 +41,7 @@ def test(result_folder):
             Step.plot_compare(),
             Step.branch_runif([
                 ('simula', lambda testenv: hostname() == 'ford', 'Simula testbed'),
+                ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', 'Simula docker'),
                 ('x250', lambda testenv: hostname() == 'DARASK-X250', 'Henriks laptop'),
                 ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'KVM host'),
             ]),
