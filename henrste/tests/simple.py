@@ -36,8 +36,14 @@ def test():
                 ('pie', 'PIE', lambda testbed: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
                 #('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
             ]),
-            Step.branch_rtt([10, 50, 100], title='%d'),
-            Step.branch_bitrate([100]),
+            Step.branch_rtt([
+                10,
+                50,
+                100,
+            ], title='%d'),
+            Step.branch_bitrate([
+                100,
+            ]),
             my_test,
         )
     )
