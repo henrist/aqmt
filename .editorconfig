@@ -1,7 +1,7 @@
 root = true
 
 # use kernel code style
-[sch*/**.{c,h}]
+[sch*/**.{c,h},common/*.{c,h}]
 indent_size = 8
 indent_style = tab
 trim_trailing_whitespace = true
