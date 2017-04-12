@@ -26,7 +26,7 @@ def test():
     run_test(
         folder='results/simple',
         title='Just a simple test to verify setup',
-        testenv=TestEnv(testbed),
+        testenv=TestEnv(testbed, retest=True),
         steps=(
             Step.plot_compare(),
             Step.branch_sched([
@@ -37,13 +37,7 @@ def test():
                 #('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
             ]),
             Step.branch_rtt([10, 50, 100], title='%d'),
-            Step.branch_runif([
-                ('iftest-1', lambda testenv: True, 'if test 1'),
-                ('iftest-2', lambda testenv: True, 'if test 2'),
-            ]),
             Step.branch_bitrate([100]),
-            Step.branch_repeat(3),
-            #Step.skipif(lambda testenv: True),
             my_test,
         )
     )
