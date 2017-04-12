@@ -384,9 +384,6 @@ void wait(uint64_t sleep_ns) {
 
 void *printInfo(void *)
 {
-    uint16_t qsize_reno;
-    uint16_t qsize_dctcp;
-
     uint64_t qs_pdf_ecn[QS_LIMIT];
     uint64_t qs_pdf_nonecn[QS_LIMIT];
     uint64_t drops_pdf_ecn[QS_LIMIT];
