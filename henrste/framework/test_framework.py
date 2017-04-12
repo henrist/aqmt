@@ -358,7 +358,7 @@ class Testbed():
         if not os.path.exists(testfolder + '/derived'):
             os.makedirs(testfolder + '/derived')
 
-        cmd = local['./framework/calc_basic'][testfolder, fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
+        cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
         if verbose > 0:
             print(get_shell_cmd(cmd))
 
