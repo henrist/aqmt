@@ -146,7 +146,7 @@ struct Results {
     Statistics *marks_ecn;
     Statistics *util_ecn;
     Statistics *util_nonecn;
-    Statistics *util; // total utilization
+    Statistics *util_total;
 
     double rr_static;
     double wr_static;
@@ -169,7 +169,7 @@ struct Results {
         marks_ecn = new Statistics();
         util_ecn = new Statistics();
         util_nonecn = new Statistics();
-        util = new Statistics();
+        util_total = new Statistics();
 
         rr_static = NAN;
         wr_static = NAN;
@@ -321,12 +321,12 @@ void getSamplesUtilization() {
 
     std::vector<double> *samples_ecn = new std::vector<double>();
     std::vector<double> *samples_nonecn = new std::vector<double>();
-    std::vector<double> *samples = new std::vector<double>();
+    std::vector<double> *samples_total = new std::vector<double>();
     double rate_ecn;
     double rate_nonecn;
     double util_ecn;
     double util_nonecn;
-    double util;
+    double util_total;
 
     // each line consists of three numbers, and we only want the last number
     for (int s = 0; s < NRSAMPLES*3; ++s) {
@@ -340,10 +340,10 @@ void getSamplesUtilization() {
         if ((s+1)%3 == 0) {
             util_ecn = rate_ecn * 100 / params->link;
             util_nonecn = rate_nonecn * 100 / params->link;
-            util = (rate_ecn+rate_nonecn) * 100 / params->link;
+            util_total = (rate_ecn+rate_nonecn) * 100 / params->link;
             samples_ecn->push_back(util_ecn);
             samples_nonecn->push_back(util_nonecn);
-            samples->push_back(util);
+            samples_total->push_back(util_total);
         }
     }
 
@@ -351,7 +351,7 @@ void getSamplesUtilization() {
     infile_nonecn.close();
     res->util_ecn->samples(samples_ecn);
     res->util_nonecn->samples(samples_nonecn);
-    res->util->samples(samples);
+    res->util_total->samples(samples_total);
 }
 
 void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_dropped) {
@@ -442,7 +442,7 @@ int main(int argc, char **argv) {
     writeStatistics("m_percent_ecn_stats", res->marks_ecn);
     writeStatistics("util_nonecn_stats", res->util_nonecn);
     writeStatistics("util_ecn_stats", res->util_ecn);
-    writeStatistics("util_total_stats", res->util);
+    writeStatistics("util_total_stats", res->util_total);
 
     //out << res->rr_static << std::endl;
     //writeToFile("rr", out.str()); out.str("");
