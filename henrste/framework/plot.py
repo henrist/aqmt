@@ -665,8 +665,8 @@ class CollectionPlot():
                     title = tagname
                 ls = str(titles_used.index(tagname) + 4)
 
-                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($6*100):($7*100):($6*100)       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', \\\n"
-                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($6*100) with lines lc rgb 'gray' title '', \\\n"
+                plot += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($3*100):($9*100):($7*100)       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + Colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', \\\n"
+                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($3*100) with lines lc rgb 'gray' title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_util_tags)
 

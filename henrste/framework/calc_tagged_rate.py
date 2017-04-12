@@ -21,15 +21,19 @@ class TaggedRate():
 
     def generateStats(self, numbers):
         if len(numbers) == 0:
-            res = ['0', '0', '0', '0', '0', '0', '0']
+            res = ['0', '0', '0', '0', '0', '0', '0', '0', '0']
         else:
-            res = [np.min(numbers).astype('str'),
-                   np.percentile(numbers, 1, interpolation='lower').astype('str'),
-                   np.percentile(numbers, 25, interpolation='lower').astype('str'),
-                   np.average(numbers).astype('str'),
-                   np.percentile(numbers, 75, interpolation='lower').astype('str'),
-                   np.percentile(numbers, 99, interpolation='lower').astype('str'),
-                   np.max(numbers).astype('str')]
+            res = [
+                np.average(numbers).astype('str'),
+                '-', # not used: np.std(numbers).astype('str'),
+                np.min(numbers).astype('str'),
+                np.percentile(numbers, 1, interpolation='lower').astype('str'),
+                np.percentile(numbers, 25, interpolation='lower').astype('str'),
+                np.percentile(numbers, 50, interpolation='lower').astype('str'),
+                np.percentile(numbers, 75, interpolation='lower').astype('str'),
+                np.percentile(numbers, 99, interpolation='lower').astype('str'),
+                np.max(numbers).astype('str'),
+            ]
 
         return ' '.join(res)
 
@@ -38,7 +42,7 @@ class TaggedRate():
             fall.write('#sample rate\n')
 
             with open(folder + '/derived/r_tagged_stats', 'w') as fstats:
-                fstats.write('#tag min p1 p25 mean p75 p99 max\n')
+                fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
                 first = True
                 for tag, values in rates.items():
@@ -57,7 +61,7 @@ class TaggedRate():
             fall.write('#sample util\n')
 
             with open(folder + '/derived/util_tagged_stats', 'w') as fstats:
-                fstats.write('#tag min p1 p25 mean p75 p99 max\n')
+                fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
                 first = True
                 for tag, values in rates.items():
