@@ -20,3 +20,10 @@
     append: yes
     name: "{{ testbed_user }}"
     groups: docker
+
+- name: Raise max_user_watches for fix_permissions container
+  lineinfile:
+    dest: /etc/sysctl.conf
+    state: present
+    line: 'fs.inotify.max_user_watches=100000'
+  notify: max_user_watches

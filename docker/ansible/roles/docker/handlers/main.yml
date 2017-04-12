@@ -1,0 +1,7 @@
+---
+
+# this is run when the value is initially added to sysctl.conf
+# so it is updated instantly as well
+# (should be no reason to run this if it is present in sysctl.conf)
+- name: max_user_watches
+  command: sysctl -w fs.inotify.max_user_watches=100000

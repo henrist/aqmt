@@ -2,11 +2,10 @@
 
 - hosts: all
   become: yes
-  remote_user: testbed
+  #remote_user: testbed
   #connection: local
 
   vars:
-    docker_compose_version: '1.11.1'
     testbed_user: 'testbed'
 
     kernel_images:
@@ -19,6 +18,20 @@
 
   roles:
     - common
-    - docker
     - kernel
     #- vboxadditions
+
+- hosts: aqm
+  become: yes
+
+  roles:
+    - aqm
+
+- hosts: docker
+  become: yes
+
+  vars:
+    docker_compose_version: '1.11.1'
+
+  roles:
+    - docker
