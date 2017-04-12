@@ -677,7 +677,7 @@ class CollectionPlot():
             set yrange [0:*]
             unset logscale y
 
-            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             #set xtic offset first .1
             """
 
@@ -731,7 +731,7 @@ class CollectionPlot():
         self.gpi += """
 
             # drops and marks
-            set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}
+            set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             set xtic offset first 0
             """
 
