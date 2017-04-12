@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#tc=/home/testbed/dual-queue-aqm/iproute2-3.16.0/tc/tc
-tc=tc
+# use tc from iproute2-l4s in parent directory
+tc="$(dirname "$(dirname "$(readlink -f "$BASH_SOURCE")")")/iproute2-l4s/tc/tc"
 
 # load variables if running on simula testbed
 if [ "$(hostname)" == "ford" ]; then
