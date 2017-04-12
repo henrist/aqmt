@@ -27,8 +27,6 @@ struct Parameters {
     std::string output_folder;
     uint32_t n_ecn;
     uint32_t n_nonecn;
-    std::string fairness;
-    int nbrf;
     double link;
 
     Parameters() {
@@ -38,8 +36,6 @@ struct Parameters {
         output_folder = "";
         n_ecn = 0;
         n_nonecn = 0;
-        fairness = "";
-        nbrf = 0;
         link = 0;
     }
 };
@@ -208,111 +204,6 @@ void writeToFile(std::string filename, std::string data) {
     fs->close();
 }
 
-void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ecn, int i) {
-    std::ofstream *f_decn_pdf = openFileW("d_pf_ecn_pdf");
-    std::ofstream *f_mecn_pdf = openFileW("m_pf_ecn_pdf");
-    std::ofstream *f_dnonecn_pdf = openFileW("d_pf_nonecn_pdf");
-
-    std::vector<double> *samples_drops_ecn = drops_ecn->samples();
-    std::vector<double> *samples_drops_nonecn = drops_nonecn->samples();
-    std::vector<double> *samples_marks_ecn = marks_ecn->samples();
-
-    uint32_t decn_pdf[PDF_BINS];
-    uint32_t dnonecn_pdf[PDF_BINS];
-    uint32_t mecn_pdf[PDF_BINS];
-    bzero(decn_pdf, sizeof(uint32_t)*PDF_BINS);
-    bzero(dnonecn_pdf, sizeof(uint32_t)*PDF_BINS);
-    bzero(mecn_pdf, sizeof(uint32_t)*PDF_BINS);
-
-    uint32_t max = 0;
-
-    if (samples_drops_ecn->back() > max)
-        max = samples_drops_ecn->back();
-    if (samples_drops_nonecn->back() > max)
-        max = samples_drops_nonecn->back();
-
-    uint32_t binsize = max/PDF_BINS;
-    uint32_t b;
-
-    for (double val: *samples_drops_ecn) {
-        b = val / binsize;
-        if (b >= PDF_BINS)
-            b = PDF_BINS - 1;
-        decn_pdf[b]++;
-    }
-
-    for (double val: *samples_drops_nonecn) {
-        b = val / binsize;
-        if (b >= PDF_BINS)
-            b = PDF_BINS - 1;
-        dnonecn_pdf[b]++;
-    }
-
-    if (samples_marks_ecn->back() > max)
-        max = samples_marks_ecn->back();
-
-    binsize = max/PDF_BINS;
-    for (double val: *samples_marks_ecn) {
-        b = val / binsize;
-        if (b >= PDF_BINS)
-            b = PDF_BINS - 1;
-        mecn_pdf[b]++;
-    }
-
-    for (int i = 0; i < PDF_BINS; ++i) {
-        *f_decn_pdf << i << " " << decn_pdf[i] << std::endl;
-        *f_mecn_pdf << i << " " << mecn_pdf[i] << std::endl;
-        *f_dnonecn_pdf << i << " " << dnonecn_pdf[i] << std::endl;
-    }
-
-    f_decn_pdf->close();
-    f_mecn_pdf->close();
-    f_dnonecn_pdf->close();
-}
-
-void rPDF(Statistics *rate_ecn, Statistics *rate_nonecn, char fairness, int n_ecn, int n_nonecn, int nbrf) {
-    std::ofstream *f_recn_pdf = openFileW("r_pf_ecn_pdf");
-    std::ofstream *f_rnonecn_pdf = openFileW("r_pf_nonecn_pdf");
-    uint32_t recn_pdf[PDF_BINS];
-    uint32_t rnonecn_pdf[PDF_BINS];
-    bzero(recn_pdf, sizeof(uint32_t)*PDF_BINS);
-    bzero(rnonecn_pdf, sizeof(uint32_t)*PDF_BINS);
-
-    std::vector<double> *samples_rate_ecn = rate_ecn->samples();
-    std::vector<double> *samples_rate_nonecn = rate_nonecn->samples();
-
-    uint32_t max = fairness == 'e' ? n_ecn + n_nonecn : (n_ecn ? n_ecn : n_nonecn);
-    if (max == 0)
-        max = 1;
-
-    max = 10000000/max/nbrf;
-
-    uint32_t binsize = max/PDF_BINS;
-    uint32_t b;
-
-    for (double val: *samples_rate_ecn) {
-        b = val / binsize;
-        if (b >= PDF_BINS)
-            b = PDF_BINS - 1;
-        recn_pdf[b]++;
-    }
-
-    for (double val: *samples_rate_nonecn) {
-        b = val / binsize;
-        if (b >= PDF_BINS)
-            b = PDF_BINS - 1;
-        rnonecn_pdf[b]++;
-    }
-
-    for (int i = 0; i < PDF_BINS; ++i) {
-        *f_recn_pdf << i << " " << recn_pdf[i] << std::endl;
-        *f_rnonecn_pdf << i << " " << rnonecn_pdf[i] << std::endl;
-    }
-
-    f_recn_pdf->close();
-    f_rnonecn_pdf->close();
-}
-
 void readFileMarks(std::string filename_marks, Statistics *stats, std::string filename_tot) {
     std::ifstream infile_marks(filename_marks.c_str());
     std::ifstream infile_tot(filename_tot.c_str());
@@ -381,7 +272,7 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
     stats->samples(samples);
 }
 
-void readFileRate(std::string filename, int nrflows, Statistics *stats_rate, Statistics *stats_win, double avg_qs, double rtt) {
+void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stats_win, double avg_qs, double rtt) {
     std::ifstream infile(filename.c_str());
     double rate;
 
@@ -403,11 +294,6 @@ void readFileRate(std::string filename, int nrflows, Statistics *stats_rate, Sta
                     samples_rate->push_back(rate);
                     samples_win->push_back(win);
                 }
-            }
-
-            for (int i = colnr; i < nrflows; ++i) {
-                samples_rate->push_back(0);
-                samples_win->push_back(0);
             }
         }
     }
@@ -490,10 +376,10 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 }
 
 void getSamplesRateMarksDrops() {
-    readFileRate(params->analyzer_folder + "/r_tot_ecn", params->n_ecn, res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
+    readFileRate(params->analyzer_folder + "/r_tot_ecn", res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
     readFileMarks(params->analyzer_folder + "/m_tot_ecn", res->marks_ecn, params->analyzer_folder + "/tot_packets_ecn");
     readFileDrops(params->analyzer_folder + "/d_tot_ecn", res->drops_qs_ecn, params->analyzer_folder + "/tot_packets_ecn");
-    readFileRate(params->analyzer_folder + "/r_tot_nonecn", params->n_nonecn, res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
+    readFileRate(params->analyzer_folder + "/r_tot_nonecn", res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
     readFileDrops(params->analyzer_folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->analyzer_folder + "/tot_packets_nonecn");
 }
 
@@ -503,28 +389,20 @@ void getSamplesQS() {
 }
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <analyzer_folder> <output_folder> <e=rate_equal|d=dc_unequal> <nbr of flows per row/col> <link b/s> <rtt_d> <rtt_r> <nr ecn flows> <nr nonecn flows>\n", argv[0]);
+    printf("Usage: %s <analyzer_folder> <output_folder> <link b/s> <rtt_d> <rtt_r>\n", argv[0]);
     exit(1);
 }
 
 void loadParameters(int argc, char **argv) {
-    if (argc < 10) {
+    if (argc < 6) {
         usage(argc, argv);
     }
 
     params->analyzer_folder = argv[1];
     params->output_folder = argv[2];
-    params->fairness = argv[3];
-    params->nbrf = atoi(argv[4]);
-    params->link = atoi(argv[5]);
-    params->rtt_d = (double) atoi(argv[6]);
-    params->rtt_r = (double) atoi(argv[7]);
-    params->n_ecn = atoi(argv[8]);
-    params->n_nonecn = atoi(argv[9]);
-
-    if (params->fairness.length() != 1) {
-        usage(argc, argv);
-    }
+    params->link = atoi(argv[3]);
+    params->rtt_d = (double) atoi(argv[4]);
+    params->rtt_r = (double) atoi(argv[5]);
 }
 
 int main(int argc, char **argv) {
@@ -534,13 +412,10 @@ int main(int argc, char **argv) {
     getSamplesRateMarksDrops();
     getSamplesUtilization();
 
-    if (params->n_nonecn > 0) {
+    if (res->rate_nonecn->average() > 0) {
         res->rr_static = res->rate_ecn->average() / res->rate_nonecn->average();
         res->wr_static = res->win_ecn->average() / res->win_nonecn->average();
     }
-
-    //rPDF(res->rate_ecn, res->rate_nonecn, params->fairness[0], params->n_ecn, params->n_nonecn, params->nbrf);
-    //dmPDF(res->drops_qs_ecn, res->drops_qs_nonecn, res->marks_ecn, i);
 
     if (res->drops_qs_nonecn->p(99) > 100) {
         std::cerr << "too high drops p99: " << res->drops_qs_nonecn->p(99) << std::endl;
@@ -550,49 +425,49 @@ int main(int argc, char **argv) {
     std::stringstream out;
 
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
-    out << "s" << params->n_ecn << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
+    out << "s" << 1 << " " << res->qs_ecn->average() << " " << res->qs_ecn->p(99) << " " << res->qs_ecn->p(1) << " " << res->qs_ecn->p(25) << " " << res->qs_ecn->p(75) << " " << res->qs_ecn->stddev() << std::endl;
     writeToFile("qs_ecn_stats", out.str()); out.str("");
 
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
-    out << "s" << params->n_nonecn <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
+    out << "s" << 1 <<  " " << res->qs_nonecn->average() << " " << res->qs_nonecn->p(99) << " " << res->qs_nonecn->p(1) << " " << res->qs_nonecn->p(25) << " " << res->qs_nonecn->p(75) << " " << res->qs_nonecn->stddev() << std::endl;
     writeToFile("qs_nonecn_stats", out.str()); out.str("");
 
     //out << "# num_flows average p99 p1 stddev" << std::endl;
-    //out << "s" << params->n_ecn <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
+    //out << "s" << 1 <<  " " << res->rate_ecn->average() << " " << res->rate_ecn->p(99) << " " << res->rate_ecn->p(1) << " " << res->rate_ecn->stddev() << std::endl;
     //writeToFile("r_tot_ecn_stats", out.str()); out.str("");
 
     //out << "# num_flows average p99 p1 stddev" << std::endl;
-    //out << "s" << params->n_nonecn << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
+    //out << "s" << 1 << " " << res->rate_nonecn->average() << " " << res->rate_nonecn->p(99) << " " << res->rate_nonecn->p(1) << " " << res->rate_nonecn->stddev() << std::endl;
     //writeToFile("r_tot_nonecn_stats", out.str()); out.str("");
 
     //out << "# num_flows average p99 p1 stddev" << std::endl;
-    //out << "s" << params->n_ecn <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
+    //out << "s" << 1 <<  " " << res->win_ecn->average() << " " << res->win_ecn->p(99) << " " << res->win_ecn->p(1) << " " << res->win_ecn->stddev() << std::endl;
     //writeToFile("win_ecn_stats", out.str()); out.str("");
 
     //out << "# num_flows average p99 p1 stddev" << std::endl;
-    //out << "s" << params->n_nonecn <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
+    //out << "s" << 1 <<  " " << res->win_nonecn->average() << " " << res->win_nonecn->p(99) << " " << res->win_nonecn->p(1) << " " << res->win_nonecn->stddev() << std::endl;
     //writeToFile("win_nonecn_stats", out.str()); out.str("");
 
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
-    out << "s" << params->n_ecn <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->p(25) << " " << res->drops_qs_ecn->p(75) << " " << res->drops_qs_ecn->stddev() << std::endl;
+    out << "s" << 1 <<  " " << res->drops_qs_ecn->average() << " " << res->drops_qs_ecn->p(99) << " " << res->drops_qs_ecn->p(1) << " " << res->drops_qs_ecn->p(25) << " " << res->drops_qs_ecn->p(75) << " " << res->drops_qs_ecn->stddev() << std::endl;
     writeToFile("d_percent_ecn_stats", out.str()); out.str("");
 
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
-    out << "s" << params->n_nonecn << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->p(25) << " " << res->drops_qs_nonecn->p(75) << " " << res->drops_qs_nonecn->stddev() << std::endl;
+    out << "s" << 1 << " " << res->drops_qs_nonecn->average() << " " << res->drops_qs_nonecn->p(99) << " " << res->drops_qs_nonecn->p(1) << " " << res->drops_qs_nonecn->p(25) << " " << res->drops_qs_nonecn->p(75) << " " << res->drops_qs_nonecn->stddev() << std::endl;
     writeToFile("d_percent_nonecn_stats", out.str()); out.str("");
 
     out << "# num_flows average p99 p1 p25 p75 stddev" << std::endl;
-    out << "s" << params->n_ecn <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->p(25) << " " << res->marks_ecn->p(75) << " " << res->marks_ecn->stddev() << std::endl;
+    out << "s" << 1 <<  " " << res->marks_ecn->average() << " " << res->marks_ecn->p(99) << " " << res->marks_ecn->p(1) << " " << res->marks_ecn->p(25) << " " << res->marks_ecn->p(75) << " " << res->marks_ecn->stddev() << std::endl;
     writeToFile("m_percent_ecn_stats", out.str()); out.str("");
 
-    //out << "s" << params->n_ecn << ":" << "s" << params->n_nonecn << " " << res->rr_static << std::endl;
+    //out << "s" << 1 << ":" << "s" << 1 << " " << res->rr_static << std::endl;
     //writeToFile("rr", out.str()); out.str("");
 
-    //out << "s" << params->n_ecn << ":" << "s" << params->n_nonecn << " " << res->wr_static << std::endl;
+    //out << "s" << 1 << ":" << "s" << 1 << " " << res->wr_static << std::endl;
     //writeToFile("wr", out.str()); out.str("");
 
     out << "# num_flows(ecn):num_flows(nonecn) total_p1 total_p25 total_average total_p75 total_p99 ecn_p1 ecn_p25 ecn_average ecn_p75 ecn_p99 nonecn_p1 nonecn_p25 nonecn_average total_p75 nonecn_p99" << std::endl;
-    out << "s" << params->n_ecn  << ":" << "s" << params->n_nonecn
+    out << "s" << 1  << ":" << "s" << 1
                     << " " << res->util->p(1) << " " << res->util->p(25) << " " << res->util->average() << " " << res->util->p(75) << " " << res->util->p(99)
                     << " " << res->util_ecn->p(1) << " " << res->util_ecn->p(25) << " " << res->util_ecn->average() << " " << res->util_ecn->p(75) << " " << res->util_ecn->p(99)
                     << " " << res->util_nonecn->p(1) << " " << res->util_nonecn->p(25) << " " << res->util_nonecn->average() << " " << res->util_nonecn->p(75) << " " << res->util_nonecn->p(99)

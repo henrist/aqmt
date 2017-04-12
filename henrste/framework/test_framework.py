@@ -355,17 +355,13 @@ class Testbed():
             if bitrate == 0:
                 raise Exception("Could not determine bitrate of test '%s'" % testfolder)
 
-        fairness = "e"         # used to calculate rPDF, we don't use it now
-        nbrf = 0               # used to calculate rPDF, we don't use it now
         rtt_l4s = 0            # used to calculate window size, we don't use it now
         rtt_classic = 0        # used to calculate window size, we don't use it now
-        nbr_l4s_flows = 1      # used to generate rPDF and dmPDF, we don't use it now
-        nbr_classic_flows = 1  # used to generate rPDF and dmPDF, we don't use it now
 
         if not os.path.exists(testfolder + '/derived'):
             os.makedirs(testfolder + '/derived')
 
-        cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', fairness, str(nbrf), str(bitrate), str(rtt_l4s), str(rtt_classic), str(nbr_l4s_flows), str(nbr_classic_flows)]
+        cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
         if verbose > 0:
             print_cmd(cmd)
 
