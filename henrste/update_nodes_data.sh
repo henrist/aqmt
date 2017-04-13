@@ -25,7 +25,7 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
     ssh root@$ip '
         mkdir -p /opt/testbed/greedy_generator
         mkdir -p /opt/testbed/henrste/utils
-        rm -f /opt/testbed/henrste/views
+        rm -Rf /opt/testbed/henrste/views
         mkdir -p /opt/testbed/henrste/views
 
         echo "export IP_AQM_MGMT='$IP_AQM_MGMT'" >'$f'
