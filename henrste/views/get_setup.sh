@@ -6,9 +6,12 @@
 # Run from the AQM machine.
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../common.sh
+. ../vars.sh
 
-require_on_aqm_node
+if [ -n "$IFACE_AQM" ]; then
+    echo "This script must be run on the AQM machine"
+    exit 1
+fi
 
 # -- get from localhost (aqm)
 

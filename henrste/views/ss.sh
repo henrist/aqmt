@@ -1,6 +1,14 @@
 #!/bin/bash
 # run this on aqm
 
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../vars.sh
+
+if [ -n "$IFACE_AQM" ]; then
+    echo "This script must be run on the AQM machine"
+    exit 1
+fi
+
 check() {
     title=$1
     host=$2

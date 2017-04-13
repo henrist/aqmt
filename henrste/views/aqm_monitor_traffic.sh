@@ -9,7 +9,12 @@
 # ./aqm_monitor_traffic.sh 0.05 <number-mbit>
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../common.sh
+. ../vars.sh
+
+if [ -n "$IFACE_AQM" ]; then
+    echo "This script must be run on the AQM machine"
+    exit 1
+fi
 
 delay=0.05
 max=$((1000*1000*12/8))

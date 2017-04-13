@@ -3,17 +3,22 @@
 # it will monitor various parameters for you
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../common.sh
+. ../vars.sh
 
-require_not_on_aqm_node
+if [ -z "$IFACE_AQM" ]; then
+    echo "Could not find IFACE_AQM variable."
+    echo "Perhaps you are not running this on a client/server?"
+    exit 1
+fi
 
-if [ -z $TMUX ]; then
+# force this inside tmux
+if [ -z "$TMUX" ]; then
     tmux new-session "./node_monitor.sh"
     exit 0
 fi
 
 cmds=()
-cmds[0]="watch -n .2 ./show_setup.sh -vi \$IFACE_AQM"
+cmds[0]="watch -n .2 ./show_setup.sh -vi $IFACE_AQM"
 cmds[1]="./monitor_iface_status.sh"
 
 sn="node-monitor-$(date +%s)"

@@ -4,11 +4,20 @@
 # to the clients and servers
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. common.sh
+. vars.sh
 
 set -e
 
-(cd ../greedy_generator; make)
+if ! [ -f ../greedy_generator/greedy ]; then
+    echo "You have to build the utils before you can run this script"
+    echo "(Missing binary of greedy_generator)"
+    exit 1
+fi
+
+if [ -f /testbed-is-docker ]; then
+    echo "You can't run this inside Docker - and there is no need to!"
+    exit 1
+fi
 
 f=/opt/testbed/henrste/vars.sh
 
@@ -16,6 +25,7 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
     ssh root@$ip '
         mkdir -p /opt/testbed/greedy_generator
         mkdir -p /opt/testbed/henrste/utils
+        rm -f /opt/testbed/henrste/views
         mkdir -p /opt/testbed/henrste/views
 
         echo "export IP_AQM_MGMT='$IP_AQM_MGMT'" >'$f'
@@ -32,9 +42,7 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
         echo "export IP_SERVERB='$IP_SERVERB'" >>'$f
     scp -p ../greedy_generator/greedy root@$ip:/opt/testbed/greedy_generator/greedy
     scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/testbed/henrste/utils/
-    scp -p views/get_sysctl.sh root@$ip:/opt/testbed/henrste/views/
-    scp -p views/node_monitor.sh root@$ip:/opt/testbed/henrste/views/
-    scp -p views/monitor_iface_status.sh root@$ip:/opt/testbed/henrste/views/
+    scp -p views/* root@$ip:/opt/testbed/henrste/views/
 done
 
 ssh root@$IP_CLIENTA_MGMT 'echo "export IFACE_AQM='$IFACE_ON_CLIENTA'" >>'$f

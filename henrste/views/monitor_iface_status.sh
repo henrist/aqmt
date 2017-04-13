@@ -5,6 +5,9 @@
 #
 # run it on the relevant machines to watch status
 
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../vars.sh
+
 sleeptime=1
 
 get_num() {
