@@ -1,5 +1,5 @@
 import sys
-from .test_framework import TestCollection
+from .test_framework import TestCollection, require_on_aqm_node
 from .plot import PlotAxis, plot_folder_flows, plot_folder_compare
 
 MBIT=1000*1000
@@ -148,6 +148,7 @@ class Testdef():
         self.level = 0
 
 def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, ask_confirmation=True):
+    require_on_aqm_node()
     testdef = Testdef(testenv)
 
     # Save testdef to testenv so we can pull it from the test case we are running.

@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import datetime
 from framework.plot import PlotAxis
-from framework.test_framework import Testbed, TestEnv, require_on_aqm_node
+from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import Step, run_test
 
 def test():
@@ -65,5 +65,4 @@ def test():
     )
 
 if __name__ == '__main__':
-    require_on_aqm_node()
     test()
