@@ -33,6 +33,7 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
     scp -p ../greedy_generator/greedy root@$ip:/opt/testbed/greedy_generator/greedy
     scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/testbed/henrste/utils/
     scp -p views/get_sysctl.sh root@$ip:/opt/testbed/henrste/views/
+    scp -p views/node_monitor.sh root@$ip:/opt/testbed/henrste/views/
     scp -p views/monitor_iface_status.sh root@$ip:/opt/testbed/henrste/views/
 done
 
