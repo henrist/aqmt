@@ -5,6 +5,9 @@
 For interactive tests (with live plots), run:
 $ TEST_INTERACTIVE=1 ./mytest.py
 
+For increased logging, run:
+$ LOG_LEVEL=DEBUG ./mytest.py
+
 """
 
 import time
@@ -62,6 +65,7 @@ def add_known_pid(pid):
 def kill_pid(pid):
     try:
         os.kill(pid, signal.SIGTERM)
+        Logger.trace('Sent SIGTERM to PID %d' % pid)
     except ProcessLookupError:
         pass
 
@@ -84,10 +88,84 @@ def waitpid(pid):
     while is_running(pid):
         time.sleep(0.3)
 
-def print_cmd(cmd):
+def get_log_cmd(cmd, prefix = 'SHELL: '):
     if not isinstance(cmd, str):
         cmd = get_shell_cmd(cmd)
-    print('SHELL: %s' % cmd)
+    return '%s %s' % (prefix, cmd)
+
+class Logger():
+    TRACE = 4
+    DEBUG = 3
+    INFO = 2
+    WARN = 1
+    ERROR = 0
+
+    NAME_TABLE = {
+        'TRACE': TRACE,
+        'DEBUG': DEBUG,
+        'INFO': INFO,
+        'WARN': WARN,
+        'ERROR': ERROR,
+    }
+
+    @staticmethod
+    def get_level_from_name(level_name, name_table, default):
+        if level_name in name_table:
+            return name_table[level_name]
+        return default
+
+    print_level = get_level_from_name.__func__(
+        os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else '',
+        NAME_TABLE,
+        INFO
+    )
+    file_level = TRACE
+    logfile = os.environ['LOG_FILE'] if 'LOG_FILE' in os.environ else 'test_framework.log'
+
+    @classmethod
+    def get_level_name(cls, level):
+        if level == cls.TRACE: return 'TRACE'
+        if level == cls.DEBUG: return 'DEBUG'
+        if level == cls.INFO: return 'INFO'
+        if level == cls.WARN: return 'WARN'
+        if level == cls.ERROR: return 'ERROR'
+        return 'UNKNOWN'
+
+    @classmethod
+    def trace(cls, msg):
+        cls.log(cls.TRACE, msg)
+
+    @classmethod
+    def debug(cls, msg):
+        cls.log(cls.DEBUG, msg)
+
+    @classmethod
+    def info(cls, msg):
+        cls.log(cls.INFO, msg)
+
+    @classmethod
+    def warn(cls, msg):
+        cls.log(cls.WARN, msg)
+
+    @classmethod
+    def error(cls, msg):
+        cls.log(cls.ERROR, msg)
+
+    @classmethod
+    def log(cls, level, msg):
+        if level <= cls.print_level:
+            print(msg)
+
+        if level <= cls.file_level and cls.logfile is not None:
+            with open(cls.logfile, 'a') as f:
+                level_name = cls.get_level_name(level)
+                prefix = '%s %7s: ' % (datetime.datetime.now().isoformat(), level_name)
+                f.write(cls.prefix_multiline(prefix, msg, '\n'))
+
+    @staticmethod
+    def prefix_multiline(prefix, msg, append=''):
+        return prefix + msg.replace('\n', '\n' + ' ' * len(prefix)) + append
+
 
 class Terminal():
     def __init__(self):
@@ -96,20 +174,18 @@ class Terminal():
     def cleanup(self):
         pass
 
-    def run_fg(self, cmd, verbose=False):
+    def run_fg(self, cmd):
         cmd = get_shell_cmd(cmd)
-        if verbose:
-            print_cmd(cmd)
-
         p = bash['-c', cmd].popen(stdin=None, stdout=None, stderr=None, close_fds=True)
+
+        Logger.trace('RUN_FG (PID: %d): %s' % (p.pid, get_log_cmd(cmd, prefix='')))
         return p.pid
 
-    def run_bg(self, cmd, verbose=False):
+    def run_bg(self, cmd):
         cmd = get_shell_cmd(cmd)
-        if verbose:
-            print_cmd(cmd)
-
         p = bash['-c', cmd].popen(stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+
+        Logger.trace('RUN_BG (PID: %d): %s' % (p.pid, get_log_cmd(cmd, prefix='')))
         return p.pid
 
 
@@ -137,20 +213,17 @@ class Tmux(Terminal):
         pane_ids = (tmux['list-panes', '-aF', '#{window_id} #{pane_id}'] | local['grep']['^' + window_id + ' '] | local['awk']['{ print $2 }']).run(retcode=None)[1].split()
         return pane_ids[0]
 
-    def run_fg(self, cmd, verbose=False):
+    def run_fg(self, cmd):
         cmd = get_shell_cmd(cmd)
-        if verbose:
-            print_cmd(cmd)
-
         pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_id), '-F', '#{pane_pid}', cmd]().strip()
 
         tmux['select-layout', '-t', self.win_id, 'tiled']()
+
+        Logger.trace('RUN_FG (TMUX PID: %d): %s' % (pane_pid, get_log_cmd(cmd, prefix='')))
         return int(pane_pid)
 
-    def run_bg(self, cmd, verbose=False):
+    def run_bg(self, cmd):
         cmd = get_shell_cmd(cmd)
-        if verbose:
-            print_cmd(cmd)
 
         # create the window if needed
         # output in the end should be the new pid of the running command
@@ -165,6 +238,7 @@ class Tmux(Terminal):
             pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_bg_id), '-F', '#{pane_pid}', cmd]().strip()
             tmux['select-layout', '-t', self.win_bg_id, 'tiled'] & FG
 
+        Logger.trace('RUN_BG (TMUX PID: %d): %s' % (pane_pid, get_log_cmd(cmd, prefix='')))
         return int(pane_pid)
 
     def have_bg_win(self):
@@ -250,8 +324,9 @@ class Testbed():
             return (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 20 + 3
         return self.ta_idle
 
-    def setup(self, dry_run=False, verbose=0):
+    def setup(self, dry_run=False, log_level=Logger.DEBUG):
         cmd = bash['-c', """
+            # configuring testbed
             set -e
             source """ + get_common_script_path() + """
 
@@ -267,10 +342,8 @@ class Testbed():
             configure_host_cc $IP_SERVERB_MGMT """ + '%s %s' % (self.cc_b, self.ecn_b) + """
             """]
 
-        if dry_run:
-            if verbose > 1:
-                print_cmd(cmd)
-        else:
+        Logger.log(log_level, get_log_cmd(cmd))
+        if not dry_run:
             try:
                 cmd & FG
             except ProcessExecutionError:
@@ -278,10 +351,12 @@ class Testbed():
 
         return True
 
-    def reset(self, dry_run=False, verbose=0):
+    def reset(self, dry_run=False, log_level=Logger.DEBUG):
         cmd = bash['-c', """
+            # resetting testbed
             set -e
             source """ + get_common_script_path() + """
+
             kill_all_traffic
             reset_aqm_client_edge
             reset_aqm_server_edge
@@ -289,10 +364,8 @@ class Testbed():
             reset_all_hosts_cc
             """]
 
-        if dry_run:
-            if verbose > 1:
-                print_cmd(cmd)
-        else:
+        Logger.log(log_level, get_log_cmd(cmd))
+        if not dry_run:
             try:
                 cmd & FG
             except ProcessExecutionError:
@@ -311,37 +384,40 @@ class Testbed():
         res = bash['-c', 'set -e; source %s; get_aqm_options %s' % (common, name)]()
         return res.strip()
 
-    def print_setup(self):
-        print("Configured testbed:")
-        print("  rate: %s (applied from router to clients)" % self.bitrate)
-        print("  rtt to router:")
-        print("    - clients: %d ms" % self.rtt_clients)
-        print("    - servera: %d ms" % self.rtt_servera)
-        print("    - serverb: %d ms" % self.rtt_serverb)
+    def get_setup(self):
+        out = ""
+
+        out += "Configured testbed:\n"
+        out += "  rate: %s (applied from router to clients)\n" % self.bitrate
+        out += "  rtt to router:\n"
+        out += "    - clients: %d ms\n" % self.rtt_clients
+        out += "    - servera: %d ms\n" % self.rtt_servera
+        out += "    - serverb: %d ms\n" % self.rtt_serverb
 
         if self.aqm_name != '':
             params = ''
             if self.aqm_params != '':
                 params = ' (%s)' % self.aqm_params
 
-            print("  aqm: %s%s" % (self.aqm_name, params))
-            print("       (%s)" % self.get_aqm_options(self.aqm_name))
+            out += "  aqm: %s%s\n" % (self.aqm_name, params)
+            out += "       (%s)\n" % self.get_aqm_options(self.aqm_name)
         else:
-            print("  no aqm")
+            out += "  no aqm\n"
 
         for node in ['CLIENTA', 'CLIENTB', 'SERVERA', 'SERVERB']:
             ip = 'IP_%s_MGMT' % node
 
-            print('  %s: ' % node.lower(), end='')
+            out += '  %s: ' % node.lower()
             common = get_common_script_path()
-            res = (bash['-c', 'set -e; source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
-            print(res)
+            out += (bash['-c', 'set -e; source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
+            out += '\n'
+
+        return out.strip()
 
     @staticmethod
-    def analyze_results(testfolder, dry_run=False, verbose=0):
+    def analyze_results(testfolder, dry_run=False, log_level=Logger.DEBUG):
         if dry_run:
-            if verbose > 0:
-                print("Cannot determine bitrate in dry run mode, setting to -1")
+            Logger.warn("Cannot determine bitrate in dry run mode, setting to -1")
             bitrate = -1
 
         else:
@@ -362,12 +438,10 @@ class Testbed():
             os.makedirs(testfolder + '/derived')
 
         cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
-        if verbose > 0:
-            print_cmd(cmd)
+        Logger.log(log_level, get_log_cmd(cmd))
 
         if dry_run:
-            if verbose > 0:
-                print("Skipping post processing due to dry run")
+            Logger.warn("Skipping post processing due to dry run")
 
         else:
             cmd()
@@ -383,7 +457,7 @@ class Testbed():
             u = Utilization()
             u.processTest(testfolder, bitrate)
 
-    def get_hint(self, dry_run=False, verbose=0):
+    def get_hint(self, dry_run=False):
         hint = ''
         hint += "testbed_rtt_clients %d\n" % self.rtt_clients
         hint += "testbed_rtt_servera %d\n" % self.rtt_servera
@@ -426,16 +500,15 @@ class TestCase():
         cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; nc -d %s %d >/dev/null' % (os.environ['IP_SERVER%s' % node], server_port)]
 
         if self.testenv.dry_run:
-            if self.testenv.verbose > 0:
-                print_cmd(cmd1)
-                print_cmd(cmd2)
+            Logger.debug(get_log_cmd(cmd1))
+            Logger.debug(get_log_cmd(cmd2))
 
             def stopTest():
                 pass
 
         else:
-            pid1 = self.testenv.run(cmd1, bg=True, verbose=True)
-            pid2 = self.testenv.run(cmd2, bg=True, verbose=True)
+            pid1 = self.testenv.run(cmd1, bg=True)
+            pid2 = self.testenv.run(cmd2, bg=True)
             add_known_pid(pid1)
             add_known_pid(pid2)
 
@@ -458,17 +531,15 @@ class TestCase():
         cmd1 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'iperf -s -p %d' % server_port]
         cmd2 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.2; iperf -c %s -p %d -t 86400' % (os.environ['IP_CLIENT%s' % node], server_port)]
 
+        Logger.debug(get_log_cmd(cmd1))
+        Logger.debug(get_log_cmd(cmd2))
         if self.testenv.dry_run:
-            if self.testenv.verbose > 0:
-                print_cmd(cmd1)
-                print_cmd(cmd2)
-
             def stopTest():
                 pass
 
         else:
-            pid1 = self.testenv.run(cmd1, bg=True, verbose=True)
-            pid2 = self.testenv.run(cmd2, bg=True, verbose=True)
+            pid1 = self.testenv.run(cmd1, bg=True)
+            pid2 = self.testenv.run(cmd2, bg=True)
             add_known_pid(pid1)
             add_known_pid(pid2)
 
@@ -501,15 +572,13 @@ class TestCase():
 
         cmd = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'scp /opt/testbed/bigfile %s:/tmp/' % (os.environ['IP_CLIENT%s' % node])]
 
+        Logger.debug(get_log_cmd(cmd))
         if self.testenv.dry_run:
-            if self.testenv.verbose > 0:
-                print_cmd(cmd)
-
             def stopTest():
                 pass
 
         else:
-            pid_server = self.testenv.run(cmd, bg=True, verbose=True)
+            pid_server = self.testenv.run(cmd, bg=True)
             add_known_pid(pid_server)
 
             def stopTest():
@@ -539,17 +608,15 @@ class TestCase():
         cmd1 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], '/opt/testbed/greedy_generator/greedy -vv -s %d' % server_port]
         cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; /opt/testbed/greedy_generator/greedy -vv %s %d' % (os.environ['IP_SERVER%s' % node], server_port)]
 
+        Logger.debug(get_log_cmd(cmd1))
+        Logger.debug(get_log_cmd(cmd2))
         if self.testenv.dry_run:
-            if self.testenv.verbose > 0:
-                print_cmd(cmd1)
-                print_cmd(cmd2)
-
             def stopTest():
                 pass
 
         else:
-            pid_server = self.testenv.run(cmd1, bg=True, verbose=True)
-            pid_client = self.testenv.run(cmd2, bg=True, verbose=True)
+            pid_server = self.testenv.run(cmd1, bg=True)
+            pid_client = self.testenv.run(cmd2, bg=True)
             add_known_pid(pid_server)
             add_known_pid(pid_client)
 
@@ -596,17 +663,15 @@ class TestCase():
         cmd_client = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.5; iperf -c %s -p %d %s -u -l %d -R -b %d -i 1 -t 99999' %
                           (os.environ['IP_CLIENT%s' % node], server_port, tos, length, bitrate)]
 
+        Logger.debug(get_log_cmd(cmd_server))
+        Logger.debug(get_log_cmd(cmd_client))
         if self.testenv.dry_run:
-            if self.testenv.verbose > 0:
-                print_cmd(cmd_server)
-                print_cmd(cmd_client)
-
             def stopTest():
                 pass
 
         else:
-            pid_server = self.testenv.run(cmd_server, bg=True, verbose=True)
-            pid_client = self.testenv.run(cmd_client, bg=True, verbose=True)
+            pid_server = self.testenv.run(cmd_server, bg=True)
+            pid_client = self.testenv.run(cmd_client, bg=True)
 
             add_known_pid(pid_server)
             add_known_pid(pid_client)
@@ -618,22 +683,20 @@ class TestCase():
         return stopTest
 
     def save_hint(self, text):
-        if self.testenv.verbose > 1:
-            print("hint(test): " + text)
+        Logger.debug("hint(test): " + text)
 
         if not self.testenv.dry_run:
             TestEnv.save_hint_to_folder(self.test_folder, text)
 
-    def print_header(self):
+    def log_header(self):
         """
         Must be called after check_folder()
         """
-        print()
-        print('=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else ''))
-        print(self.h1 + ((' ' + self.h2) if self.h2 is not None else ''))
-        print('=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else ''))
-        print(str(datetime.datetime.now()))
-        print()
+        out = '=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else '') + '\n'
+        out += self.h1 + ((' ' + self.h2) if self.h2 is not None else '') + '\n'
+        out += '=' * len(self.h1) + ((' ' + '-' * len(self.h2)) if self.h2 is not None else '') + '\n'
+        out += str(datetime.datetime.now()) + '\n'
+        Logger.info(out)
 
     def check_folder(self):
         self.h1 = 'TESTCASE %s' % self.test_folder
@@ -669,16 +732,32 @@ class TestCase():
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
         ipclass = 'f'
 
-        cmd = bash['-c', "set -e; echo 'Idling a bit before running analyzer...'; sleep %f; . vars.sh; mkdir -p '%s'; sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %s %d" %
-                   (self.testenv.testbed.get_ta_idle(), self.test_folder, pcapfilter, self.test_folder,
-                    self.testenv.testbed.ta_delay, ipclass, self.testenv.testbed.ta_samples)]
+        cmd = bash[
+            '-c',
+            """
+            # running analyzer
+            set -e
+            echo 'Idling a bit before running analyzer...'
+            sleep %f
+            . vars.sh
+            mkdir -p '%s'
+            sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %s %d
+            """ % (
+                self.testenv.testbed.get_ta_idle(),
+                self.test_folder,
+                pcapfilter,
+                self.test_folder,
+                self.testenv.testbed.ta_delay,
+                ipclass,
+                self.testenv.testbed.ta_samples
+            )
+        ]
 
+        Logger.debug(get_log_cmd(cmd))
         if self.testenv.dry_run:
             pid = -1
-            if self.testenv.verbose > 0:
-                print_cmd(cmd)
         else:
-            pid = self.testenv.run(cmd, verbose=self.testenv.verbose > 0, bg=bg)
+            pid = self.testenv.run(cmd, bg=bg)
 
             # we add it to the kill list in case the script is terminated
             add_known_pid(pid)
@@ -706,30 +785,25 @@ class TestCase():
 
         start = time.time()
 
-        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run):
             raise Exception('Reset failed')
-        print('%.2f s: Testbed reset' % (time.time()-start))
+        Logger.info('%.2f s: Testbed reset' % (time.time()-start))
 
-        if not self.testenv.testbed.setup(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+        if not self.testenv.testbed.setup(dry_run=self.testenv.dry_run):
             raise Exception('Setup failed')
         if not self.testenv.dry_run:
-            self.testenv.testbed.print_setup()
+            Logger.info(self.testenv.testbed.get_setup())
 
-        print()
-        print('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
-        print()
+        Logger.info('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
 
         self.save_hint('type test')
         self.save_hint('ta_idle %s' % self.testenv.testbed.get_ta_idle())
         self.save_hint('ta_delay %s' % self.testenv.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testenv.testbed.ta_samples)
 
-        hint = self.testenv.testbed.get_hint(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
-        if self.testenv.verbose > 1:
-            print(hint)
-        if not self.testenv.dry_run:
-            with open(self.test_folder + '/details', 'a') as f:
-                f.write(hint + "\n")
+        hint = self.testenv.testbed.get_hint(dry_run=self.testenv.dry_run)
+        for line in hint.split('\n'):
+            self.save_hint(line)
 
         global pid_ta
         pid_ta = self.run_ta(bg=not self.testenv.is_interactive)
@@ -746,20 +820,19 @@ class TestCase():
         pid_ta = None
         kill_known_pids()
 
-        print()
-        print('%.2f s: Data collection finished' % (time.time()-start))
+        Logger.info('%.2f s: Data collection finished' % (time.time()-start))
         self.save_hint('data_collected')
         self.data_collected = True
 
-        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run, verbose=self.testenv.verbose):
+        if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run):
             raise Exception('Reset failed')
-        print('%.2f s: Testbed reset, waiting %.2f s for cooldown period' % (time.time()-start, self.calc_post_wait_time()))
+        Logger.info('%.2f s: Testbed reset, waiting %.2f s for cooldown period' % (time.time()-start, self.calc_post_wait_time()))
 
         # in case there is a a queue buildup it should now free because the
         # testbed is reset (so no added RTT or rate limit) and we give it some
         # time to complete
         time.sleep(self.calc_post_wait_time())
-        print('%.2f s: Finished waiting to let the connections finish' % (time.time()-start))
+        Logger.info('%.2f s: Finished waiting to let the connections finish' % (time.time()-start))
 
         self.testenv.get_terminal().cleanup()
 
@@ -771,7 +844,7 @@ class TestCase():
 
     def analyze(self):
         TestEnv.remove_hint(self.test_folder, ['data_analyzed'])
-        Testbed.analyze_results(self.test_folder, dry_run=self.testenv.dry_run, verbose=self.testenv.verbose)
+        Testbed.analyze_results(self.test_folder, dry_run=self.testenv.dry_run)
         self.save_hint('data_analyzed')
 
     def plot(self):
@@ -780,7 +853,7 @@ class TestCase():
 
 
 class TestEnv():
-    def __init__(self, testbed, is_interactive=None, dry_run=False, verbose=1, reanalyze=False, replot=False, retest=False, skip_test=False):
+    def __init__(self, testbed, is_interactive=None, dry_run=False, reanalyze=False, replot=False, retest=False, skip_test=False):
         """
         skip_test: Will skip the test as if it already exists
         """
@@ -793,7 +866,6 @@ class TestEnv():
             is_interactive = 'TEST_INTERACTIVE' in os.environ and os.environ['TEST_INTERACTIVE']  # run in tmux or not
         self.is_interactive = is_interactive
         self.dry_run = dry_run
-        self.verbose = verbose
         self.reanalyze = reanalyze
         self.replot = replot
         self.retest = retest
@@ -819,32 +891,28 @@ class TestEnv():
             self.terminal = Tmux() if self.is_interactive else Terminal()
         return self.terminal
 
-    def run(self, cmd, bg=False, verbose=False):
+    def run(self, cmd, bg=False):
         if bg:
-            return self.get_terminal().run_bg(cmd, verbose=verbose)
+            return self.get_terminal().run_bg(cmd)
         else:
-            return self.get_terminal().run_fg(cmd, verbose=verbose)
+            return self.get_terminal().run_fg(cmd)
 
     def run_speedometer(self, max_bitrate, delay=0.5):
         max_bitrate = max_bitrate / 8
 
         cmd = local['speedometer']['-s', '-i', '%f' % delay, '-l', '-t', os.environ['IFACE_CLIENTS'], '-m', '%d' % max_bitrate]
 
-        if self.dry_run:
-            if self.verbose > 0:
-                print_cmd(cmd)
-        else:
-            pid = self.run(cmd, verbose=self.verbose > 0)
+        Logger.debug(get_log_cmd(cmd))
+        if not self.dry_run:
+            pid = self.run(cmd)
             add_known_pid(pid)
 
     def run_monitor_setup(self):
         cmd = local['watch']['-n', '.2', './views/show_setup.sh', '-v', '%s' % os.environ['IFACE_CLIENTS']]
 
-        if self.dry_run:
-            if self.verbose > 0:
-                print_cmd(cmd)
-        else:
-            pid = self.run(cmd, verbose=self.verbose > 0)
+        Logger.info(get_log_cmd(cmd))
+        if not self.dry_run:
+            pid = self.run(cmd)
             add_known_pid(pid)
 
     @staticmethod
@@ -936,7 +1004,7 @@ class TestCollection():
         if self.test:
             raise Exception("A collection cannot contain multiple tests")
         test = TestCase(testenv=testenv, folder=self.folder + '/test')
-        test.print_header()
+        test.log_header()
         self.test = test
 
         if not test.should_skip():
@@ -946,12 +1014,12 @@ class TestCollection():
             if testenv.reanalyze or not test.already_exists:
                 start = time.time()
                 test.analyze()
-                print('Analyzed test (%.2f s)' % (time.time()-start))
+                Logger.info('Analyzed test (%.2f s)' % (time.time()-start))
 
             if testenv.reanalyze or testenv.replot or not test.already_exists:
                 start = time.time()
                 test.plot()
-                print('Plotted test (%.2f s)' % (time.time()-start))
+                Logger.info('Plotted test (%.2f s)' % (time.time()-start))
 
             self.add_test(test.test_folder)
 
