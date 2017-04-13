@@ -13,8 +13,8 @@ if [ -z $TMUX ]; then
 fi
 
 cmds=()
-cmds[0]="watch -n .2 ./show_setup.sh -vir \$IFACE_CLIENTS"
-#cmds[1]="watch -n .2 ./show_setup.sh -vir \$IFACE_SERVERA"
+cmds[0]="watch -n .2 ./show_setup.sh -vir $IFACE_CLIENTS"
+#cmds[1]="watch -n .2 ./show_setup.sh -vir $IFACE_SERVERA"
 
 sn="setup-$(date +%s)"
 
