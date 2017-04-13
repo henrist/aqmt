@@ -12,6 +12,23 @@ require_on_aqm_node
 
 # -- get from localhost (aqm)
 
+if [ -f /testbed-is-docker ]; then
+    echo
+    echo "WARN: You are inside Docker and we cannot show you sysctl values"
+    echo "      Please use get_sysctl.sh outside Docker to inspect it"
+    echo
+else
+    echo
+    echo "---- aqm sysctl ----"
+    sysctl net.ipv4.tcp_rmem
+    sysctl net.ipv4.tcp_wmem
+    sysctl net.core.netdev_max_backlog
+    sysctl net.core.wmem_max
+    echo "Maximum window size is approx. (using 1448 sized segments):"
+    echo "   $(($(sysctl net.ipv4.tcp_rmem | awk '{ print $NF }') / 1448 / 2)) packets for receiving side"
+    echo "   $(($(sysctl net.ipv4.tcp_rmem | awk '{ print $NF }') / 1448 / 3)) packets for sending side"
+fi
+
 names=(clients servera serverb)
 ifaces=($IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB)
 for i in ${!ifaces[@]}; do
@@ -21,7 +38,6 @@ for i in ${!ifaces[@]}; do
     echo "$ethres" | grep generic-segmentation-offload
     echo "$ethres" | grep tcp-segmentation-offload
     echo "txqueuelen: $(ip l show ${ifaces[$i]} | grep qlen | sed 's/.*qlen\s\+\([0-9]\+\).*/\1/')"
-
 done
 
 # -- get from remote nodes
@@ -38,5 +54,15 @@ for i in ${!ifaces[@]}; do
         echo \"\$ethres\" | grep generic-segmentation-offload
         echo \"\$ethres\" | grep tcp-segmentation-offload
         echo \"txqueuelen: \$(ip l show ${ifaces[$i]} | grep qlen | sed 's/.*qlen\s\+\([0-9]\+\).*/\1/')\"
+
+        if ! [ -f /testbed-is-docker ]; then
+            sysctl net.ipv4.tcp_rmem
+            sysctl net.ipv4.tcp_wmem
+            sysctl net.core.netdev_max_backlog
+            sysctl net.core.wmem_max
+            echo \"Maximum window size is approx. (using 1448 sized segments):\"
+            echo \"   \$((\$(sysctl net.ipv4.tcp_rmem | awk '{ print \$NF }') / 1448 / 2)) packets for receiving side\"
+            echo \"   \$((\$(sysctl net.ipv4.tcp_rmem | awk '{ print \$NF }') / 1448 / 3)) packets for sending side\"
+        fi
         "
 done
