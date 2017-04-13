@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import MBIT, steps
 from framework.traffic import greedy, udp
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import MBIT, Step, run_test
+from framework.test_utils import run_test
 
 def test():
     """
@@ -47,9 +48,9 @@ def test():
         subtitle='AQM: pfifo   testrate: 200 Mb/s   sample interval: 400 ms',
         testenv=TestEnv(testbed, retest=True),
         steps=[
-            Step.plot_compare(),
-            Step.plot_flows(),
-            Step.branch_custom(
+            steps.plot_compare(),
+            steps.plot_flows(),
+            steps.branch_custom(
                 list=[
                     #('reno', testbed.ECN_ALLOW, 'reno'),
                     ('cubic', testbed.ECN_INITIATE, 'cubic'),
@@ -59,7 +60,7 @@ def test():
                 fn_tag=lambda item: item[2],
                 fn_title=lambda item: item[2],
             ),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 #50,
                 #100,
                 #200,

@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import steps
 from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import Step, run_test
+from framework.test_utils import run_test
 
 def test():
     """
@@ -54,12 +55,12 @@ def test():
         title='Testing traffic fairness',
         testenv=TestEnv(testbed),
         steps=[
-            Step.plot_compare(
+            steps.plot_compare(
                 swap_levels=[0],
                 utilization_queues=False,
                 utilization_tags=True,
             ),
-            Step.branch_sched([
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pie', 'PIE', 'pie', ''),
                 ('pi2', 'PI2\\nl\\\\_thresh=1000', 'pi2', 'l_thresh 1000'),
@@ -76,12 +77,12 @@ def test():
                 ['cubic-vs-cubic-ecn', 'Cubic/CubECN', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'Cubic-ECN'],
                 ['dctcp-vs-dctcp', 'DCTCP/DCTCP', 'a', 'dctcp', testbed.ECN_INITIATE, 'DCTCP', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP 2nd'],
             ]),
-            Step.skipif(
+            steps.skipif(
                 lambda testenv: testenv.testdef.sched_tag == 'pi2-l_thresh-50000' and \
                     testenv.testdef.cctag != 'dctcp-vs-dctcp' and \
                     testenv.testdef.cctag != 'cubic-vs-dctcp'
             ),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 2,
                 20,
                 100,

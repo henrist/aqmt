@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import steps
 from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import Step, run_test
+from framework.test_utils import run_test
 
 def test():
 
@@ -33,13 +34,13 @@ def test():
         title='Testing fq_codel',
         testenv=TestEnv(testbed),
         steps=(
-            Step.plot_compare(),
-            Step.branch_sched([
+            steps.plot_compare(),
+            steps.branch_sched([
                 # tag, title, name, params
                 ('fq-codel-1', 'fq\\\\_codel', 'fq_codel', ''),
             ]),
-            Step.branch_rtt([10, 50, 100], title='%d'),
-            Step.branch_bitrate([100]),
+            steps.branch_rtt([10, 50, 100], title='%d'),
+            steps.branch_bitrate([100]),
             my_test,
         )
     )

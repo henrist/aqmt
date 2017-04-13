@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import steps
 from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import Step, run_test
+from framework.test_utils import run_test
 from framework.plot import PlotAxis
 
 def test(result_folder):
@@ -30,9 +31,9 @@ def test(result_folder):
         title='Testing new pi2 API',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            Step.plot_flows(swap_levels=[1]),
-            Step.plot_compare(swap_levels=[1], x_axis=PlotAxis.LINEAR),
-            Step.branch_sched([
+            steps.plot_flows(swap_levels=[1]),
+            steps.plot_compare(swap_levels=[1], x_axis=PlotAxis.LINEAR),
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pi2-1',
                     'PI^2',
@@ -53,9 +54,9 @@ def test(result_folder):
                     'PI^2: dc\\\\_dualq dc\\\\_ecn',
                     'pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100 l_thresh 3000'),
             ]),
-            Step.branch_rtt([10, 50, 100], title='%d'),
-            Step.branch_bitrate([100]),
-            #Step.skipif(lambda testenv: testenv.testdef.sched_tag != 'pi2-6' or testenv.testbed.rtt_servera != 100),
+            steps.branch_rtt([10, 50, 100], title='%d'),
+            steps.branch_bitrate([100]),
+            #steps.skipif(lambda testenv: testenv.testdef.sched_tag != 'pi2-6' or testenv.testbed.rtt_servera != 100),
             my_test,
         )
     )

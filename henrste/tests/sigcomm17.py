@@ -5,10 +5,11 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import MBIT, steps
 from framework.traffic import greedy, udp
 from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import MBIT, Step, run_test
+from framework.test_utils import run_test
 import datetime
 import time
 
@@ -93,18 +94,18 @@ def test():
         subtitle='Testrate: 100 Mb/s',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            Step.plot_compare(
+            steps.plot_compare(
                 utilization_tags=True,
                 utilization_queues=True,
                 swap_levels=[],
                 x_axis=PlotAxis.LOGARITHMIC,
             ),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 #2,
                 10,
                 #50,
             ]),
-            Step.branch_sched([
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pi2',
                     'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
@@ -128,7 +129,7 @@ def test():
                 #['a', 'nonect', 'UDP=Non ECT'],
                 ['b', 'ect1', 'UDP=ECT(1)'],
             ]),
-            Step.branch_define_udp_rate([x + 0 for x in [
+            steps.branch_define_udp_rate([x + 0 for x in [
                 #50,
                 #70,
                 #75,

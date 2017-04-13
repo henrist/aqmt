@@ -6,10 +6,11 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import datetime
+from framework import steps
 from framework.traffic import greedy
 from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import Step, run_test
+from framework.test_utils import run_test
 
 def test():
 
@@ -37,18 +38,18 @@ def test():
         title='Testing pfifo',
         testenv=TestEnv(testbed, retest=True),
         steps=(
-            Step.plot_compare(
+            steps.plot_compare(
                 utilization_tags=True,
                 utilization_queues=False,
                 swap_levels=[],
                 x_axis=PlotAxis.CATEGORY,
             ),
-            Step.plot_flows(),
-            Step.branch_sched([
+            steps.plot_flows(),
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pfifo-1', 'pfifo', 'pfifo', 'limit 1000'),
             ]),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 #2,
                 #10,
                 #20,
@@ -56,7 +57,7 @@ def test():
                 #100,
                 200,
             ], title='%d'),
-            Step.branch_bitrate([
+            steps.branch_bitrate([
                 #100,
                 #200,
                 500,

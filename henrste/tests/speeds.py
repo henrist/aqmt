@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import MBIT, steps
 from framework.traffic import greedy, udp
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import MBIT, Step, run_test
+from framework.test_utils import run_test
 
 def test():
     """
@@ -69,7 +70,7 @@ def test():
         title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera,
         testenv=TestEnv(testbed),
         steps=[
-            Step.plot_compare(
+            steps.plot_compare(
                 swap_levels=[1],
                 utilization_tags=True,
             ),
@@ -79,7 +80,7 @@ def test():
                 #('cubic', 'Only Cubic for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 0, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'TCP'),
                 ('mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'DCTCP'),
             ]),
-            Step.branch_sched([
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pi2', 'PI2 l\\\\_thresh=1000', 'pi2', 'l_thresh 1000'),
                 ('pie', 'PIE', 'pie', ''),
@@ -89,7 +90,7 @@ def test():
                 ('nonect', 'UDP with Non-ECT'),
                 ('ect1', 'UDP with ECT(1)'),
             ]),
-            Step.branch_define_udp_rate([
+            steps.branch_define_udp_rate([
                 2.5,
                 5,
                 8,

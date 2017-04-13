@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import steps
 from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import Step, run_test
+from framework.test_utils import run_test
 
 def test():
     """
@@ -45,11 +46,11 @@ def test():
         title='Testing similar to page 8 of DCttH paper',
         testenv=TestEnv(testbed),
         steps=[
-            Step.plot_compare(
+            steps.plot_compare(
                 utilization_queues=False,
                 utilization_tags=True,
             ),
-            Step.branch_sched([
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pie', 'PIE', 'pie', ''),
                 ('pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', 'pi2', 't_shift 40000'),
@@ -58,16 +59,16 @@ def test():
                 ('cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'),
                 ('cubic-vs-cubic-ecn', 'Cubic/ECN-Cubic', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'cubic', testbed.ECN_INITIATE, 'ECN-Cubic'),
             ]),
-            Step.skipif(lambda testenv: testenv.testdef.sched_tag == 'pie' and testenv.testdef.cc_tag == 'cubic-vs-dctcp'),
-            Step.skipif(lambda testenv: testenv.testdef.sched_tag != 'pie' and testenv.testdef.cc_tag == 'cubic-vs-cubic-ecn'),
-            Step.branch_bitrate([
+            steps.skipif(lambda testenv: testenv.testdef.sched_tag == 'pie' and testenv.testdef.cc_tag == 'cubic-vs-dctcp'),
+            steps.skipif(lambda testenv: testenv.testdef.sched_tag != 'pie' and testenv.testdef.cc_tag == 'cubic-vs-cubic-ecn'),
+            steps.branch_bitrate([
                 4,
                 12,
                 40,
                 120,
                 200,
             ]),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 2, # extra, not in paper
                 5,
                 10,

@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework import MBIT, steps
 from framework.traffic import greedy, udp
 from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import MBIT, Step, run_test
+from framework.test_utils import run_test
 import time
 from utils import hostname
 
@@ -39,14 +40,14 @@ def test(result_folder):
         subtitle='Using 15 flows of CUBIC, 15 flows of DCTCP (with ECN) and 1 flow UDP',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            Step.plot_compare(),
-            Step.branch_runif([
+            steps.plot_compare(),
+            steps.branch_runif([
                 ('simula', lambda testenv: hostname() == 'ford', 'Simula testbed'),
                 ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', 'Simula docker'),
                 ('x250', lambda testenv: hostname() == 'DARASK-X250', 'Henriks laptop'),
                 ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'KVM host'),
             ]),
-            Step.branch_sched([
+            steps.branch_sched([
                 # tag, title, name, params
                 ('pi2',
                     'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
@@ -54,20 +55,20 @@ def test(result_folder):
                 ('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
                 #('pfifo', 'pfifo', 'pfifo', ''),
             ]),
-            Step.branch_rtt([
+            steps.branch_rtt([
                 10,
                 100,
             ]),
-            Step.branch_bitrate([
+            steps.branch_bitrate([
                 100,
                 250,
                 500,
             ]),
-            Step.branch_define_udp_rate([
+            steps.branch_define_udp_rate([
                 50,
                 300,
             ]),
-            Step.branch_repeat(8),
+            steps.branch_repeat(8),
             my_test,
         ),
     )
