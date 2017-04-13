@@ -83,6 +83,9 @@ RUN apt-get update \
     && apt-get remove -y bison build-essential flex git iptables-dev libdb5.3-dev patch pkg-config \
     && apt-get autoremove -y
 
+# create a file that can be used to identify we are in Docker
+RUN touch /testbed-is-docker
+
 ADD container/entrypoint.sh /entrypoint.sh
 
 EXPOSE 22
