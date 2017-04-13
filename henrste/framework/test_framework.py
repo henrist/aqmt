@@ -928,82 +928,98 @@ class TestCollection():
     def __init__(self, folder, title=None, subtitle=None, titlelabel=None, parent=None):
         if parent:
             self.folder = parent.folder + '/' + folder
-            parent.add_collection_pre(self)
+            parent.check_and_add_tag(folder)
         else:
             self.folder = folder
 
-        self.tags_used = []
+        self.tags_used = []  # to make sure we have unique tags as children
+
         self.test = None
         self.collections = []
+
         self.parent = parent
         self.parent_called = False
 
-        TestEnv.remove_hint(self.folder)
-        TestEnv.save_hint_to_folder(self.folder, 'type collection')
+        self.hints_initialized = False  # defer initialization of hints till we have data
+        self.title = title
+        self.subtitle = subtitle
+        self.titlelabel = titlelabel
 
-        if title is not None:
-            TestEnv.save_hint_to_folder(self.folder, 'title %s' % title)
-
-        if subtitle is not None:
-            TestEnv.save_hint_to_folder(self.folder, 'subtitle %s' % subtitle)
-
-        if titlelabel is not None:
-            TestEnv.save_hint_to_folder(self.folder, 'titlelabel %s' % titlelabel)
 
     def check_and_add_tag(self, tag):
+        """
+        This ensures we don't have duplicate tags in the collection
+        """
         if tag in self.tags_used:
             raise Exception("Tag must be unique inside same collection (tag: %s)" % tag)
 
         self.tags_used.append(tag)
 
-    def add_collection_pre(self, collection):
-        self.check_and_add_tag(collection.folder)
+    def add_child(self, child_folder):
+        """
+        Add a child of this collection.
 
-    def add_collection_post(self, collection):
-        self.collections.append(collection)
-        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(collection.folder))
+        It can be another collection (then this is called by the child
+        collection itself), or a single test.
+
+        The start of call chain for this is a test that has data.
+        If no tests with data are inside this collection, it will
+        never be visible in folder structure.
+        """
+        if not self.hints_initialized:
+            self.hints_initialized = True
+            TestEnv.remove_hint(self.folder)
+            TestEnv.save_hint_to_folder(self.folder, 'type collection')
+
+            if self.title is not None:
+                TestEnv.save_hint_to_folder(self.folder, 'title %s' % self.title)
+
+            if self.subtitle is not None:
+                TestEnv.save_hint_to_folder(self.folder, 'subtitle %s' % self.subtitle)
+
+            if self.titlelabel is not None:
+                TestEnv.save_hint_to_folder(self.folder, 'titlelabel %s' % self.titlelabel)
+
+        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % child_folder)
 
         if self.parent and not self.parent_called:
             self.parent_called = True
-            self.parent.add_collection_post(self)
-
-    def add_test(self, test_folder):
-        TestEnv.save_hint_to_folder(self.folder, 'sub %s' % os.path.basename(test_folder))
-
-        if self.parent and not self.parent_called:
-            self.parent_called = True
-            self.parent.add_collection_post(self)
+            self.parent.collections.append(self)
+            self.parent.add_child(os.path.basename(self.folder))
 
     def run_test(self, test_fn, testenv):
-        """Run a single test (the smallest possible test)
+        """
+        Run a single test (the smallest possible test)
 
         test_fn: Method that generates test data
         """
 
         if self.test:
             raise Exception("A collection cannot contain multiple tests")
-        test = TestCase(testenv=testenv, folder=self.folder + '/test')
-        test.log_header()
-        self.test = test
 
-        if not test.should_skip():
-            test.run(test_fn)
+        test_folder = 'test'
 
-        if (test.data_collected or test.already_exists) and not testenv.dry_run:
-            if testenv.reanalyze or not test.already_exists:
+        self.test = TestCase(testenv=testenv, folder=self.folder + '/' + test_folder)
+        self.test.log_header()
+
+        if not self.test.should_skip():
+            self.test.run(test_fn)
+
+        if (self.test.data_collected or self.test.already_exists) and not testenv.dry_run:
+            if testenv.reanalyze or not self.test.already_exists:
                 start = time.time()
-                test.analyze()
+                self.test.analyze()
                 Logger.info('Analyzed test (%.2f s)' % (time.time()-start))
 
-            if testenv.reanalyze or testenv.replot or not test.already_exists:
+            if testenv.reanalyze or testenv.replot or not self.test.already_exists:
                 start = time.time()
-                test.plot()
+                self.test.plot()
                 Logger.info('Plotted test (%.2f s)' % (time.time()-start))
 
-            self.add_test(test.test_folder)
+            self.add_child(test_folder)
 
-        elif test.already_exists:
-            self.add_test(test.test_folder)
+        elif self.test.already_exists:
+            self.add_child(test_folder)
 
         # if we have received a SIGTERM we will terminate TA but allow the plotting
         global is_exiting
