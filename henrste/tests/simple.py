@@ -11,37 +11,43 @@ from framework.test_utils import Step, run_test
 def test():
 
     def my_test(testcase):
-        testcase.run_greedy(node='a', tag='node-a')
-        testcase.run_greedy(node='b', tag='node-b')
+        testcase.run_greedy(node='a', tag='cubic 1')
+        testcase.run_greedy(node='a', tag='cubic 2')
+        testcase.run_greedy(node='b', tag='ecn-cubic 1')
+        testcase.run_greedy(node='b', tag='ecn-cubic 2')
 
     testbed = Testbed()
 
-    testbed.ta_samples = 10
-    testbed.ta_idle = 2
-    testbed.ta_delay = 500
+    testbed.ta_samples = 200
+    testbed.ta_idle = 0
+    testbed.ta_delay = 125
 
     testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-    testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
+    #testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
+    testbed.cc('b', 'cubic', testbed.ECN_INITIATE)
 
     run_test(
         folder='results/simple',
         title='Just a simple test to verify setup',
-        testenv=TestEnv(testbed, retest=True),
+        testenv=TestEnv(testbed, retest=True, reanalyze=True),
         steps=(
-            Step.plot_compare(),
+            Step.plot_compare(swap_levels=[1]),
+            Step.plot_flows(swap_levels=[1]),
             Step.branch_sched([
-                ('pi2',
-                    'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
-                    lambda testbed: testbed.aqm_pi2(params='dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100')),
+                #('pi2',
+                #    'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
+                #    lambda testbed: testbed.aqm_pi2(params='dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100')),
                 ('pie', 'PIE', lambda testbed: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
                 #('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
             ]),
             Step.branch_rtt([
+                2,
                 10,
                 50,
                 100,
             ], title='%d'),
             Step.branch_bitrate([
+                10,
                 100,
             ]),
             my_test,
