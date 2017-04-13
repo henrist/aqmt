@@ -5,9 +5,8 @@ import math
 import os.path
 import os
 import re
-import sys
-from pprint import pprint
 from collections import OrderedDict
+
 
 class Colors:
     BLUE = "#001E90FF"
@@ -59,13 +58,15 @@ class Colors:
 
         return Colors.UNKNOWN
 
-class PlotAxis():
-    """Different ways to display x axis in each test"""
-    LOGARITHMIC='log'
-    LINEAR='linear'
-    CATEGORY='category'
 
-class TreeUtil():
+class PlotAxis:
+    """Different ways to display x axis in each test"""
+    LOGARITHMIC = 'log'
+    LINEAR = 'linear'
+    CATEGORY = 'category'
+
+
+class TreeUtil:
 
     @staticmethod
     def get_depth_sizes(testmeta):
@@ -113,7 +114,7 @@ class TreeUtil():
                     traverse(item, depthnow + 1)
 
         traverse(testmeta)
-        return (sets, tests, depth, nodes - depth)
+        return sets, tests, depth, nodes - depth
 
     @staticmethod
     def get_testcases(testmeta):
@@ -495,7 +496,7 @@ class CollectionUtil():
         xlabel = None
         def fn(testmeta, first_set, x):
             nonlocal xlabel
-            if xlabel == None and len(testmeta['children']) > 0 and testmeta['children'][0]['titlelabel'] != '':
+            if xlabel is None and len(testmeta['children']) > 0 and testmeta['children'][0]['titlelabel'] != '':
                 xlabel = testmeta['children'][0]['titlelabel']
 
         TreeUtil.walk_leaf(testmeta, fn)
@@ -754,7 +755,7 @@ class CollectionPlot():
 
         # show xlabel at bottom of the multiplot
         xlabel = CollectionUtil.get_xlabel(self.testmeta)
-        if xlabel != None:
+        if xlabel is not None:
             self.gpi += """
                 set xlabel '""" + xlabel + """'"""
 
@@ -861,10 +862,11 @@ class CollectionPlot():
         Plot.generate(self.output_file, self.gpi, size='21cm,%dcm' % height)
 
 
-class Plot():
+class Plot:
     gpi = ''
     size = '21cm,10cm'
 
+    @staticmethod
     def generate(output_file, gpi, size='21cm,10cm'):
         gpi = """
             reset
@@ -1058,12 +1060,15 @@ class Plot():
 class FolderUtil():
 
     @staticmethod
-    def generate_hierarchy_data_from_folder(folder, swap_levels=[]):
+    def generate_hierarchy_data_from_folder(folder, swap_levels=None):
         """Generate a dict that can be sent to CollectionPlot by analyzing the directory
 
         It will look in all the metadata stored while running test
         to generate the final result
         """
+
+        if swap_levels is None:
+            swap_levels = []
 
         def parse_folder(folder):
             if not os.path.isdir(folder):
@@ -1127,14 +1132,20 @@ def read_metadata(file):
 
     return (metadata, lines)
 
-def plot_folder_compare(folder, swap_levels=[], x_axis=PlotAxis.CATEGORY, **kwargs):
+
+def plot_folder_compare(folder, swap_levels=None, x_axis=PlotAxis.CATEGORY, **kwargs):
+    if swap_levels is None:
+        swap_levels = []
     data = FolderUtil.generate_hierarchy_data_from_folder(folder, swap_levels)
 
     cp = CollectionPlot(folder + '/comparison', data, x_axis=x_axis)
     cp.plot(**kwargs)
     print('Plotted comparison of %s' % folder)
 
-def plot_folder_flows(folder, swap_levels=[]):
+
+def plot_folder_flows(folder, swap_levels=None):
+    if swap_levels is None:
+        swap_levels = []
     data = FolderUtil.generate_hierarchy_data_from_folder(folder, swap_levels)
 
     testcases = []
@@ -1150,6 +1161,7 @@ def plot_folder_flows(folder, swap_levels=[]):
         plot = Plot()
         plot.plot_multiple_flows(testcases, output_path=output_path)
         print('Plotted merge of %s' % folder)
+
 
 def plot_tests(folder):
     data = FolderUtil.generate_hierarchy_data_from_folder(folder)

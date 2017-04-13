@@ -14,184 +14,191 @@
 import numpy as np
 import os
 import re
-import sys
 
-class TaggedRate():
-    DEFAULT_TAG='Other'
+DEFAULT_TAG = 'Other'
 
-    def generateStats(self, numbers):
-        if len(numbers) == 0:
-            res = ['0', '0', '0', '0', '0', '0', '0', '0', '0']
-        else:
-            res = [
-                np.average(numbers).astype('str'),
-                '-', # not used: np.std(numbers).astype('str'),
-                np.min(numbers).astype('str'),
-                np.percentile(numbers, 1, interpolation='lower').astype('str'),
-                np.percentile(numbers, 25, interpolation='lower').astype('str'),
-                np.percentile(numbers, 50, interpolation='lower').astype('str'),
-                np.percentile(numbers, 75, interpolation='lower').astype('str'),
-                np.percentile(numbers, 99, interpolation='lower').astype('str'),
-                np.max(numbers).astype('str'),
-            ]
 
-        return ' '.join(res)
+def generate_stats(numbers):
+    if len(numbers) == 0:
+        res = ['0', '0', '0', '0', '0', '0', '0', '0', '0']
+    else:
+        res = [
+            np.average(numbers).astype('str'),
+            '-',  # not used: np.std(numbers).astype('str'),
+            np.min(numbers).astype('str'),
+            np.percentile(numbers, 1, interpolation='lower').astype('str'),
+            np.percentile(numbers, 25, interpolation='lower').astype('str'),
+            np.percentile(numbers, 50, interpolation='lower').astype('str'),
+            np.percentile(numbers, 75, interpolation='lower').astype('str'),
+            np.percentile(numbers, 99, interpolation='lower').astype('str'),
+            np.max(numbers).astype('str'),
+        ]
 
-    def saveTagRates(self, folder, rates):
-        with open(folder + '/derived/r_tagged', 'w') as fall:
-            fall.write('#sample rate\n')
+    return ' '.join(res)
 
-            with open(folder + '/derived/r_tagged_stats', 'w') as fstats:
-                fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
-                first = True
-                for tag, values in rates.items():
-                    if not first:
-                        fall.write('\n\n')
-                    first = False
-                    fall.write('"%s"\n' % tag)
+def save_tag_rates(folder, rates):
+    with open(folder + '/derived/r_tagged', 'w') as fall:
+        fall.write('#sample rate\n')
 
-                    for i, rate in enumerate(values):
-                        fall.write('%d %d\n' % (i, rate))
+        with open(folder + '/derived/r_tagged_stats', 'w') as fstats:
+            fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
-                    fstats.write('"%s" %s\n' % (tag, self.generateStats(values)))
+            first = True
+            for tag, values in rates.items():
+                if not first:
+                    fall.write('\n\n')
+                first = False
+                fall.write('"%s"\n' % tag)
 
-    def saveTagUtil(self, folder, rates, bitrate):
-        with open(folder + '/derived/util_tagged', 'w') as fall:
-            fall.write('#sample util\n')
+                for i, rate in enumerate(values):
+                    fall.write('%d %d\n' % (i, rate))
 
-            with open(folder + '/derived/util_tagged_stats', 'w') as fstats:
-                fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
+                fstats.write('"%s" %s\n' % (tag, generate_stats(values)))
 
-                first = True
-                for tag, values in rates.items():
-                    list_util = []
 
-                    if not first:
-                        fall.write('\n\n')
-                    first = False
-                    fall.write('"%s"\n' % tag)
+def save_tag_util(folder, rates, bitrate):
+    with open(folder + '/derived/util_tagged', 'w') as fall:
+        fall.write('#sample util\n')
 
-                    for i, rate in enumerate(values):
-                        util = rate / bitrate
-                        list_util.append(util)
+        with open(folder + '/derived/util_tagged_stats', 'w') as fstats:
+            fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
-                        fall.write('%d %f\n' % (i, util))
+            first = True
+            for tag, values in rates.items():
+                list_util = []
 
-                    fstats.write('"%s" %s\n' % (tag, self.generateStats(list_util)))
+                if not first:
+                    fall.write('\n\n')
+                first = False
+                fall.write('"%s"\n' % tag)
 
-    def getRates(self, folder, flows, tags, bitrate):
-        """Map all known rates to the tag and aggregated rate"""
+                for i, rate in enumerate(values):
+                    util = rate / bitrate
+                    list_util.append(util)
 
-        rates = {self.DEFAULT_TAG: []}
-        for tag in tags:
-            rates[tag] = []
+                    fall.write('%d %f\n' % (i, util))
 
-        for ecntype in ['ecn', 'nonecn']:
-            n_samples = 0
-            with open(folder + '/ta/r_pf_' + ecntype) as f:
-                #0 1000 6152397 3693860
-                for line in f:
-                    n_samples += 1
+                fstats.write('"%s" %s\n' % (tag, generate_stats(list_util)))
 
-                    for i, rate in enumerate(line.split()[2:]):
-                        tag = flows[ecntype][i]['tag']
 
-                        if len(rates[tag]) < n_samples:
-                            rates[tag].append(0)
+def get_rates(folder, flows, tags):
+    """Map all known rates to the tag and aggregated rate"""
 
-                        rates[tag][n_samples-1] += int(rate)
+    rates = {DEFAULT_TAG: []}
+    for tag in tags:
+        rates[tag] = []
 
-        # remove unknown if all is tagged
-        if len(rates[self.DEFAULT_TAG]) == 0:
-            rates.pop(self.DEFAULT_TAG)
-
-        # make sure all lists are filled up
-        # (in case no traffic is detected on a tag)
-        for tag in tags:
-            if len(rates[tag]) == 0:
-                rates[tag] = [0] * n_samples
-
-        return rates
-
-    def extractProperties(self, line):
-        """Convert the line in the 'details' file to a map"""
-        list = {}
-        name = None
-
-        for item in re.split(r'(?:^| )([^= ]+=)', line.strip()):
-            if item.endswith('='):
-                name = item[0:-1]
-            elif name is not None:
-                list[name] = item
-
-        return list
-
-    def getClassification(self, folder):
-        tags = set()
-        classify = []
-
-        with open(folder + '/details', 'r') as f:
+    n_samples = None  # will use the last one in following loop
+    for ecntype in ['ecn', 'nonecn']:
+        n_samples = 0
+        with open(folder + '/ta/r_pf_' + ecntype) as f:
+            # 0 1000 6152397 3693860
             for line in f:
-                if line.startswith('traffic='):
-                    properties = self.extractProperties(line)
-                    if 'tag' in properties:
-                        tag = properties['tag']
-                        tags.add(tag)
+                n_samples += 1
 
-                        classify_by = 'client' if 'client' in properties else 'server'
-                        classify.append({classify_by: properties[classify_by], 'tag': tag})
+                for i, rate in enumerate(line.split()[2:]):
+                    tag = flows[ecntype][i]['tag']
 
-        return [list(tags), classify]
+                    if len(rates[tag]) < n_samples:
+                        rates[tag].append(0)
 
-    def getBitrate(self, folder):
-        with open(folder + '/details', 'r') as f:
+                    rates[tag][n_samples - 1] += int(rate)
+
+    # remove unknown if all is tagged
+    if len(rates[DEFAULT_TAG]) == 0:
+        rates.pop(DEFAULT_TAG)
+
+    # make sure all lists are filled up
+    # (in case no traffic is detected on a tag)
+    for tag in tags:
+        if len(rates[tag]) == 0:
+            rates[tag] = [0] * n_samples
+
+    return rates
+
+
+def extract_properties(line):
+    """Convert the line in the 'details' file to a map"""
+    list = {}
+    name = None
+
+    for item in re.split(r'(?:^| )([^= ]+=)', line.strip()):
+        if item.endswith('='):
+            name = item[0:-1]
+        elif name is not None:
+            list[name] = item
+
+    return list
+
+
+def get_classification(folder):
+    tags = set()
+    classify = []
+
+    with open(folder + '/details', 'r') as f:
+        for line in f:
+            if line.startswith('traffic='):
+                properties = extract_properties(line)
+                if 'tag' in properties:
+                    tag = properties['tag']
+                    tags.add(tag)
+
+                    classify_by = 'client' if 'client' in properties else 'server'
+                    classify.append({classify_by: properties[classify_by], 'tag': tag})
+
+    return [list(tags), classify]
+
+
+def get_bitrate(folder):
+    with open(folder + '/details', 'r') as f:
+        for line in f:
+            if line.startswith('testbed_rate '):
+                return int(line.split(' ')[1])
+
+    raise Exception('Could not determine bitrate used in test')
+
+
+def get_flows(folder, classify):
+    flows = {'ecn': [], 'nonecn': []}
+    for ecntype in ['ecn', 'nonecn']:
+        with open(folder + '/ta/flows_' + ecntype) as f:
             for line in f:
-                if line.startswith('testbed_rate '):
-                    return int(line.split(' ')[1])
+                # TCP 10.25.2.21 5504 10.25.1.11 53898
+                _type, srcip, srcport, dstip, dstport = line.split()
 
-        raise Exception('Could not determine bitrate used in test')
+                # identify the tag
+                tag = DEFAULT_TAG
+                for item in classify:
+                    if 'client' in item and item['client'] == dstport:
+                        tag = item['tag']
+                        break
+                    elif 'server' in item and item['server'] == srcport:
+                        tag = item['tag']
+                        break
 
-    def getFlows(self, folder, classify):
-        flows = {'ecn': [], 'nonecn': []}
-        for ecntype in ['ecn', 'nonecn']:
-            with open(folder + '/ta/flows_' + ecntype) as f:
-                for line in f:
-                    #TCP 10.25.2.21 5504 10.25.1.11 53898
-                    type, srcip, srcport, dstip, dstport = line.split()
+                flows[ecntype].append({
+                    'flow': line.strip(),
+                    'tag': tag
+                })
 
-                    # identify the tag
-                    tag = self.DEFAULT_TAG
-                    for item in classify:
-                        if 'client' in item and item['client'] == dstport:
-                            tag = item['tag']
-                            break
-                        elif 'server' in item and item['server'] == srcport:
-                            tag = item['tag']
-                            break
+    return flows
 
-                    flows[ecntype].append({
-                        'flow': line.strip(),
-                        'tag': tag
-                    })
 
-        return flows
+def process_test(folder):
+    outfolder = folder + '/derived'
+    if not os.path.exists(outfolder):
+        os.makedirs(outfolder)
 
-    def processTest(self, folder):
-        outfolder = folder + '/derived'
-        if not os.path.exists(outfolder):
-            os.makedirs(outfolder)
+    tags, classify = get_classification(folder)
+    bitrate = get_bitrate(folder)
+    flows = get_flows(folder, classify)
 
-        tags, classify = self.getClassification(folder)
-        bitrate = self.getBitrate(folder)
-        flows = self.getFlows(folder, classify)
+    rates = get_rates(folder, flows, tags)
 
-        rates = self.getRates(folder, flows, tags, bitrate)
-
-        self.saveTagRates(folder, rates)
-        self.saveTagUtil(folder, rates, bitrate)
+    save_tag_rates(folder, rates)
+    save_tag_util(folder, rates, bitrate)
 
 
 if __name__ == '__main__':
-    qd = TaggedRate()
-    qd.processTest('testsets/fairness/pi2/dctcp-vs-dctcp/test-rtt-100')
+    process_test('testsets/fairness/pi2/dctcp-vs-dctcp/test-rtt-100')

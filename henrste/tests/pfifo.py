@@ -6,11 +6,10 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import datetime
-from framework import steps
+from framework import Testbed, TestEnv, run_test, steps
 from framework.traffic import greedy
 from framework.plot import PlotAxis
-from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import run_test
+
 
 def test():
 

@@ -4,7 +4,11 @@ This file contains different functions for generating traffic for a test
 
 import os
 from plumbum.cmd import ssh
-from .test_framework import Logger, get_log_cmd, add_known_pid, kill_pid
+
+from . import logger
+from . import processes
+from .terminal import get_log_cmd
+
 
 def tcp_netcat(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
@@ -20,23 +24,24 @@ def tcp_netcat(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; nc -d %s %d >/dev/null' % (os.environ['IP_SERVER%s' % node], server_port)]
 
     if dry_run:
-        Logger.debug(get_log_cmd(cmd1))
-        Logger.debug(get_log_cmd(cmd2))
+        logger.debug(get_log_cmd(cmd1))
+        logger.debug(get_log_cmd(cmd2))
 
-        def stopTest():
+        def stop_test():
             pass
 
     else:
         pid1 = run_fn(cmd1, bg=True)
         pid2 = run_fn(cmd2, bg=True)
-        add_known_pid(pid1)
-        add_known_pid(pid2)
+        processes.add_known_pid(pid1)
+        processes.add_known_pid(pid2)
 
-        def stopTest():
-            kill_pid(pid1)
-            kill_pid(pid2)
+        def stop_test():
+            processes.kill_pid(pid1)
+            processes.kill_pid(pid2)
 
-    return stopTest
+    return stop_test
+
 
 def tcp_iperf(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
@@ -51,23 +56,24 @@ def tcp_iperf(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     cmd1 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'iperf -s -p %d' % server_port]
     cmd2 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.2; iperf -c %s -p %d -t 86400' % (os.environ['IP_CLIENT%s' % node], server_port)]
 
-    Logger.debug(get_log_cmd(cmd1))
-    Logger.debug(get_log_cmd(cmd2))
+    logger.debug(get_log_cmd(cmd1))
+    logger.debug(get_log_cmd(cmd2))
     if dry_run:
-        def stopTest():
+        def stop_test():
             pass
 
     else:
         pid1 = run_fn(cmd1, bg=True)
         pid2 = run_fn(cmd2, bg=True)
-        add_known_pid(pid1)
-        add_known_pid(pid2)
+        processes.add_known_pid(pid1)
+        processes.add_known_pid(pid2)
 
-        def stopTest():
-            kill_pid(pid1)
-            kill_pid(pid2)
+        def stop_test():
+            processes.kill_pid(pid1)
+            processes.kill_pid(pid2)
 
-    return stopTest
+    return stop_test
+
 
 def scp(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
@@ -92,19 +98,20 @@ def scp(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
 
     cmd = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'scp /opt/testbed/bigfile %s:/tmp/' % (os.environ['IP_CLIENT%s' % node])]
 
-    Logger.debug(get_log_cmd(cmd))
+    logger.debug(get_log_cmd(cmd))
     if dry_run:
-        def stopTest():
+        def stop_test():
             pass
 
     else:
         pid_server = run_fn(cmd, bg=True)
-        add_known_pid(pid_server)
+        processes.add_known_pid(pid_server)
 
-        def stopTest():
-            kill_pid(pid_server)
+        def stop_test():
+            processes.kill_pid(pid_server)
 
-    return stopTest
+    return stop_test
+
 
 def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
@@ -128,23 +135,24 @@ def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     cmd1 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], '/opt/testbed/greedy_generator/greedy -vv -s %d' % server_port]
     cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; /opt/testbed/greedy_generator/greedy -vv %s %d' % (os.environ['IP_SERVER%s' % node], server_port)]
 
-    Logger.debug(get_log_cmd(cmd1))
-    Logger.debug(get_log_cmd(cmd2))
+    logger.debug(get_log_cmd(cmd1))
+    logger.debug(get_log_cmd(cmd2))
     if dry_run:
-        def stopTest():
+        def stop_test():
             pass
 
     else:
         pid_server = run_fn(cmd1, bg=True)
         pid_client = run_fn(cmd2, bg=True)
-        add_known_pid(pid_server)
-        add_known_pid(pid_client)
+        processes.add_known_pid(pid_server)
+        processes.add_known_pid(pid_client)
 
-        def stopTest():
-            kill_pid(pid_server)
-            kill_pid(pid_client)
+        def stop_test():
+            processes.kill_pid(pid_server)
+            processes.kill_pid(pid_client)
 
-    return stopTest
+    return stop_test
+
 
 def udp(dry_run, testbed, hint_fn, run_fn, bitrate, node='a', ect="nonect", tag=None):
     """
@@ -160,9 +168,9 @@ def udp(dry_run, testbed, hint_fn, run_fn, bitrate, node='a', ect="nonect", tag=
 
     tos = ''
     if ect == 'ect1':
-        tos = "--tos 0x01" # ECT(1)
+        tos = "--tos 0x01"  # ECT(1)
     elif ect == 'ect0':
-        tos="--tos 0x02" # ECT(0)
+        tos = "--tos 0x02"  # ECT(0)
     else:
         ect = 'nonect'
 
@@ -180,24 +188,29 @@ def udp(dry_run, testbed, hint_fn, run_fn, bitrate, node='a', ect="nonect", tag=
     length = framesize - headers
     bitrate = bitrate * length / framesize
 
-    cmd_client = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.5; iperf -c %s -p %d %s -u -l %d -R -b %d -i 1 -t 99999' %
-                      (os.environ['IP_CLIENT%s' % node], server_port, tos, length, bitrate)]
+    cmd_client = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'sleep 0.5; iperf -c %s -p %d %s -u -l %d -R -b %d -i 1 -t 99999' % (
+        os.environ['IP_CLIENT%s' % node],
+        server_port,
+        tos,
+        length,
+        bitrate
+    )]
 
-    Logger.debug(get_log_cmd(cmd_server))
-    Logger.debug(get_log_cmd(cmd_client))
+    logger.debug(get_log_cmd(cmd_server))
+    logger.debug(get_log_cmd(cmd_client))
     if dry_run:
-        def stopTest():
+        def stop_test():
             pass
 
     else:
         pid_server = run_fn(cmd_server, bg=True)
         pid_client = run_fn(cmd_client, bg=True)
 
-        add_known_pid(pid_server)
-        add_known_pid(pid_client)
+        processes.add_known_pid(pid_server)
+        processes.add_known_pid(pid_client)
 
-        def stopTest():
-            kill_pid(pid_client)
-            kill_pid(pid_server)
+        def stop_test():
+            processes.kill_pid(pid_client)
+            processes.kill_pid(pid_server)
 
-    return stopTest
+    return stop_test

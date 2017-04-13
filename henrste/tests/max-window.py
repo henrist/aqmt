@@ -5,10 +5,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-from framework import MBIT, steps
+from framework import MBIT, Testbed, TestEnv, run_test, steps
 from framework.traffic import greedy, udp
-from framework.test_framework import Testbed, TestEnv
-from framework.test_utils import run_test
+
 
 def test():
     """

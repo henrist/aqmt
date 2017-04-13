@@ -18,6 +18,7 @@ from .plot import plot_folder_flows, plot_folder_compare
 
 MBIT = 1000*1000
 
+
 def branch_sched(sched_list):
     def step(testdef):
         for tag, title, sched_name, sched_params in sched_list:
@@ -31,6 +32,7 @@ def branch_sched(sched_list):
             }
     return step
 
+
 def branch_custom(list, fn_testdef, fn_tag, fn_title, titlelabel=''):
     def step(testdef):
         for item in list:
@@ -41,6 +43,7 @@ def branch_custom(list, fn_testdef, fn_tag, fn_title, titlelabel=''):
                 'titlelabel': titlelabel,
             }
     return step
+
 
 def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s'):
     """
@@ -57,6 +60,7 @@ def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s'):
             }
     return branch
 
+
 def branch_repeat(num, title='Test %d'):
     def step(testdef):
         for i in range(num):
@@ -66,6 +70,7 @@ def branch_repeat(num, title='Test %d'):
                 'titlelabel': 'Test #',
             }
     return step
+
 
 def branch_rtt(rtt_list, title='RTT: %d ms'):
     def step(testdef):
@@ -79,6 +84,7 @@ def branch_rtt(rtt_list, title='RTT: %d ms'):
             }
     return step
 
+
 def branch_bitrate(bitrate_list, title='%d Mb/s'):
     def step(testdef):
         for bitrate in bitrate_list:
@@ -89,6 +95,7 @@ def branch_bitrate(bitrate_list, title='%d Mb/s'):
                 'titlelabel': 'Linkrate',
             }
     return step
+
 
 def branch_runif(checks):
     def step(testdef):
@@ -105,6 +112,7 @@ def branch_runif(checks):
             testdef.testenv.skip_test = prev
     return step
 
+
 def skipif(fn):
     def step(testdef):
         prev = testdef.testenv.skip_test
@@ -116,6 +124,7 @@ def skipif(fn):
 
     return step
 
+
 def plot_compare(**plot_args):
     def step(testdef):
         yield
@@ -123,9 +132,10 @@ def plot_compare(**plot_args):
             plot_folder_compare(testdef.collection.folder, **plot_args)
     return step
 
+
 def plot_flows(**plot_args):
     def step(testdef):
         yield
         if not testdef.dry_run:
-            plot_folder_flows(testdef.collection.folder)
+            plot_folder_flows(testdef.collection.folder, **plot_args)
     return step
