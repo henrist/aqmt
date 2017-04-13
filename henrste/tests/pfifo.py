@@ -44,9 +44,8 @@ def test():
             ),
             Step.plot_flows(),
             Step.branch_sched([
-                ('pfifo-1',
-                    'pfifo',
-                    lambda testbed: testbed.aqm('pfifo', 'limit 1000')),
+                # tag, title, name, params
+                ('pfifo-1', 'pfifo', 'pfifo', 'limit 1000'),
             ]),
             Step.branch_rtt([
                 #2,

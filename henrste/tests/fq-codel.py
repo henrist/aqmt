@@ -34,9 +34,8 @@ def test():
         steps=(
             Step.plot_compare(),
             Step.branch_sched([
-                ('fq-codel-1',
-                    'fq\\\\_codel',
-                    lambda testbed: testbed.aqm('fq_codel')),
+                # tag, title, name, params
+                ('fq-codel-1', 'fq\\\\_codel', 'fq_codel', ''),
             ]),
             Step.branch_rtt([10, 50, 100], title='%d'),
             Step.branch_bitrate([100]),

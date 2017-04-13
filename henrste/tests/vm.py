@@ -46,11 +46,12 @@ def test(result_folder):
                 ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'KVM host'),
             ]),
             Step.branch_sched([
+                # tag, title, name, params
                 ('pi2',
                     'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
-                    lambda testbed: testbed.aqm('pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100')),
-                ('pie', 'PIE', lambda testbed: testbed.aqm('pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
-                #('pfifo', 'pfifo', lambda testbed: testbed.aqm('pfifo')),
+                    'pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100'),
+                ('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
+                #('pfifo', 'pfifo', 'pfifo', ''),
             ]),
             Step.branch_rtt([
                 10,

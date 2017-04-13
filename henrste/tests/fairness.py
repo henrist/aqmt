@@ -59,11 +59,12 @@ def test():
                 utilization_tags=True,
             ),
             Step.branch_sched([
-                ['pie', 'PIE', lambda testbed: testbed.aqm('pie')],
-                ['pi2', 'PI2\\nl\\\\_thresh=1000', lambda testbed: testbed.aqm('pi2', 'l_thresh 1000')],
-                ['pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', lambda testbed: testbed.aqm('pi2', 'l_thresh 10000')],
-                ['pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', lambda testbed: testbed.aqm('pi2', 'l_thresh 50000')],
-                #['pfifo', 'pfifo', lambda testbed: testbed.aqm('pfifo')],
+                # tag, title, name, params
+                ('pie', 'PIE', 'pie', ''),
+                ('pi2', 'PI2\\nl\\\\_thresh=1000', 'pi2', 'l_thresh 1000'),
+                ('pi2-l_thresh-10000', 'PI2\\nl\\\\_thresh=10000', 'pi2', 'l_thresh 10000'),
+                ('pi2-l_thresh-50000', 'PI2\\nl\\\\_thresh=50000', 'pi2', 'l_thresh 50000'),
+                #('pfifo', 'pfifo', 'pfifo', ''),
             ]),
             branch_cc_matrix([
                 #['reno-vs-reno', 'Reno/Reno', 'a', 'reno', testbed.ECN_ALLOW, 'Reno', 'b', 'reno', testbed.ECN_ALLOW, 'Reno 2nd'],

@@ -20,8 +20,8 @@ class Step():
     @staticmethod
     def branch_sched(sched_list):
         def step(testdef):
-            for tag, title, sched_fn in sched_list:
-                sched_fn(testdef.testenv.testbed)
+            for tag, title, sched_name, sched_params in sched_list:
+                testdef.testenv.testbed.aqm(sched_name, sched_params)
                 testdef.sched_tag = tag  # to allow substeps to filter it
 
                 yield {
