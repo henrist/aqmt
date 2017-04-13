@@ -393,49 +393,6 @@ class Testbed():
 
         return out.strip()
 
-    @staticmethod
-    def analyze_results(testfolder, dry_run=False, log_level=Logger.DEBUG):
-        if dry_run:
-            Logger.warn("Cannot determine bitrate in dry run mode, setting to -1")
-            bitrate = -1
-
-        else:
-            bitrate = 0
-            with open(testfolder + '/details', 'r') as f:
-                for line in f:
-                    if line.startswith('testbed_rate'):
-                        bitrate = int(line.split()[1])
-                        break
-
-            if bitrate == 0:
-                raise Exception("Could not determine bitrate of test '%s'" % testfolder)
-
-        rtt_l4s = 0            # used to calculate window size, we don't use it now
-        rtt_classic = 0        # used to calculate window size, we don't use it now
-
-        if not os.path.exists(testfolder + '/derived'):
-            os.makedirs(testfolder + '/derived')
-
-        cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
-        Logger.log(log_level, get_log_cmd(cmd))
-
-        if dry_run:
-            Logger.warn("Skipping post processing due to dry run")
-
-        else:
-            cmd()
-
-            start = time.time()
-
-            qd = QueueDelay()
-            qd.processTest(testfolder)
-
-            tr = TaggedRate()
-            tr.processTest(testfolder)
-
-            u = Utilization()
-            u.processTest(testfolder, bitrate)
-
     def get_hint(self, dry_run=False):
         hint = ''
         hint += "testbed_rtt_clients %d\n" % self.rtt_clients
@@ -641,8 +598,51 @@ class TestCase():
 
     def analyze(self):
         TestEnv.remove_hint(self.test_folder, ['data_analyzed'])
-        Testbed.analyze_results(self.test_folder, dry_run=self.testenv.dry_run)
+        self.analyze_results(self.test_folder, dry_run=self.testenv.dry_run)
         self.save_hint('data_analyzed')
+
+    @staticmethod
+    def analyze_results(testfolder, dry_run=False, log_level=Logger.DEBUG):
+        if dry_run:
+            Logger.warn("Cannot determine bitrate in dry run mode, setting to -1")
+            bitrate = -1
+
+        else:
+            bitrate = 0
+            with open(testfolder + '/details', 'r') as f:
+                for line in f:
+                    if line.startswith('testbed_rate'):
+                        bitrate = int(line.split()[1])
+                        break
+
+            if bitrate == 0:
+                raise Exception("Could not determine bitrate of test '%s'" % testfolder)
+
+        rtt_l4s = 0            # used to calculate window size, we don't use it now
+        rtt_classic = 0        # used to calculate window size, we don't use it now
+
+        if not os.path.exists(testfolder + '/derived'):
+            os.makedirs(testfolder + '/derived')
+
+        cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
+        Logger.log(log_level, get_log_cmd(cmd))
+
+        if dry_run:
+            Logger.warn("Skipping post processing due to dry run")
+
+        else:
+            cmd()
+
+            start = time.time()
+
+            qd = QueueDelay()
+            qd.processTest(testfolder)
+
+            tr = TaggedRate()
+            tr.processTest(testfolder)
+
+            u = Utilization()
+            u.processTest(testfolder, bitrate)
 
     def plot(self):
         p = Plot()
