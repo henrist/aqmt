@@ -226,7 +226,7 @@ void writeStatistics(std::string filename, Statistics *stats) {
     out << stats->average() << " " << stats->stddev() << " "
         << stats->front() << " "
         << stats->p(1) << " " << stats->p(25) << " " << stats->p(50) << " "
-        << stats->p(75) << " " << stats->p(99)
+        << stats->p(75) << " " << stats->p(99) << " "
         << stats->back() << "" << std::endl;
     writeToFile(filename, out.str());
 }
