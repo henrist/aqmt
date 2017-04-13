@@ -228,7 +228,7 @@ void writeStatistics(std::string filename, Statistics *stats) {
         << stats->p(1) << " " << stats->p(25) << " " << stats->p(50) << " "
         << stats->p(75) << " " << stats->p(99)
         << stats->back() << "" << std::endl;
-    writeToFile(filename, out.str()); out.str("");
+    writeToFile(filename, out.str());
 }
 
 void readFileMarks(std::string filename_marks, Statistics *stats, std::string filename_tot) {
