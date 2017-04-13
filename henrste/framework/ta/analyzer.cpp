@@ -490,16 +490,17 @@ void *printInfo(void *)
         time_ms = (tp->db2->last - tp->start) / 1000;
         tp->sample_times.push_back(time_ms);
 
-        printf("\n--- SAMPLE # %d", (int) tp->sample_id + 1);
+        printf("\n--- BEGIN SAMPLE # %d", (int) tp->sample_id + 1);
         if (tp->m_nrs != 0) {
             printf(" of %d", tp->m_nrs);
         }
         printf(" -- total run time %d ms ---\n", (int) time_ms);
 
-        printf("       ECN 00 qsize: ");
-        printf("       ECN 01 qsize: ");
-        printf("       ECN 10 qsize: ");
-        printf("       ECN 11 qsize: \n");
+        printf(" delay [ms]    ");
+        printf(" ECN 00: ");
+        printf(" ECN 01: ");
+        printf(" ECN 10: ");
+        printf(" ECN 11: \n");
 
         *f_qs_ecn_pdf00s << time_ms;
         *f_qs_ecn_pdf01s << time_ms;
@@ -521,8 +522,14 @@ void *printInfo(void *)
             uint64_t nr_nonecn = 0;
 
             if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
-                // TODO: change output, can we make it less verbose? also decode queue delay
-                printf("%3d:%10d %20d %20d %20d\n", i, tp->db2->qs.ecn00[i], tp->db2->qs.ecn01[i], tp->db2->qs.ecn10[i], tp->db2->qs.ecn11[i]);
+                // TODO: can we make it less verbose? e.g. group by some intervals?
+                printf("%9.3f:  %8d %8d %8d %8d\n",
+                    (double) qdelay_decode_table[i] / 1000,
+                    tp->db2->qs.ecn00[i],
+                    tp->db2->qs.ecn01[i],
+                    tp->db2->qs.ecn10[i],
+                    tp->db2->qs.ecn11[i]
+                );
 
                 nr_ecn = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
                 nr_nonecn = tp->db2->qs.ecn00[i];
@@ -629,6 +636,12 @@ void *printInfo(void *)
         tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
 
         printf("Total throughput: %lu bits/sec\n", (r_nonecn_tot + r_ecn_tot));
+
+        printf("--- END SAMPLE # %d", (int) tp->sample_id + 1);
+        if (tp->m_nrs != 0) {
+            printf(" of %d", tp->m_nrs);
+        }
+        printf(" -- \n\n");
 
         if (tp->m_nrs != 0 && tp->sample_id >= (tp->m_nrs - 1)) {
             printf("Obtained given number of samples (%d)\n", tp->m_nrs);
