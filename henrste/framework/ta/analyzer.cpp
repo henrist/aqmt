@@ -478,12 +478,11 @@ void *printInfo(void *)
         uint64_t recn_tot_s = 0;
         uint64_t rnonecn_tot_s = 0;
 
-        /* queue size, drops as a function queue size */
-        // total for the experiment, all samples summed up
+        // PDF - all samples summed up
         std::ofstream *f_qs_drops_ecn_pdf = openFileW(tp->m_folder, "/qs_drops_ecn_pdf");
         std::ofstream *f_qs_drops_nonecn_pdf = openFileW(tp->m_folder, "/qs_drops_nonecn_pdf");
 
-        // CDF
+        // CDF - all samples summed up
         std::ofstream *f_qs_drops_ecn_cdf = openFileW(tp->m_folder,  "/qs_drops_ecn_cdf");
         std::ofstream *f_qs_drops_nonecn_cdf = openFileW(tp->m_folder,  "/qs_drops_nonecn_cdf");
 
