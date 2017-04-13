@@ -763,6 +763,7 @@ class TestCase():
             os.makedirs(self.test_folder, exist_ok=True)
 
         start = time.time()
+        self.save_hint('type test')
 
         if not self.testenv.testbed.reset(dry_run=self.testenv.dry_run):
             raise Exception('Reset failed')
@@ -775,7 +776,6 @@ class TestCase():
 
         Logger.info('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
 
-        self.save_hint('type test')
         self.save_hint('ta_idle %s' % self.testenv.testbed.get_ta_idle())
         self.save_hint('ta_delay %s' % self.testenv.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testenv.testbed.ta_samples)
