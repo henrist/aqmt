@@ -106,9 +106,9 @@ def test():
                 # tag, title, fn
                 ('pi2',
                     'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
-                    lambda testbed: testbed.aqm_pi2(params='dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100')),
-                #('pie', 'PIE', lambda testbed: testbed.aqm_pie('ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
-                #('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
+                    lambda testbed: testbed.aqm('pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100')),
+                #('pie', 'PIE', lambda testbed: testbed.aqm('pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25')),
+                #('pfifo', 'pfifo', lambda testbed: testbed.aqm('pfifo')),
             ]),
             custom_cc,
             branch_flow_set([

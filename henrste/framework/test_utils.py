@@ -7,7 +7,7 @@ MBIT=1000*1000
 def base_testbed():
     testbed = Testbed()
     testbed.bitrate = 10 * MBIT
-    testbed.aqm_pi2()
+    testbed.aqm('pi2')
     testbed.rtt_servera = 25
     testbed.rtt_serverb = 25
     testbed.cc('a', 'cubic', testbed.ECN_ALLOW)

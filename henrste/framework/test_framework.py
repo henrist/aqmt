@@ -280,32 +280,11 @@ class Testbed():
 
         self.traffic_port = 5500
 
-    def aqm_default(self):
-        self.aqm_name = ''
-        self.aqm_params = ''
+    def aqm(self, name='', params=''):
+        if name == 'pfifo':
+            name = 'pfifo_qsize' # use our custom version with qsize
 
-    def aqm_pi2(self, params = ''):
-        self.aqm_name = 'pi2'
-        self.aqm_params = str(params)
-
-    def aqm_red(self):
-        self.aqm_name = 'red'
-        self.aqm_params = 'limit 1000000 avpkt 1000 ecn adaptive bandwidth %d' % self.bitrate
-
-    def aqm_dualq(self):
-        self.aqm_name = 'dualq'
-        self.aqm_params = 'l_thresh_us 1000 offset 0 l_slope 5 c_slope 4 l_smooth 0 c_smooth 5 l_power 1 c_power 2 l_shift 50'
-
-    def aqm_pie(self, params='ecn'):
-        self.aqm_name = 'pie'
-        self.aqm_params = params
-
-    def aqm_fq_codel(self, params='ecn'):
-        self.aqm_name = 'fq_codel'
-        self.aqm_params = params
-
-    def aqm_pfifo(self, params=''):
-        self.aqm_name = 'pfifo_qsize'
+        self.aqm_name = name
         self.aqm_params = params
 
     def cc(self, node, cc, ecn):

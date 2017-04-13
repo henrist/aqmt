@@ -29,8 +29,8 @@ def test():
     testbed.netem_servera_params = "limit 200000"
     testbed.netem_serverb_params = "limit 200000"
 
-    #testbed.aqm_pi2('no_dualq classic_ecn limit 200000 target 50000000 tupdate 500000')
-    testbed.aqm_pfifo('limit 200000')
+    #testbed.aqm('pi2', 'no_dualq classic_ecn limit 200000 target 50000000 tupdate 500000')
+    testbed.aqm('pfifo', 'limit 200000')
 
     def my_test(testcase):
         testcase.run_greedy(node='a')

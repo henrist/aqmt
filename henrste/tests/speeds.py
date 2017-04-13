@@ -79,9 +79,9 @@ def test():
                 ('mixed', 'Mixed DCTCP (ECN) + Cubic (no ECN) for TCP', 1, 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 1, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'DCTCP'),
             ]),
             Step.branch_sched([
-                ('pi2', 'PI2 l\\\\_thresh=1000', lambda testbed: testbed.aqm_pi2(params='l_thresh 1000')),
-                ('pie', 'PIE', lambda testbed: testbed.aqm_pie()),
-                ('pfifo', 'pfifo', lambda testbed: testbed.aqm_pfifo()),
+                ('pi2', 'PI2 l\\\\_thresh=1000', lambda testbed: testbed.aqm('pi2', 'l_thresh 1000')),
+                ('pie', 'PIE', lambda testbed: testbed.aqm('pie')),
+                ('pfifo', 'pfifo', lambda testbed: testbed.aqm('pfifo')),
             ]),
             branch_ect([
                 ('nonect', 'UDP with Non-ECT'),

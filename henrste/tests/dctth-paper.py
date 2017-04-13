@@ -49,8 +49,8 @@ def test():
                 utilization_tags=True,
             ),
             Step.branch_sched([
-                ('pie', 'PIE', lambda testbed: testbed.aqm_pie()),
-                ('pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda testbed: testbed.aqm_pi2(params='t_shift 40000')),
+                ('pie', 'PIE', lambda testbed: testbed.aqm('pie')),
+                ('pi2-t_shift-40000', 'PI2 (t\\\\_shift=40000)', lambda testbed: testbed.aqm('pi2', 't_shift 40000')),
             ]),
             branch_cc_matrix([
                 ('cubic-vs-dctcp', 'Cubic/DCTCP', 'a', 'cubic', testbed.ECN_ALLOW, 'Cubic', 'b', 'dctcp', testbed.ECN_INITIATE, 'DCTCP'),

@@ -46,7 +46,7 @@ def test():
             Step.branch_sched([
                 ('pfifo-1',
                     'pfifo',
-                    lambda testbed: testbed.aqm_pfifo('limit 1000')),
+                    lambda testbed: testbed.aqm('pfifo', 'limit 1000')),
             ]),
             Step.branch_rtt([
                 #2,

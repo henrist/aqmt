@@ -36,7 +36,7 @@ def test():
             Step.branch_sched([
                 ('fq-codel-1',
                     'fq\\\\_codel',
-                    lambda testbed: testbed.aqm_fq_codel()),
+                    lambda testbed: testbed.aqm('fq_codel')),
             ]),
             Step.branch_rtt([10, 50, 100], title='%d'),
             Step.branch_bitrate([100]),
