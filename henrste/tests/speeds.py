@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy, udp
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import MBIT, Step, run_test
 
@@ -56,12 +57,12 @@ def test():
         testdef = testcase.testenv.testdef
 
         for i in range(testdef.cc1n):
-            testcase.run_greedy(node=testdef.node1, tag=testdef.cctag1)
+            testcase.traffic(greedy, node=testdef.node1, tag=testdef.cctag1)
 
         for i in range(testdef.cc2n):
-            testcase.run_greedy(node=testdef.node2, tag=testdef.cctag2)
+            testcase.traffic(greedy, node=testdef.node2, tag=testdef.cctag2)
 
-        testcase.run_udp(node='a', bitrate=testdef.udp_rate*MBIT, ect=testdef.ect, tag='Unresponsive UDP')
+        testcase.traffic(udp, node='a', bitrate=testdef.udp_rate*MBIT, ect=testdef.ect, tag='Unresponsive UDP')
 
     run_test(
         folder='results/speeds',

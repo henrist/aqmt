@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import Step, run_test
 
@@ -45,8 +46,8 @@ def test():
     def my_test(testcase):
         testdef = testcase.testenv.testdef
 
-        testcase.run_greedy(node='a', tag=testdef.cctag1)
-        testcase.run_greedy(node='b', tag=testdef.cctag2)
+        testcase.traffic(greedy, node='a', tag=testdef.cctag1)
+        testcase.traffic(greedy, node='b', tag=testdef.cctag2)
 
     run_test(
         folder='results/fairness',

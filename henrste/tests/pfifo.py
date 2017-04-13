@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import datetime
+from framework.traffic import greedy
 from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import Step, run_test
@@ -13,13 +14,13 @@ from framework.test_utils import Step, run_test
 def test():
 
     def my_test(testcase):
-        #testcase.run_greedy(node='a', tag='RENO')
-        testcase.run_greedy(node='a', tag='CUBIC A')
-        testcase.run_greedy(node='a', tag='CUBIC A')
-        testcase.run_greedy(node='a', tag='CUBIC A')
-        testcase.run_greedy(node='b', tag='CUBIC B')
-        testcase.run_greedy(node='b', tag='CUBIC B')
-        testcase.run_greedy(node='b', tag='CUBIC B')
+        #testcase.traffic(greedy, node='a', tag='RENO')
+        testcase.traffic(greedy, node='a', tag='CUBIC A')
+        testcase.traffic(greedy, node='a', tag='CUBIC A')
+        testcase.traffic(greedy, node='a', tag='CUBIC A')
+        testcase.traffic(greedy, node='b', tag='CUBIC B')
+        testcase.traffic(greedy, node='b', tag='CUBIC B')
+        testcase.traffic(greedy, node='b', tag='CUBIC B')
 
     testbed = Testbed()
 

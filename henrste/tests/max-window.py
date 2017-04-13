@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy, udp
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import MBIT, Step, run_test
 
@@ -33,12 +34,12 @@ def test():
     testbed.aqm('pfifo', 'limit 200000')
 
     def my_test(testcase):
-        testcase.run_greedy(node='a')
-        #testcase.run_greedy(node='a')
-        #testcase.run_udp(node='a', bitrate=800000000, ect='ect0', tag='UDP')
-        #testcase.run_udp(node='a', bitrate=800000000, ect='ect1', tag='UDP')
-        #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
-        #testcase.run_udp(node='a', bitrate=800000000, ect='nonect', tag='UDP')
+        testcase.traffic(greedy, node='a')
+        #testcase.traffic(greedy, node='a')
+        #testcase.traffic(udp, node='a', bitrate=800000000, ect='ect0', tag='UDP')
+        #testcase.traffic(udp, node='a', bitrate=800000000, ect='ect1', tag='UDP')
+        #testcase.traffic(udp, node='a', bitrate=800000000, ect='nonect', tag='UDP')
+        #testcase.traffic(udp, node='a', bitrate=800000000, ect='nonect', tag='UDP')
 
     run_test(
         folder='results/max-window',

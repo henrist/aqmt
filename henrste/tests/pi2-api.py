@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import Step, run_test
 from framework.plot import PlotAxis
@@ -12,8 +13,8 @@ from framework.plot import PlotAxis
 def test(result_folder):
 
     def my_test(testcase):
-        testcase.run_greedy(node='a', tag='CUBIC')
-        testcase.run_greedy(node='b', tag='DCTCP')
+        testcase.traffic(greedy, node='a', tag='CUBIC')
+        testcase.traffic(greedy, node='b', tag='DCTCP')
 
     testbed = Testbed()
 

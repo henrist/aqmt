@@ -5,16 +5,17 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import Step, run_test
 
 def test():
 
     def my_test(testcase):
-        testcase.run_greedy(node='a', tag='cubic 1')
-        testcase.run_greedy(node='a', tag='cubic 2')
-        testcase.run_greedy(node='b', tag='ecn-cubic 1')
-        testcase.run_greedy(node='b', tag='ecn-cubic 2')
+        testcase.traffic(greedy, node='a', tag='cubic 1')
+        testcase.traffic(greedy, node='a', tag='cubic 2')
+        testcase.traffic(greedy, node='b', tag='ecn-cubic 1')
+        testcase.traffic(greedy, node='b', tag='ecn-cubic 2')
 
     testbed = Testbed()
 

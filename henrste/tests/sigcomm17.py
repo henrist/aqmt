@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+from framework.traffic import greedy, udp
 from framework.plot import PlotAxis
 from framework.test_framework import Testbed, TestEnv
 from framework.test_utils import MBIT, Step, run_test
@@ -60,14 +61,15 @@ def test():
         testdef = testcase.testenv.testdef
 
         for x in range(testdef.flows_a_num):
-            testcase.run_greedy(node='a', tag=testdef.flows_a_tag)
+            testcase.traffic(greedy, node='a', tag=testdef.flows_a_tag)
 
         for x in range(testdef.flows_b_num):
-            testcase.run_greedy(node='b', tag=testdef.flows_b_tag)
+            testcase.traffic(greedy, node='b', tag=testdef.flows_b_tag)
 
         if testdef.udp_rate > 0:
             time.sleep(1)
-            testcase.run_udp(
+            testcase.traffic(
+                udp,
                 node=testdef.udp_node,
                 bitrate=testdef.udp_rate * MBIT,
                 ect=testdef.udp_ect,
