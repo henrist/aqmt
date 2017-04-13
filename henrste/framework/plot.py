@@ -722,15 +722,15 @@ class CollectionPlot():
             ls_l4s = "ls 1 lc rgb '" + Colors.L4S + "'"
             ls_classic = "ls 1 lc rgb '" + Colors.CLASSIC + "'"
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):3:7:9" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
-            plot += "''                                  using ($1+" + str(x) + "+0.05):6  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot += "''                                  using ($1+" + str(x) + "+0.05):10  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):3:7:9  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
-            plot += "''                                  using ($1+" + str(x) + "+0.15):6  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot += "''                                  using ($1+" + str(x) + "+0.15):10  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000):($7/1000):($9/1000)" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.05):($6/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.05):($10/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000):($7/1000):($9/1000)  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.15):($6/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot += "''                                  using ($1+" + str(x) + "+0.15):($10/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
 
-            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):3  with lines lc rgb 'gray'         title '', \\\n"
-            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):3  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
+            plot += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
 
         TreeUtil.walk_leaf(self.testmeta, data_rate)
         self.gpi += """
@@ -1017,14 +1017,14 @@ class Plot():
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
         #             4     6     2         9    10
-        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):2:4:9 with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
-        self.gpi +=                                          "'' using ($0+0.95):2 with lines lc rgb 'gray'         title '', \\\n"
-        self.gpi +=                                          "'' using ($0+0.95):10 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi +=                                          "'' using ($0+0.95):6 with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):2:4:9 with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
-        self.gpi +=                                             "'' using ($0+1.05):2 with lines lc rgb 'gray'         title '', \\\n"
-        self.gpi +=                                             "'' using ($0+1.05):10 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        self.gpi +=                                             "'' using ($0+1.05):6 with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):($2/1000):($4/1000):($9/1000) with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):($10/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi +=                                          "'' using ($0+0.95):($6/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):($2/1000):($4/1000):($9/1000) with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):($10/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        self.gpi +=                                             "'' using ($0+1.05):($6/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
 
         self.gpi += """
 

@@ -24,6 +24,9 @@
 #include <time.h>
 #include <sys/types.h>
 
+typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
+#include "../../../common/numbers.h"
+
 #define NSEC_PER_SEC 1000000000UL
 #define NSEC_PER_MS 1000000UL
 #define US_PER_S 1000000UL
@@ -93,6 +96,9 @@ void ThreadParam::swapDB(){ // called by printInfo
 // we need ThreadParam global to use it in the signal handler
 ThreadParam *tp;
 
+// table of qdelay values (no need to decode all the time..)
+int qdelay_decode_table[QS_LIMIT];
+
 void signalHandler(int signum) {
     tp->quit = true;
     pthread_cond_broadcast(&tp->quit_cond);
@@ -104,6 +110,19 @@ std::string IPtoString(in_addr_t ip) {
     return std::string(inet_ntoa(ipip.sin_addr));
 }
 
+/* Queuing delay is returned in ns */
+int decodeQdelay(u32 value) {
+    // Input value is originally time in ns right shifted 15 times
+    // to get division by 1000 and units of 32 us. The right shifting
+    // by 10 to do division by 1000 actually causes a rounding
+    // we correct by doing (x * (1024/1000)) here.
+    return fl2int(value, QDELAY_M, QDELAY_E) * 32 * 1.024;
+}
+
+int decodeDrops(u32 value) {
+    return fl2int(value, DROPS_M, DROPS_E);
+}
+
 void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
 {
     struct iphdr *iph = (struct iphdr*)(buffer + 14); // ethernet header is 14 bytes
@@ -111,11 +130,13 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     uint8_t proto = iph->protocol;
     uint16_t sport = 0;
     uint16_t dport = 0;
+
     uint16_t id = ntohs(iph->id);
-    uint16_t qsize = id & 2047;
-    double tmp_qs = (double) qsize; // * 1.049318; // fix the error caused by bit shifting instead of division
-    qsize = (uint16_t)round(tmp_qs);
-    uint16_t drops = (id >> 11);
+    int drops = decodeDrops(id >> 11); /* drops stored in 5 bits MSB */
+
+    /* we don't decode queueing delay here as we need to store it in a table,
+     * so defer this to the actual serialization of the table to file */
+    int qdelay_encoded = id & 2047; /* qdelay stored in 11 bits LSB */
 
     if (proto == IPPROTO_TCP) {
         struct tcphdr *tcph = (struct tcphdr*)(buffer + 14 + iph->ihl*4);
@@ -134,9 +155,6 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     std::map<SrcDst,FlowData> *fmap;
     uint32_t mark = 0;
 
-    if (qsize >= QS_LIMIT)
-        qsize = QS_LIMIT-1;
-
     uint8_t ts = iph->tos;
     if ((ts & 3) == 3)
         mark = 1;
@@ -149,26 +167,26 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     switch (ts & 3) {
     case 0:
         tp->db1->tot_packets_nonecn++;
-        tp->db1->qs.ecn00[qsize]++;
-        tp->db1->d_qs.ecn00[qsize]+= drops;
+        tp->db1->qs.ecn00[qdelay_encoded]++;
+        tp->db1->d_qs.ecn00[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.nonecn_rate;
         break;
     case 1:
         tp->db1->tot_packets_ecn++;
-        tp->db1->qs.ecn01[qsize]++;
-        tp->db1->d_qs.ecn01[qsize]+= drops;
+        tp->db1->qs.ecn01[qdelay_encoded]++;
+        tp->db1->d_qs.ecn01[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
     case 2:
         tp->db1->tot_packets_ecn++;
-        tp->db1->qs.ecn10[qsize]++;
-        tp->db1->d_qs.ecn10[qsize]+= drops;
+        tp->db1->qs.ecn10[qdelay_encoded]++;
+        tp->db1->d_qs.ecn10[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
     case 3:
         tp->db1->tot_packets_ecn++;
-        tp->db1->qs.ecn11[qsize]++;
-        tp->db1->d_qs.ecn11[qsize]+= drops;
+        tp->db1->qs.ecn11[qdelay_encoded]++;
+        tp->db1->d_qs.ecn11[qdelay_encoded]+= drops;
         fmap = &tp->db1->fm.ecn_rate;
         break;
     }
@@ -388,6 +406,7 @@ void *printInfo(void *)
     uint64_t qs_pdf_nonecn[QS_LIMIT];
     uint64_t drops_pdf_ecn[QS_LIMIT];
     uint64_t drops_pdf_nonecn[QS_LIMIT];
+
     bzero(qs_pdf_ecn, sizeof(uint64_t)*QS_LIMIT);
     bzero(qs_pdf_nonecn, sizeof(uint64_t)*QS_LIMIT);
     bzero(drops_pdf_ecn, sizeof(uint64_t)*QS_LIMIT);
@@ -411,27 +430,29 @@ void *printInfo(void *)
     std::ofstream *f_qs_nonecn_avg = openFileW(tp->m_folder, "/qs_nonecn_avg");
 
     /* per sample total of rate, drops, marks */
-    std::ofstream *f_r_tot_ecn =  openFileW(tp->m_folder, "/r_tot_ecn");
-    std::ofstream *f_r_tot_nonecn =  openFileW(tp->m_folder, "/r_tot_nonecn");
-    std::ofstream *f_d_tot_ecn =  openFileW(tp->m_folder, "/d_tot_ecn");
-    std::ofstream *f_d_tot_nonecn =  openFileW(tp->m_folder, "/d_tot_nonecn");
-    std::ofstream *f_m_tot_ecn =  openFileW(tp->m_folder, "/m_tot_ecn");
-    std::ofstream *f_r_tot =  openFileW(tp->m_folder, "/r_tot");
+    std::ofstream *f_r_tot_ecn = openFileW(tp->m_folder, "/r_tot_ecn");
+    std::ofstream *f_r_tot_nonecn = openFileW(tp->m_folder, "/r_tot_nonecn");
+    std::ofstream *f_d_tot_ecn = openFileW(tp->m_folder, "/d_tot_ecn");
+    std::ofstream *f_d_tot_nonecn = openFileW(tp->m_folder, "/d_tot_nonecn");
+    std::ofstream *f_m_tot_ecn = openFileW(tp->m_folder, "/m_tot_ecn");
+    std::ofstream *f_r_tot = openFileW(tp->m_folder, "/r_tot");
 
-    *f_qs_ecn_pdf00s << PLOT_MATRIX_DIM;
-    *f_qs_ecn_pdf01s << PLOT_MATRIX_DIM;
-    *f_qs_ecn_pdf10s << PLOT_MATRIX_DIM;
-    *f_qs_ecn_pdf11s << PLOT_MATRIX_DIM;
-    *f_qs_ecn_pdfsums << PLOT_MATRIX_DIM;
+    // first column in header contains the number of columns following
+    *f_qs_ecn_pdf00s << QS_LIMIT;
+    *f_qs_ecn_pdf01s << QS_LIMIT;
+    *f_qs_ecn_pdf10s << QS_LIMIT;
+    *f_qs_ecn_pdf11s << QS_LIMIT;
+    *f_qs_ecn_pdfsums << QS_LIMIT;
 
+    // header row contains the queue delay this column represents
+    // e.g. a cell value multiplied by this header cell yields queue delay in us
     for (int i = 0; i < QS_LIMIT; ++i) {
-        *f_qs_ecn_pdf00s << " " << i;
-        *f_qs_ecn_pdf01s << " " << i;
-        *f_qs_ecn_pdf10s << " " << i;
-        *f_qs_ecn_pdf11s << " " << i;
-        *f_qs_ecn_pdfsums << " " << i;
+        *f_qs_ecn_pdf00s << " " << qdelay_decode_table[i];
+        *f_qs_ecn_pdf01s << " " << qdelay_decode_table[i];
+        *f_qs_ecn_pdf10s << " " << qdelay_decode_table[i];
+        *f_qs_ecn_pdf11s << " " << qdelay_decode_table[i];
+        *f_qs_ecn_pdfsums << " " << qdelay_decode_table[i];
     }
-
     *f_qs_ecn_pdf00s << std::endl;
     *f_qs_ecn_pdf01s << std::endl;
     *f_qs_ecn_pdf10s << std::endl;
@@ -492,46 +513,53 @@ void *printInfo(void *)
         uint64_t cdf_drops_ecn = 0;
         uint64_t cdf_drops_nonecn = 0;
 
-        double qs_ecn_sum = 0;
-        double qs_nonecn_sum = 0;
+        double qs_ecn_sum = 0; // sum of queue delay in us for ecn queue
+        double qs_nonecn_sum = 0; // sum of queue delay in us for nonecn queue
         double nr_samples_ecn = 0;
         double nr_samples_nonecn = 0;
         for (int i = 0; i < QS_LIMIT; ++i) {
-            uint64_t ecnsum = 0;
-            uint64_t ecndrops = 0;
+            uint64_t nr_ecn = 0;
+            uint64_t nr_nonecn = 0;
 
             if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
+                // TODO: change output, can we make it less verbose? also decode queue delay
                 printf("%3d:%10d %20d %20d %20d\n", i, tp->db2->qs.ecn00[i], tp->db2->qs.ecn01[i], tp->db2->qs.ecn10[i], tp->db2->qs.ecn11[i]);
-                ecnsum = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
-                qs_pdf_ecn[i] += ecnsum;
-                qs_pdf_nonecn[i] += tp->db2->qs.ecn00[i];
-                qs_ecn_sum += (ecnsum*i);
-                nr_samples_ecn += ecnsum;
-                qs_nonecn_sum += (tp->db2->qs.ecn00[i]*i);
-                nr_samples_nonecn += tp->db2->qs.ecn00[i];
 
-                ecndrops = tp->db2->d_qs.ecn01[i] + tp->db2->d_qs.ecn10[i] + tp->db2->d_qs.ecn11[i];
-                drops_pdf_ecn[i] += ecndrops;
+                nr_ecn = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
+                nr_nonecn = tp->db2->qs.ecn00[i];
+
+                qs_pdf_ecn[i] += nr_ecn;
+                qs_pdf_nonecn[i] += nr_nonecn;
+
+                qs_ecn_sum += nr_ecn * qdelay_decode_table[i];
+                qs_nonecn_sum += nr_nonecn * qdelay_decode_table[i];
+
+                nr_samples_ecn += nr_ecn;
+                nr_samples_nonecn += nr_nonecn;
+
+                drops_pdf_ecn[i] += tp->db2->d_qs.ecn01[i] + tp->db2->d_qs.ecn10[i] + tp->db2->d_qs.ecn11[i];
                 drops_pdf_nonecn[i] += tp->db2->d_qs.ecn00[i];
             }
 
-            if (tp->sample_id < PLOT_MATRIX_DIM) {
+            // FIXME: why is this check? this must be a bug?!
+            if (tp->sample_id < QS_LIMIT) {
                 *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
                 *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
                 *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
                 *f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
-                *f_qs_ecn_pdfsums << " " << ecnsum;
+                *f_qs_ecn_pdfsums << " " << nr_ecn;
             }
 
-            // overwritten at each while loop iteration
-            *f_qs_drops_ecn_pdf << qs_pdf_ecn[i] << " " << drops_pdf_ecn[i] << std::endl;
-            *f_qs_drops_nonecn_pdf << qs_pdf_nonecn[i] << " " << drops_pdf_nonecn[i] << std::endl;
+            // PDF and CDF tables are overwritten at each while loop iteration
+            *f_qs_drops_ecn_pdf << qdelay_decode_table[i] << " " << qs_pdf_ecn[i] << " " << drops_pdf_ecn[i] << std::endl;
+            *f_qs_drops_nonecn_pdf << qdelay_decode_table[i] << " " << qs_pdf_nonecn[i] << " " << drops_pdf_nonecn[i] << std::endl;
+
             cdf_qs_ecn += qs_pdf_ecn[i];
             cdf_qs_nonecn += qs_pdf_nonecn[i];
             cdf_drops_ecn += drops_pdf_ecn[i];
             cdf_drops_nonecn += drops_pdf_nonecn[i];
-            *f_qs_drops_ecn_cdf << cdf_qs_ecn << " " << cdf_drops_ecn << std::endl;
-            *f_qs_drops_nonecn_cdf << cdf_qs_nonecn << " " << cdf_drops_nonecn << std::endl;
+            *f_qs_drops_ecn_cdf << qdelay_decode_table[i] << " " << cdf_qs_ecn << " " << cdf_drops_ecn << std::endl;
+            *f_qs_drops_nonecn_cdf << qdelay_decode_table[i] << " " << cdf_qs_nonecn << " " << cdf_drops_nonecn << std::endl;
         }
 
         f_qs_drops_ecn_pdf->close();
@@ -725,6 +753,11 @@ int main(int argc, char **argv)
     uint32_t sinterval;
     uint32_t nrs = 0;
     bool ipclass = false;
+
+    // initialize qdelay conversion table
+    for (int i = 0; i < QS_LIMIT; ++i) {
+        qdelay_decode_table[i] = decodeQdelay(i);
+    }
 
     if (argc < 5)
         usage(argc, argv);

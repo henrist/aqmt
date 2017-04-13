@@ -11,7 +11,6 @@
 #include <vector>
 
 #define QS_LIMIT 2048
-#define PLOT_MATRIX_DIM QS_LIMIT
 #define PDF_UPPERLIM 500
 
 struct SrcDst {

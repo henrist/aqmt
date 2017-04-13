@@ -381,20 +381,25 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 
     double tot_sent = 0;
     double tot_dropped = 0;
-    double nrpackets, drops;
-    uint32_t qsize = 0;
+    double us, nrpackets, drops;
     std::vector<double> *samples = new std::vector<double>();
 
-    while (!infile.eof() && qsize < MAX_QS) {
+    /* format of input file:
+     * each line contains three columns:
+     * - queueing delay in us
+     * - number of packets observed at this queueing delay
+     * - number of drops observed at this queueing delay
+     */
+    while (!infile.eof()) {
+        infile >> us; /* number of us each packet represents */
         infile >> nrpackets;
         infile >> drops;
 
         for (int i = 0; i < nrpackets; ++i)
-            samples->push_back(qsize);
+            samples->push_back(us);
 
         tot_sent += nrpackets;
         tot_dropped += drops;
-        qsize++;
     }
 
     infile.close();

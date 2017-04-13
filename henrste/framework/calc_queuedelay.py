@@ -9,12 +9,21 @@ import numpy as np
 import os
 
 class QueueDelay():
-    def parseLine(self, line):
+    def parseHeader(self, line):
+        """
+        The header in qs_ecnXX_s contains the queueing delay in us that
+        this column represents.
+
+        The first column in the header contains number of columns following.
+        We simply ignore this.
+        """
+        return np.fromstring(line, dtype=int, sep=' ')[1:]
+
+    def parseLine(self, line, header_us):
         arr = np.array([])
 
         num = np.fromstring(line, dtype=int, sep=' ')[1:]
-        qs = np.arange(0, num.size)
-        arr = np.repeat(qs, num)
+        arr = np.repeat(header_us, num)
 
         return arr
 
@@ -44,11 +53,15 @@ class QueueDelay():
         with open(outfolder + '/qs_samples_nonecn', 'w') as fout:
             fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
             with open(folder + '/ta/qs_ecn00_s', 'r') as f:
-                f.readline()  # skip header
+                header_us = self.parseHeader(f.readline())
 
                 for line in f:
-                    fout.write('%s %s\n' % (line.split()[0], self.generateStats(
-                            self.parseLine(line))))
+                    fout.write('%s %s\n' % (
+                        line.split()[0],  # time of sample
+                        self.generateStats(
+                            self.parseLine(line, header_us)
+                        )
+                    ))
 
         with open(outfolder + '/qs_samples_ecn', 'w') as fout:
             fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
@@ -57,8 +70,8 @@ class QueueDelay():
             f2 = open(folder + '/ta/qs_ecn10_s', 'r')
             f3 = open(folder + '/ta/qs_ecn11_s', 'r')
 
-            f1.readline()  # skip header
-            f2.readline()
+            header_us = self.parseHeader(f1.readline())
+            f2.readline()  # skip the other headers, they should be same
             f3.readline()
 
             # all files should have the same amount of lines
@@ -66,12 +79,16 @@ class QueueDelay():
                 line2 = f2.readline()
                 line3 = f3.readline()
 
-                fout.write('%s %s\n' % (line1.split()[0], self.generateStats(
+                fout.write('%s %s\n' % (
+                    line1.split()[0],  # time of sample
+                    self.generateStats(
                         np.concatenate([
-                            self.parseLine(line1),
-                            self.parseLine(line2),
-                            self.parseLine(line3)
-                        ]))))
+                            self.parseLine(line1, header_us),
+                            self.parseLine(line2, header_us),
+                            self.parseLine(line3, header_us)
+                        ])
+                    )
+                ))
 
             f1.close()
             f2.close()
