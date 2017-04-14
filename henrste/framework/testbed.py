@@ -41,7 +41,7 @@ class Testbed:
         self.netem_servera_params = ""
         self.netem_serverb_params = ""
 
-        self.aqm_name = ''
+        self.aqm_name = 'pfifo_qsize'  # we need a default aqm to get queue delay
         self.aqm_params = ''
 
         self.cc_a = 'cubic'
