@@ -25,13 +25,13 @@ if __name__ == '__main__':
     testbed.netem_serverb_params = ""
 
     testbed.aqm('pie', 'ecn')
-    testbed.aqm('pi2')
-    testbed.aqm('pfifo_qsize')
+    #testbed.aqm('pi2')
+    #testbed.aqm('pfifo_qsize')
 
     testbed.cc('a', 'cubic', Testbed.ECN_ALLOW)
     testbed.cc('b', 'cubic', Testbed.ECN_INITIATE)
 
-    testbed.reset(log_level=Logger.INFO)
-    testbed.setup(log_level=Logger.INFO)
+    testbed.reset(log_level=logger.INFO)
+    testbed.setup(log_level=logger.INFO)
 
     print(testbed.get_setup())
