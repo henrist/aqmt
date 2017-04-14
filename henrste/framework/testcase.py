@@ -124,7 +124,6 @@ class TestCase:
         net_sb = re.sub(r'\.[0-9]+$', '.0', os.environ['IP_AQM_SB'])
 
         pcapfilter = 'ip and dst net %s/24 and (src net %s/24 or src net %s/24) and (tcp or udp)' % (net_c, net_sa, net_sb)
-        ipclass = 'f'
 
         cmd = bash[
             '-c',
@@ -135,14 +134,13 @@ class TestCase:
             sleep %f
             . vars.sh
             mkdir -p '%s'
-            sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %s %d
+            sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %d
             """ % (
                 self.testenv.testbed.get_ta_idle(),
                 self.test_folder,
                 pcapfilter,
                 self.test_folder,
                 self.testenv.testbed.ta_delay,
-                ipclass,
                 self.testenv.testbed.ta_samples
             )
         ]

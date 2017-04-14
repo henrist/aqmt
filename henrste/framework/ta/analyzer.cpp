@@ -53,8 +53,7 @@ uint64_t getStamp()
     return ((uint64_t)monotime.tv_sec) * US_PER_S + monotime.tv_nsec / NSEC_PER_US;
 }
 
-ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, uint32_t nrs, bool ipc)
-: ipclass(ipc)
+ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, uint32_t nrs)
 {
     db1 = new DataBlock();
     db2 = new DataBlock();
@@ -157,9 +156,6 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     if ((ts & 3) == 3)
         mark = 1;
 
-    if (tp->ipclass)
-        ts = ntohl(iph->saddr);
-
     pthread_mutex_lock(&tp->m_mutex);
 
     switch (ts & 3) {
@@ -228,7 +224,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs)
+int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::string &pcapfilter, uint32_t nrs)
 {
     int i;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -272,7 +268,7 @@ int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::strin
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_JOINABLE);
     int res;
-    tp = new ThreadParam(descr, sinterval, folder, nrs, ipclass);
+    tp = new ThreadParam(descr, sinterval, folder, nrs);
 
     // initialize pthread condition used to quit threads on interrupts
     pthread_condattr_t attr;
@@ -729,9 +725,9 @@ void *printInfo(void *)
 
 void usage(int argc, char* argv[])
 {
-    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> (optional:) <ip classification> <nrsamples>\n", argv[0]);
+    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> (optional:) <nrsamples>\n", argv[0]);
     printf("pcap filter: what to capture. ex.: \"ip and src net 10.187.255.0/24\"\n");
-    printf("If nrsamples is not specified, the samples will be recorded until interrupted\nIp classification is t/f (default f); the 2 lsbits of the src ip are used.\n");
+    printf("If nrsamples is not specified, the samples will be recorded until interrupted\n");
     exit(1);
 }
 
@@ -740,7 +736,6 @@ int main(int argc, char **argv)
     char *dev;
     uint32_t sinterval;
     uint32_t nrs = 0;
-    bool ipclass = false;
 
     // initialize qdelay conversion table
     for (int i = 0; i < QS_LIMIT; ++i) {
@@ -759,12 +754,9 @@ int main(int argc, char **argv)
     std::cout << "pcap filter: " << pcapfilter << std::endl;
 
     if (argc > 5)
-        ipclass = (argv[5][0] == 't');
+        nrs = atoi(argv[5]);
 
-    if (argc > 6)
-        nrs = atoi(argv[6]);
-
-    start_analysis(dev, folder, sinterval, pcapfilter, ipclass, nrs);
+    start_analysis(dev, folder, sinterval, pcapfilter, nrs);
 
     //fprintf(stderr,"main exiting..\n");
     return 0;
