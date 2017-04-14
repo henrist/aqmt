@@ -131,14 +131,14 @@ public:
     DataBlock *db2; // used by printInfo
     pcap_t* m_descr;
     uint32_t m_sinterval;
-    char* m_folder;
+    std::string m_folder;
     uint32_t m_nrs;
     bool ipclass;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
     uint32_t nr_ecn_flows;
     uint32_t nr_nonecn_flows;
-    ThreadParam(pcap_t* descr, uint32_t sinterval, char* folder, uint32_t nrs, bool ipc);
+    ThreadParam(pcap_t* descr, uint32_t sinterval, std::string folder, uint32_t nrs, bool ipc);
     void swapDB();
     volatile bool quit;
     pthread_cond_t quit_cond;

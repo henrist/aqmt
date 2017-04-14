@@ -53,7 +53,7 @@ uint64_t getStamp()
     return ((uint64_t)monotime.tv_sec) * US_PER_S + monotime.tv_nsec / NSEC_PER_US;
 }
 
-ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32_t nrs, bool ipc)
+ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, uint32_t nrs, bool ipc)
 : ipclass(ipc)
 {
     db1 = new DataBlock();
@@ -204,13 +204,12 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     pthread_mutex_unlock(&tp->m_mutex);
 }
 
-std::ofstream *openFileW(std::string folder, std::string filename)
-{
-    std::string filename_out = folder + filename;
-    std::ofstream *f = new std::ofstream(filename_out.c_str());
-    if (!f->is_open())
-        std::cerr << "error opening file for writing: " << filename_out << std::endl;
-    return f;
+void openFileW(std::ofstream *file, std::string filename) {
+    *file = std::ofstream(filename.c_str());
+    if (!file->is_open()) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        exit(1);
+    }
 }
 
 std::string getProtoRepr(uint8_t proto) {
@@ -229,7 +228,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs)
+int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs)
 {
     int i;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -266,7 +265,7 @@ int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pca
         return(2);
     }
 
-    mkdir(folder, 0777);
+    mkdir(folder.c_str(), 0777);
 
     pthread_t thread_id[2];
     pthread_attr_t attrs;
@@ -404,62 +403,62 @@ void *printInfo(void *)
 
     /* queue size */
     // per sample
-    printf("Output folder: %s\n", tp->m_folder);
+    printf("Output folder: %s\n", tp->m_folder.c_str());
 
-    std::ofstream *f_tot_packets_ecn = openFileW(tp->m_folder, "/tot_packets_ecn");
-    std::ofstream *f_tot_packets_nonecn = openFileW(tp->m_folder, "/tot_packets_nonecn");
+    std::ofstream f_tot_packets_ecn;    openFileW(&f_tot_packets_ecn,    tp->m_folder + "/tot_packets_ecn");
+    std::ofstream f_tot_packets_nonecn; openFileW(&f_tot_packets_nonecn, tp->m_folder + "/tot_packets_nonecn");
 
-    std::ofstream *f_qs_ecn_pdf00s = openFileW(tp->m_folder, "/qs_ecn00_s");
-    std::ofstream *f_qs_ecn_pdf01s = openFileW(tp->m_folder, "/qs_ecn01_s");
-    std::ofstream *f_qs_ecn_pdf10s = openFileW(tp->m_folder, "/qs_ecn10_s");
-    std::ofstream *f_qs_ecn_pdf11s = openFileW(tp->m_folder, "/qs_ecn11_s");
-    std::ofstream *f_d_ecn_pdf00s = openFileW(tp->m_folder, "/d_ecn00_s");
-    std::ofstream *f_d_ecn_pdf01s = openFileW(tp->m_folder, "/d_ecn01_s");
-    std::ofstream *f_d_ecn_pdf10s = openFileW(tp->m_folder, "/d_ecn10_s");
-    std::ofstream *f_d_ecn_pdf11s = openFileW(tp->m_folder, "/d_ecn11_s");
+    std::ofstream f_qs_ecn_pdf00s;      openFileW(&f_qs_ecn_pdf00s,      tp->m_folder + "/qs_ecn00_s");
+    std::ofstream f_qs_ecn_pdf01s;      openFileW(&f_qs_ecn_pdf01s,      tp->m_folder + "/qs_ecn01_s");
+    std::ofstream f_qs_ecn_pdf10s;      openFileW(&f_qs_ecn_pdf10s,      tp->m_folder + "/qs_ecn10_s");
+    std::ofstream f_qs_ecn_pdf11s;      openFileW(&f_qs_ecn_pdf11s,      tp->m_folder + "/qs_ecn11_s");
+    std::ofstream f_d_ecn_pdf00s;       openFileW(&f_d_ecn_pdf00s,       tp->m_folder + "/d_ecn00_s");
+    std::ofstream f_d_ecn_pdf01s;       openFileW(&f_d_ecn_pdf01s,       tp->m_folder + "/d_ecn01_s");
+    std::ofstream f_d_ecn_pdf10s;       openFileW(&f_d_ecn_pdf10s,       tp->m_folder + "/d_ecn10_s");
+    std::ofstream f_d_ecn_pdf11s;       openFileW(&f_d_ecn_pdf11s,       tp->m_folder + "/d_ecn11_s");
 
-    std::ofstream *f_qs_ecn_avg = openFileW(tp->m_folder, "/qs_ecn_avg");
-    std::ofstream *f_qs_nonecn_avg = openFileW(tp->m_folder, "/qs_nonecn_avg");
+    std::ofstream f_qs_ecn_avg;         openFileW(&f_qs_ecn_avg,         tp->m_folder + "/qs_ecn_avg");
+    std::ofstream f_qs_nonecn_avg;      openFileW(&f_qs_nonecn_avg,      tp->m_folder + "/qs_nonecn_avg");
 
     /* per sample total of rate, drops, marks */
-    std::ofstream *f_r_tot_ecn = openFileW(tp->m_folder, "/r_tot_ecn");
-    std::ofstream *f_r_tot_nonecn = openFileW(tp->m_folder, "/r_tot_nonecn");
-    std::ofstream *f_d_tot_ecn = openFileW(tp->m_folder, "/d_tot_ecn");
-    std::ofstream *f_d_tot_nonecn = openFileW(tp->m_folder, "/d_tot_nonecn");
-    std::ofstream *f_m_tot_ecn = openFileW(tp->m_folder, "/m_tot_ecn");
-    std::ofstream *f_r_tot = openFileW(tp->m_folder, "/r_tot");
+    std::ofstream f_r_tot_ecn;          openFileW(&f_r_tot_ecn,          tp->m_folder + "/r_tot_ecn");
+    std::ofstream f_r_tot_nonecn;       openFileW(&f_r_tot_nonecn,       tp->m_folder + "/r_tot_nonecn");
+    std::ofstream f_d_tot_ecn;          openFileW(&f_d_tot_ecn,          tp->m_folder + "/d_tot_ecn");
+    std::ofstream f_d_tot_nonecn;       openFileW(&f_d_tot_nonecn,       tp->m_folder + "/d_tot_nonecn");
+    std::ofstream f_m_tot_ecn;          openFileW(&f_m_tot_ecn,          tp->m_folder + "/m_tot_ecn");
+    std::ofstream f_r_tot;              openFileW(&f_r_tot,              tp->m_folder + "/r_tot");
 
     // first column in header contains the number of columns following
-    *f_qs_ecn_pdf00s << QS_LIMIT;
-    *f_qs_ecn_pdf01s << QS_LIMIT;
-    *f_qs_ecn_pdf10s << QS_LIMIT;
-    *f_qs_ecn_pdf11s << QS_LIMIT;
-    *f_d_ecn_pdf00s << QS_LIMIT;
-    *f_d_ecn_pdf01s << QS_LIMIT;
-    *f_d_ecn_pdf10s << QS_LIMIT;
-    *f_d_ecn_pdf11s << QS_LIMIT;
+    f_qs_ecn_pdf00s << QS_LIMIT;
+    f_qs_ecn_pdf01s << QS_LIMIT;
+    f_qs_ecn_pdf10s << QS_LIMIT;
+    f_qs_ecn_pdf11s << QS_LIMIT;
+    f_d_ecn_pdf00s << QS_LIMIT;
+    f_d_ecn_pdf01s << QS_LIMIT;
+    f_d_ecn_pdf10s << QS_LIMIT;
+    f_d_ecn_pdf11s << QS_LIMIT;
 
 
     // header row contains the queue delay this column represents
     // e.g. a cell value multiplied by this header cell yields queue delay in us
     for (int i = 0; i < QS_LIMIT; ++i) {
-        *f_qs_ecn_pdf00s << " " << qdelay_decode_table[i];
-        *f_qs_ecn_pdf01s << " " << qdelay_decode_table[i];
-        *f_qs_ecn_pdf10s << " " << qdelay_decode_table[i];
-        *f_qs_ecn_pdf11s << " " << qdelay_decode_table[i];
-        *f_d_ecn_pdf00s << " " << qdelay_decode_table[i];
-        *f_d_ecn_pdf01s << " " << qdelay_decode_table[i];
-        *f_d_ecn_pdf10s << " " << qdelay_decode_table[i];
-        *f_d_ecn_pdf11s << " " << qdelay_decode_table[i];
+        f_qs_ecn_pdf00s << " " << qdelay_decode_table[i];
+        f_qs_ecn_pdf01s << " " << qdelay_decode_table[i];
+        f_qs_ecn_pdf10s << " " << qdelay_decode_table[i];
+        f_qs_ecn_pdf11s << " " << qdelay_decode_table[i];
+        f_d_ecn_pdf00s << " " << qdelay_decode_table[i];
+        f_d_ecn_pdf01s << " " << qdelay_decode_table[i];
+        f_d_ecn_pdf10s << " " << qdelay_decode_table[i];
+        f_d_ecn_pdf11s << " " << qdelay_decode_table[i];
     }
-    *f_qs_ecn_pdf00s << std::endl;
-    *f_qs_ecn_pdf01s << std::endl;
-    *f_qs_ecn_pdf10s << std::endl;
-    *f_qs_ecn_pdf11s << std::endl;
-    *f_d_ecn_pdf00s << std::endl;
-    *f_d_ecn_pdf01s << std::endl;
-    *f_d_ecn_pdf10s << std::endl;
-    *f_d_ecn_pdf11s << std::endl;
+    f_qs_ecn_pdf00s << std::endl;
+    f_qs_ecn_pdf01s << std::endl;
+    f_qs_ecn_pdf10s << std::endl;
+    f_qs_ecn_pdf11s << std::endl;
+    f_d_ecn_pdf00s << std::endl;
+    f_d_ecn_pdf01s << std::endl;
+    f_d_ecn_pdf10s << std::endl;
+    f_d_ecn_pdf11s << std::endl;
 
     // first run
     // to get accurate results we swap the database and initialize timers here
@@ -496,14 +495,14 @@ void *printInfo(void *)
         printf(" ECN 10: ");
         printf(" ECN 11: \n");
 
-        *f_qs_ecn_pdf00s << time_ms;
-        *f_qs_ecn_pdf01s << time_ms;
-        *f_qs_ecn_pdf10s << time_ms;
-        *f_qs_ecn_pdf11s << time_ms;
-        *f_d_ecn_pdf00s << time_ms;
-        *f_d_ecn_pdf01s << time_ms;
-        *f_d_ecn_pdf10s << time_ms;
-        *f_d_ecn_pdf11s << time_ms;
+        f_qs_ecn_pdf00s << time_ms;
+        f_qs_ecn_pdf01s << time_ms;
+        f_qs_ecn_pdf10s << time_ms;
+        f_qs_ecn_pdf11s << time_ms;
+        f_d_ecn_pdf00s << time_ms;
+        f_d_ecn_pdf01s << time_ms;
+        f_d_ecn_pdf10s << time_ms;
+        f_d_ecn_pdf11s << time_ms;
 
         double qs_ecn_sum = 0; // sum of queue delay in us for ecn queue
         double qs_nonecn_sum = 0; // sum of queue delay in us for nonecn queue
@@ -533,14 +532,14 @@ void *printInfo(void *)
                 nr_samples_nonecn += nr_nonecn;
             }
 
-            *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
-            *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
-            *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
-            *f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
-            *f_d_ecn_pdf00s << " " << tp->db2->d_qs.ecn00[i];
-            *f_d_ecn_pdf01s << " " << tp->db2->d_qs.ecn01[i];
-            *f_d_ecn_pdf10s << " " << tp->db2->d_qs.ecn10[i];
-            *f_d_ecn_pdf11s << " " << tp->db2->d_qs.ecn11[i];
+            f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
+            f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
+            f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
+            f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
+            f_d_ecn_pdf00s << " " << tp->db2->d_qs.ecn00[i];
+            f_d_ecn_pdf01s << " " << tp->db2->d_qs.ecn01[i];
+            f_d_ecn_pdf10s << " " << tp->db2->d_qs.ecn10[i];
+            f_d_ecn_pdf11s << " " << tp->db2->d_qs.ecn11[i];
         }
 
         double qs_ecn_avg = 0;
@@ -550,24 +549,24 @@ void *printInfo(void *)
         if (nr_samples_nonecn > 0)
             qs_nonecn_avg = qs_nonecn_sum/nr_samples_nonecn;
 
-        *f_qs_ecn_avg << (double)time_ms/1000.0 << " " << qs_ecn_avg <<  std::endl;
-        *f_qs_nonecn_avg << (double)time_ms/1000.0 << " " << qs_nonecn_avg << std::endl;
+        f_qs_ecn_avg << (double)time_ms/1000.0 << " " << qs_ecn_avg <<  std::endl;
+        f_qs_nonecn_avg << (double)time_ms/1000.0 << " " << qs_nonecn_avg << std::endl;
 
-        *f_qs_ecn_pdf00s << std::endl;
-        *f_qs_ecn_pdf01s << std::endl;
-        *f_qs_ecn_pdf10s << std::endl;
-        *f_qs_ecn_pdf11s << std::endl;
-        *f_d_ecn_pdf00s << std::endl;
-        *f_d_ecn_pdf01s << std::endl;
-        *f_d_ecn_pdf10s << std::endl;
-        *f_d_ecn_pdf11s << std::endl;
+        f_qs_ecn_pdf00s << std::endl;
+        f_qs_ecn_pdf01s << std::endl;
+        f_qs_ecn_pdf10s << std::endl;
+        f_qs_ecn_pdf11s << std::endl;
+        f_d_ecn_pdf00s << std::endl;
+        f_d_ecn_pdf01s << std::endl;
+        f_d_ecn_pdf10s << std::endl;
+        f_d_ecn_pdf11s << std::endl;
 
-        *f_r_tot_ecn << tp->sample_id << " " << time_ms;
-        *f_r_tot_nonecn << tp->sample_id << " " << time_ms;
-        *f_d_tot_ecn << tp->sample_id << " " << time_ms;
-        *f_d_tot_nonecn << tp->sample_id << " " << time_ms;
-        *f_m_tot_ecn << tp->sample_id << " " << time_ms;
-        *f_r_tot << tp->sample_id << " " << time_ms;
+        f_r_tot_ecn << tp->sample_id << " " << time_ms;
+        f_r_tot_nonecn << tp->sample_id << " " << time_ms;
+        f_d_tot_ecn << tp->sample_id << " " << time_ms;
+        f_d_tot_nonecn << tp->sample_id << " " << time_ms;
+        f_m_tot_ecn << tp->sample_id << " " << time_ms;
+        f_r_tot << tp->sample_id << " " << time_ms;
 
         processFD();
         uint64_t r_ecn_tot = 0;
@@ -582,29 +581,29 @@ void *printInfo(void *)
             m_ecn_tot += val.second.at(tp->sample_id).marks;
         }
 
-        *f_r_tot_ecn << " " << r_ecn_tot;
-        *f_d_tot_ecn << " " << d_ecn_tot;
-        *f_m_tot_ecn << " " << m_ecn_tot;
+        f_r_tot_ecn << " " << r_ecn_tot;
+        f_d_tot_ecn << " " << d_ecn_tot;
+        f_m_tot_ecn << " " << m_ecn_tot;
 
         for (auto const& val: tp->fd_pf_nonecn) {
             r_nonecn_tot += val.second.at(tp->sample_id).rate;
             d_nonecn_tot += val.second.at(tp->sample_id).drops;
         }
 
-        *f_r_tot_nonecn << " " << r_nonecn_tot;
-        *f_d_tot_nonecn << " " << d_nonecn_tot;
+        f_r_tot_nonecn << " " << r_nonecn_tot;
+        f_d_tot_nonecn << " " << d_nonecn_tot;
 
-        *f_r_tot << " " << (r_ecn_tot + r_nonecn_tot);
+        f_r_tot << " " << (r_ecn_tot + r_nonecn_tot);
 
-        *f_r_tot << std::endl;
-        *f_r_tot_ecn << std::endl;
-        *f_r_tot_nonecn << std::endl;
-        *f_d_tot_ecn << std::endl;
-        *f_d_tot_nonecn << std::endl;
-        *f_m_tot_ecn << std::endl;
+        f_r_tot << std::endl;
+        f_r_tot_ecn << std::endl;
+        f_r_tot_nonecn << std::endl;
+        f_d_tot_ecn << std::endl;
+        f_d_tot_nonecn << std::endl;
+        f_m_tot_ecn << std::endl;
 
-        *f_tot_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
-        *f_tot_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
+        f_tot_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
+        f_tot_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
 
         tp->packets_processed += tp->db2->tot_packets_nonecn + tp->db2->tot_packets_ecn;
 
@@ -640,37 +639,37 @@ void *printInfo(void *)
         tp->sample_id++;
     }
 
-    f_qs_ecn_pdf00s->close();
-    f_qs_ecn_pdf01s->close();
-    f_qs_ecn_pdf10s->close();
-    f_qs_ecn_pdf11s->close();
+    f_qs_ecn_pdf00s.close();
+    f_qs_ecn_pdf01s.close();
+    f_qs_ecn_pdf10s.close();
+    f_qs_ecn_pdf11s.close();
 
-    f_d_ecn_pdf00s->close();
-    f_d_ecn_pdf01s->close();
-    f_d_ecn_pdf10s->close();
-    f_d_ecn_pdf11s->close();
+    f_d_ecn_pdf00s.close();
+    f_d_ecn_pdf01s.close();
+    f_d_ecn_pdf10s.close();
+    f_d_ecn_pdf11s.close();
 
-    f_tot_packets_ecn->close();
-    f_tot_packets_nonecn->close();
+    f_tot_packets_ecn.close();
+    f_tot_packets_nonecn.close();
 
-    f_r_tot_ecn->close();
-    f_r_tot_nonecn->close();
-    f_d_tot_ecn->close();
-    f_d_tot_nonecn->close();
-    f_m_tot_ecn->close();
-    f_r_tot->close();
+    f_r_tot_ecn.close();
+    f_r_tot_nonecn.close();
+    f_d_tot_ecn.close();
+    f_d_tot_nonecn.close();
+    f_m_tot_ecn.close();
+    f_r_tot.close();
 
-    f_qs_ecn_avg->close();
-    f_qs_nonecn_avg->close();
+    f_qs_ecn_avg.close();
+    f_qs_nonecn_avg.close();
 
     // write per flow stats
     // (we wait till here because we don't know how many
     //  flows there are before the test is finished)
-    std::ofstream *f_r_pf_ecn    =  openFileW(tp->m_folder, "/r_pf_ecn");
-    std::ofstream *f_r_pf_nonecn =  openFileW(tp->m_folder, "/r_pf_nonecn");
-    std::ofstream *f_d_pf_ecn    =  openFileW(tp->m_folder, "/d_pf_ecn");
-    std::ofstream *f_d_pf_nonecn =  openFileW(tp->m_folder, "/d_pf_nonecn");
-    std::ofstream *f_m_pf_ecn    =  openFileW(tp->m_folder, "/m_pf_ecn");
+    std::ofstream f_r_pf_ecn;    openFileW(&f_r_pf_ecn,     tp->m_folder + "/r_pf_ecn");
+    std::ofstream f_r_pf_nonecn; openFileW(&f_r_pf_nonecn,  tp->m_folder + "/r_pf_nonecn");
+    std::ofstream f_d_pf_ecn;    openFileW(&f_d_pf_ecn,     tp->m_folder + "/d_pf_ecn");
+    std::ofstream f_d_pf_nonecn; openFileW(&f_d_pf_nonecn,  tp->m_folder + "/d_pf_nonecn");
+    std::ofstream f_m_pf_ecn;    openFileW(&f_m_pf_ecn,     tp->m_folder + "/m_pf_ecn");
 
     // note: drop and mark numbers per flow don't really tell us much, as
     //       the numbers include whichever packet was handled before this
@@ -678,52 +677,52 @@ void *printInfo(void *)
     //       e.g. a drop might be for another flow
 
     for (int i = 0; i < tp->sample_times.size(); i++) {
-        *f_r_pf_ecn << i << " " << tp->sample_times[i];
-        *f_d_pf_ecn << i << " " << tp->sample_times[i];
-        *f_m_pf_ecn << i << " " << tp->sample_times[i];
+        f_r_pf_ecn << i << " " << tp->sample_times[i];
+        f_d_pf_ecn << i << " " << tp->sample_times[i];
+        f_m_pf_ecn << i << " " << tp->sample_times[i];
 
-        *f_r_pf_nonecn << i << " " << tp->sample_times[i];
-        *f_d_pf_nonecn << i << " " << tp->sample_times[i];
+        f_r_pf_nonecn << i << " " << tp->sample_times[i];
+        f_d_pf_nonecn << i << " " << tp->sample_times[i];
 
         for (auto const& kv: tp->fd_pf_ecn) {
-            *f_r_pf_ecn << " " << kv.second.at(i).rate;
-            *f_d_pf_ecn << " " << kv.second.at(i).drops;
-            *f_m_pf_ecn << " " << kv.second.at(i).marks;
+            f_r_pf_ecn << " " << kv.second.at(i).rate;
+            f_d_pf_ecn << " " << kv.second.at(i).drops;
+            f_m_pf_ecn << " " << kv.second.at(i).marks;
         }
 
         for (auto const& kv: tp->fd_pf_nonecn) {
-            *f_r_pf_nonecn << " " << kv.second.at(i).rate;
-            *f_d_pf_nonecn << " " << kv.second.at(i).drops;
+            f_r_pf_nonecn << " " << kv.second.at(i).rate;
+            f_d_pf_nonecn << " " << kv.second.at(i).drops;
         }
 
-        *f_r_pf_ecn << std::endl;
-        *f_d_pf_ecn << std::endl;
-        *f_m_pf_ecn << std::endl;
+        f_r_pf_ecn << std::endl;
+        f_d_pf_ecn << std::endl;
+        f_m_pf_ecn << std::endl;
 
-        *f_r_pf_nonecn << std::endl;
-        *f_d_pf_nonecn << std::endl;
+        f_r_pf_nonecn << std::endl;
+        f_d_pf_nonecn << std::endl;
     }
 
-    f_r_pf_ecn->close();
-    f_r_pf_nonecn->close();
-    f_d_pf_ecn->close();
-    f_d_pf_nonecn->close();
-    f_m_pf_ecn->close();
+    f_r_pf_ecn.close();
+    f_r_pf_nonecn.close();
+    f_d_pf_ecn.close();
+    f_d_pf_nonecn.close();
+    f_m_pf_ecn.close();
 
     // save flow details
-    std::ofstream *f_flows_ecn    =  openFileW(tp->m_folder, "/flows_ecn");
-    std::ofstream *f_flows_nonecn =  openFileW(tp->m_folder, "/flows_nonecn");
+    std::ofstream f_flows_ecn;    openFileW(&f_flows_ecn,    tp->m_folder + "/flows_ecn");
+    std::ofstream f_flows_nonecn; openFileW(&f_flows_nonecn, tp->m_folder + "/flows_nonecn");
 
     for (auto const& kv: tp->fd_pf_ecn) {
-        *f_flows_ecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+        f_flows_ecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
     }
 
     for (auto const& kv: tp->fd_pf_nonecn) {
-        *f_flows_nonecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
+        f_flows_nonecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
     }
 
-    f_flows_ecn->close();
-    f_flows_nonecn->close();
+    f_flows_ecn.close();
+    f_flows_nonecn.close();
 
     return 0;
 }
@@ -739,7 +738,6 @@ void usage(int argc, char* argv[])
 int main(int argc, char **argv)
 {
     char *dev;
-    char *folder;
     uint32_t sinterval;
     uint32_t nrs = 0;
     bool ipclass = false;
@@ -754,9 +752,9 @@ int main(int argc, char **argv)
 
     dev = argv[1];
 
-    folder = argv[3];
-    sinterval = atoi(argv[4]);
     std::string pcapfilter = argv[2];
+    std::string folder = argv[3];
+    sinterval = atoi(argv[4]);
 
     std::cout << "pcap filter: " << pcapfilter << std::endl;
 
