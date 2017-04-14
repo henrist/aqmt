@@ -32,8 +32,6 @@ typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
 #define US_PER_S 1000000UL
 #define NSEC_PER_US 1000UL
 
-#define percentile(p, n) (ceil(float(p)/100*float(n)))
-
 struct RateVar {
 public:
     RateVar(uint32_t r, double c) {
