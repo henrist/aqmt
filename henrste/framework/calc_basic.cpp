@@ -14,7 +14,6 @@
 #include <string.h>
 #include <algorithm>
 
-#define NRSAMPLES 250
 #define MAX_QS 2048
 
 #define percentile(p, n) (ceil(float(p)/100*float(n)))
@@ -234,28 +233,35 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
     std::ifstream infile_marks(filename_marks.c_str());
     std::ifstream infile_tot(filename_tot.c_str());
 
-    double marks;
-    double tot_packets;
     std::vector<double> *samples = new std::vector<double>();
 
-    for (int s = 0; s < NRSAMPLES; ++s) {
-        for (int colnr = 0; colnr < 3; ++colnr) {
-            if (infile_marks.eof() || infile_tot.eof())
-                break;
+    // Columns in drops file we are reading:
+    // <sample number> <sample time> <marks>
 
-            infile_marks >> marks;
+    // Columns in total packets file we are reading:
+    // <number of packets>
 
-            if (colnr == 2) {
-                infile_tot >> tot_packets;
-                double marks_perc = 0;
+    while (1) {
+        double marks;
+        double tot_packets;
+        double marks_perc = 0;
 
-                if (tot_packets > 0) {
-                    marks_perc = marks * 100 / tot_packets;
-                }
+        infile_tot >> tot_packets;
 
-                samples->push_back(marks_perc);
-            }
+        // skip first two cols
+        infile_marks >> marks;
+        infile_marks >> marks;
+        infile_marks >> marks;
+
+        if (infile_marks.eof() || infile_tot.eof()) {
+            break;
         }
+
+        if (tot_packets > 0) {
+            marks_perc = marks * 100 / tot_packets;
+        }
+
+        samples->push_back(marks_perc);
     }
 
     infile_marks.close();
@@ -267,29 +273,38 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
     std::ifstream infile_drops(filename_drops.c_str());
     std::ifstream infile_tot(filename_tot.c_str());
 
-    double drops;
-    double tot_packets;
     std::vector<double> *samples = new std::vector<double>();
 
-    for (int s = 0; s < NRSAMPLES; ++s) {
-        for (int colnr = 0; colnr < 3; ++colnr) {
-            if (infile_drops.eof() || infile_tot.eof())
-                break;
+    // Columns in drops file we are reading:
+    // <sample number> <sample time> <drops>
 
-            infile_drops >> drops;
+    // Columns in total packets file we are reading:
+    // <number of packets>
 
-            if (colnr == 2) {
-                infile_tot >> tot_packets;
-                double drops_perc = 0;
+    while (1) {
+        double drops;
+        double tot_packets;
+        double drops_perc = 0;
 
-                if (tot_packets+drops > 0)
-                    drops_perc = drops*100/(tot_packets+drops);
+        infile_tot >> tot_packets;
 
-                samples->push_back(drops_perc);
+        // skip first two cols
+        infile_drops >> drops;
+        infile_drops >> drops;
+        infile_drops >> drops;
 
-                if (drops_perc > 100)
-                    std::cout << "too large drops perc: " << drops_perc << std::endl;
-            }
+        if (infile_drops.eof() || infile_tot.eof()) {
+            break;
+        }
+
+        if (tot_packets + drops > 0) {
+            drops_perc = drops * 100 / (tot_packets + drops);
+        }
+
+        samples->push_back(drops_perc);
+
+        if (drops_perc > 100) {
+            std::cout << "too large drops perc: " << drops_perc << std::endl;
         }
     }
 
@@ -300,28 +315,37 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
 
 void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stats_win, double avg_qs, double rtt) {
     std::ifstream infile(filename.c_str());
-    double rate;
 
     std::vector<double> *samples_rate = new std::vector<double>();
     std::vector<double> *samples_win = new std::vector<double>();
 
-    for (int s = 0; s < NRSAMPLES; ++s) {
-        for(std::string line; getline(infile, line);) {
-            std::istringstream iss(line);
-            int colnr = 0;
+    // Columns in file we are reading:
+    // <sample number> <sample time> <rate>
 
-            while (iss >> rate) {
-                if (colnr++ >= 2) {
-                    double win = 0;
-                    if (avg_qs != 0) {
-                        win = rate*(avg_qs+rtt)/1000;
-                    }
+    while (1) {
+        double rate;
+        double win = 0;
 
-                    samples_rate->push_back(rate);
-                    samples_win->push_back(win);
-                }
-            }
+        std::string line;
+        getline(infile, line);
+
+        std::istringstream iss(line);
+
+        // skip first two cols
+        iss >> rate;
+        iss >> rate;
+        iss >> rate;
+
+        if (infile.eof()) {
+            break;
         }
+
+        if (avg_qs != 0) {
+            win = rate * (avg_qs + rtt) / 1000;
+        }
+
+        samples_rate->push_back(rate);
+        samples_win->push_back(win);
     }
 
     infile.close();
@@ -339,33 +363,41 @@ void getSamplesUtilization() {
     std::vector<double> *samples_ecn = new std::vector<double>();
     std::vector<double> *samples_nonecn = new std::vector<double>();
     std::vector<double> *samples_total = new std::vector<double>();
-    double rate_ecn;
-    double rate_nonecn;
-    double util_ecn;
-    double util_nonecn;
-    double util_total;
 
-    // each line consists of three numbers, and we only want the last number
-    for (int s = 0; s < NRSAMPLES*3; ++s) {
+    // Columns in file we are reading:
+    // <sample number> <sample time> <rate>
+
+    while (1) {
+        double rate_ecn;
+        double rate_nonecn;
+        double util_ecn;
+        double util_nonecn;
+        double util_total;
+
+        // skip first two cols
+        infile_ecn >> rate_ecn;
+        infile_ecn >> rate_ecn;
+        infile_ecn >> rate_ecn;
+        infile_nonecn >> rate_nonecn;
+        infile_nonecn >> rate_nonecn;
+        infile_nonecn >> rate_nonecn;
+
         if (infile_ecn.eof() || infile_nonecn.eof()) {
             break;
         }
 
-        infile_ecn >> rate_ecn;
-        infile_nonecn >> rate_nonecn;
+        util_ecn = rate_ecn * 100 / params->link;
+        util_nonecn = rate_nonecn * 100 / params->link;
+        util_total = (rate_ecn+rate_nonecn) * 100 / params->link;
 
-        if ((s+1)%3 == 0) {
-            util_ecn = rate_ecn * 100 / params->link;
-            util_nonecn = rate_nonecn * 100 / params->link;
-            util_total = (rate_ecn+rate_nonecn) * 100 / params->link;
-            samples_ecn->push_back(util_ecn);
-            samples_nonecn->push_back(util_nonecn);
-            samples_total->push_back(util_total);
-        }
+        samples_ecn->push_back(util_ecn);
+        samples_nonecn->push_back(util_nonecn);
+        samples_total->push_back(util_total);
     }
 
     infile_ecn.close();
     infile_nonecn.close();
+
     res->util_ecn->samples(samples_ecn);
     res->util_nonecn->samples(samples_nonecn);
     res->util_total->samples(samples_total);
@@ -380,28 +412,36 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 
     double tot_sent = 0;
     double tot_dropped = 0;
-    double us, nrpackets, drops;
     std::vector<double> *samples = new std::vector<double>();
 
-    /* format of input file:
-     * each line contains three columns:
-     * - queueing delay in us
-     * - number of packets observed at this queueing delay
-     * - number of drops observed at this queueing delay
-     */
-    while (!infile.eof()) {
+    // Columns in file we are reading:
+    // <queuing delay in us> <number of packes not dropped> <number of packets dropped>
+
+    int i = 0;
+
+    while (1) {
+        double us;
+        double nrpackets;
+        double drops;
+
         infile >> us; /* number of us each packet represents */
         infile >> nrpackets;
         infile >> drops;
 
-        for (int i = 0; i < nrpackets; ++i)
+        if (infile.eof()) {
+            break;
+        }
+
+        for (int i = 0; i < nrpackets; ++i) {
             samples->push_back(us);
+        }
 
         tot_sent += nrpackets;
         tot_dropped += drops;
     }
 
     infile.close();
+
     stats->samples(samples);
     *tot_sent_dropped = (uint64_t)(tot_sent + tot_dropped);
 }
