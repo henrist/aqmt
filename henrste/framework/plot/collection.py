@@ -55,23 +55,14 @@ def plot_labels(tree):
     return gpi
 
 
-def common_header(tree, y_logarithmic):
+def common_header(tree):
     _, _, _, n_nodes = collectionutil.get_tree_details(tree)
 
     gpi = """
         unset bars
         set xtic rotate by -65 font ',""" + str(max(3, min(10, 15 - n_nodes / 18))) + """'
         set key above
-        """
-
-    if y_logarithmic:
-        gpi += """
-        set logscale y
-        """
-
-    gpi += """
         set xrange [-2:""" + str(n_nodes + 1) + """]
-        set yrange [""" + ('0.1:105' if y_logarithmic else '0:*<105') + """]
         set boxwidth 0.2
         set tmargin """ + str(get_tmargin_base(tree)) + """
         set lmargin 13
@@ -110,10 +101,7 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
 
     for component in components:
         res = component(tree, x_axis, leaf_hook)
-        gpi += common_header(
-            tree,
-            y_logarithmic=res['y_logarithmic'],
-        )
+        gpi += common_header(tree)
 
         gpi += res['gpi']
 

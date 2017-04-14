@@ -1,4 +1,5 @@
 from .collection import get_tmargin_base, is_custom_xtics
+from .common import add_plot, add_scale
 from . import collectionutil
 from . import treeutil
 from . import colors
@@ -10,14 +11,14 @@ def utilization_queues(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
-        gpi = """
 
+        gpi = """
             # utilization
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
             set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
-            """
+            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         if is_custom_xtics(x_axis):
             gpi += """
@@ -25,7 +26,8 @@ def utilization_queues(y_logarithmic=False):
                 set xtics ()
                 """
 
-        plot_gpi = ''
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
@@ -70,9 +72,11 @@ def utilization_queues(y_logarithmic=False):
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + plot_gpi + """
+            """ + add_plot(plot_gpi) + """
 
-            unset arrow 100"""
+            unset arrow 100
+            unset logscale y
+            """
 
         return {
             'y_logarithmic': y_logarithmic,
@@ -89,13 +93,12 @@ def utilization_tags(y_logarithmic=False):
 
     def plot(tree, x_axis, leaf_hook):
         gpi = """
-
             # utilization of tags
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
             set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
-            """
+            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         if is_custom_xtics(x_axis):
             gpi += """
@@ -103,7 +106,9 @@ def utilization_tags(y_logarithmic=False):
                 set xtics ()
                 """
 
-        plot_gpi = ''
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
+
         plot_lines = ''
         titles_used = []
 
@@ -151,9 +156,11 @@ def utilization_tags(y_logarithmic=False):
             set tmargin """ + str(get_tmargin_base(tree) + 1.3 * (len(titles_used)+1) / 4 - 1) + """
 
             plot \\
-            """ + plot_gpi + plot_lines + """
+            """ + add_plot(plot_gpi + plot_lines) + """
 
-            unset arrow 100"""
+            unset arrow 100
+            unset logscale y
+            """
 
         return {
             'y_logarithmic': y_logarithmic,
@@ -170,15 +177,12 @@ def queueing_delay(y_logarithmic=False):
 
     def plot(tree, x_axis, leaf_hook):
         gpi = """
-
             # queueing delay
-            #set yrange [""" + ('1' if y_logarithmic else '0') + """:*]
-            set yrange [0:*]
-            unset logscale y
+            set yrange [""" + ('1' if y_logarithmic else '0') + """:1<*]
 
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             #set xtic offset first .1
-            """
+            """ + add_scale(y_logarithmic, range_to='10<*')
 
         if is_custom_xtics(x_axis):
             gpi += """
@@ -186,7 +190,8 @@ def queueing_delay(y_logarithmic=False):
                 set xtics ()
                 """
 
-        plot_gpi = ''
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
@@ -223,7 +228,10 @@ def queueing_delay(y_logarithmic=False):
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + plot_gpi
+            """ + add_plot(plot_gpi) + """
+
+            unset logscale y
+            """
 
         return {
             'y_logarithmic': y_logarithmic,
@@ -241,9 +249,10 @@ def drops_marks(y_logarithmic=False):
     def plot(tree, x_axis, leaf_hook):
         gpi = """
             # drops and marks
+            #set yrange [""" + ('1' if y_logarithmic else '0') + """:1<*]
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             set xtic offset first 0
-            """
+            """ + add_scale(y_logarithmic, range_to='10<*')
 
         if is_custom_xtics(x_axis):
             gpi += """
@@ -251,7 +260,8 @@ def drops_marks(y_logarithmic=False):
                 set xtics ()
                 """
 
-        plot_gpi = ''
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
@@ -293,7 +303,10 @@ def drops_marks(y_logarithmic=False):
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + plot_gpi
+            """ + add_plot(plot_gpi) + """
+
+            unset logscale y
+            """
 
         return {
             'y_logarithmic': y_logarithmic,

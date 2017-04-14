@@ -44,12 +44,12 @@ def plot_folder_flows(folder, swap_levels=None, components=None):
 
     if components is None:
         components = [
-            flow_components.utilization_queue(),
+            flow_components.utilization_queues(),
             flow_components.rate_per_flow(),
-            flow_components.queuedelay(),
-            #flow_components.queuedelay(y_logarithmic=True),
-            flow_components.drop_marks(),
-            #flow_components.drop_marks(y_logarithmic=True),
+            flow_components.queueing_delay(),
+            #flow_components.queueing_delay(y_logarithmic=True),
+            flow_components.drops_marks(),
+            #flow_components.drops_marks(y_logarithmic=True),
         ]
 
     tree = generate_hierarchy_data_from_folder(folder, swap_levels)
@@ -67,12 +67,12 @@ def plot_folder_flows(folder, swap_levels=None, components=None):
 def plot_test(folder, components=None):
     if components is None:
         components = [
-            flow_components.utilization_queue(),
+            flow_components.utilization_queues(),
             flow_components.rate_per_flow(),
-            flow_components.queuedelay(),
-            #flow_components.queuedelay(y_logarithmic=True),
-            flow_components.drop_marks(),
-            #flow_components.drop_marks(y_logarithmic=True),
+            flow_components.queueing_delay(),
+            #flow_components.queueing_delay(y_logarithmic=True),
+            flow_components.drops_marks(),
+            #flow_components.drops_marks(y_logarithmic=True),
         ]
 
     export(

@@ -5,6 +5,27 @@ import re
 from . import treeutil
 
 
+def add_plot(gpi):
+    """
+    Remove trailing comma from plot command because gnuplot complains about it
+    (We use the trailing comma to easier build plot commands)
+    """
+    return re.sub(r',(\s*\\?\s*)$', '\g<1>', gpi)
+
+
+def add_scale(y_logarithmic, range_from_log='1', range_to='1<*', range_to_log=None):
+    if y_logarithmic:
+        if range_to_log is None:
+            range_to_log = '*'
+        return """
+            set logscale y
+            set yrange [""" + range_from_log + """:""" + range_to_log + """]
+            """
+    else:
+        return """
+            set yrange [0:""" + range_to + """]
+            """
+
 def plot_header():
     return """
         #set key above
