@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/if_ether.h> /* includes net/ethernet.h */
+#include <netinet/if_ether.h> // includes net/ethernet.h
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
@@ -107,7 +107,7 @@ std::string IPtoString(in_addr_t ip) {
     return std::string(inet_ntoa(ipip.sin_addr));
 }
 
-/* Queuing delay is returned in ns */
+// Queuing delay is returned in ns
 int decodeQdelay(u32 value) {
     // Input value is originally time in ns right shifted 15 times
     // to get division by 1000 and units of 32 us. The right shifting
@@ -129,11 +129,11 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     uint16_t dport = 0;
 
     uint16_t id = ntohs(iph->id);
-    int drops = decodeDrops(id >> 11); /* drops stored in 5 bits MSB */
+    int drops = decodeDrops(id >> 11); // drops stored in 5 bits MSB
 
-    /* we don't decode queueing delay here as we need to store it in a table,
-     * so defer this to the actual serialization of the table to file */
-    int qdelay_encoded = id & 2047; /* qdelay stored in 11 bits LSB */
+    // We don't decode queueing delay here as we need to store it in a table,
+    // so defer this to the actual serialization of the table to file
+    int qdelay_encoded = id & 2047; // qdelay stored in 11 bits LSB
 
     if (proto == IPPROTO_TCP) {
         struct tcphdr *tcph = (struct tcphdr*)(buffer + 14 + iph->ihl*4);
@@ -147,7 +147,7 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
 
     SrcDst sd(proto, iph->saddr, sport, iph->daddr, dport);
     uint64_t iplen = ntohs(iph->tot_len) + 14; // include the 14 bytes in ethernet header
-                                       // the link bandwidth includes it
+                                               // the link bandwidth includes it
     iplen *= 8; // use bits
     std::map<SrcDst,FlowData> *fmap;
     uint32_t mark = 0;
@@ -230,12 +230,12 @@ int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::strin
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *descr;
     const u_char *packet;
-    struct pcap_pkthdr hdr;     /* pcap.h */
-    struct ether_header *eptr;  /* net/ethernet.h */
-    struct bpf_program fp;      /* The compiled filter expression */
-    bpf_u_int32 mask;       /* The netmask of our sniffing device */
-    bpf_u_int32 net;        /* The IP of our sniffing device */
-    u_char *ptr; /* printing out hardware header info */
+    struct pcap_pkthdr hdr;     // pcap.h
+    struct ether_header *eptr;  // net/ethernet.h
+    struct bpf_program fp;      // The compiled filter expression
+    bpf_u_int32 mask;       // The netmask of our sniffing device
+    bpf_u_int32 net;        // The IP of our sniffing device
+    u_char *ptr; // printing out hardware header info
     char *srcnet;
 
     if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
@@ -397,7 +397,6 @@ void *printInfo(void *)
 {
     uint64_t time_ms;
 
-    /* queue size */
     // per sample
     printf("Output folder: %s\n", tp->m_folder.c_str());
 
@@ -416,7 +415,7 @@ void *printInfo(void *)
     std::ofstream f_qs_ecn_avg;         openFileW(&f_qs_ecn_avg,         tp->m_folder + "/qs_ecn_avg");
     std::ofstream f_qs_nonecn_avg;      openFileW(&f_qs_nonecn_avg,      tp->m_folder + "/qs_nonecn_avg");
 
-    /* per sample total of rate, drops, marks */
+    // per sample total of rate, drops, marks
     std::ofstream f_r_tot_ecn;          openFileW(&f_r_tot_ecn,          tp->m_folder + "/r_tot_ecn");
     std::ofstream f_r_tot_nonecn;       openFileW(&f_r_tot_nonecn,       tp->m_folder + "/r_tot_nonecn");
     std::ofstream f_d_tot_ecn;          openFileW(&f_d_tot_ecn,          tp->m_folder + "/d_tot_ecn");
@@ -433,7 +432,6 @@ void *printInfo(void *)
     f_d_ecn_pdf01s << QS_LIMIT;
     f_d_ecn_pdf10s << QS_LIMIT;
     f_d_ecn_pdf11s << QS_LIMIT;
-
 
     // header row contains the queue delay this column represents
     // e.g. a cell value multiplied by this header cell yields queue delay in us
