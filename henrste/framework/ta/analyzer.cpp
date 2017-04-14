@@ -402,16 +402,6 @@ void wait(uint64_t sleep_ns) {
 
 void *printInfo(void *)
 {
-    uint64_t qs_pdf_ecn[QS_LIMIT];
-    uint64_t qs_pdf_nonecn[QS_LIMIT];
-    uint64_t drops_pdf_ecn[QS_LIMIT];
-    uint64_t drops_pdf_nonecn[QS_LIMIT];
-
-    bzero(qs_pdf_ecn, sizeof(uint64_t)*QS_LIMIT);
-    bzero(qs_pdf_nonecn, sizeof(uint64_t)*QS_LIMIT);
-    bzero(drops_pdf_ecn, sizeof(uint64_t)*QS_LIMIT);
-    bzero(drops_pdf_nonecn, sizeof(uint64_t)*QS_LIMIT);
-
     uint64_t time_ms;
 
     /* queue size */
@@ -420,11 +410,15 @@ void *printInfo(void *)
 
     std::ofstream *f_tot_packets_ecn = openFileW(tp->m_folder, "/tot_packets_ecn");
     std::ofstream *f_tot_packets_nonecn = openFileW(tp->m_folder, "/tot_packets_nonecn");
+
     std::ofstream *f_qs_ecn_pdf00s = openFileW(tp->m_folder, "/qs_ecn00_s");
     std::ofstream *f_qs_ecn_pdf01s = openFileW(tp->m_folder, "/qs_ecn01_s");
     std::ofstream *f_qs_ecn_pdf10s = openFileW(tp->m_folder, "/qs_ecn10_s");
     std::ofstream *f_qs_ecn_pdf11s = openFileW(tp->m_folder, "/qs_ecn11_s");
-    std::ofstream *f_qs_ecn_pdfsums = openFileW(tp->m_folder, "/qs_ecnsum_s");
+    std::ofstream *f_d_ecn_pdf00s = openFileW(tp->m_folder, "/d_ecn00_s");
+    std::ofstream *f_d_ecn_pdf01s = openFileW(tp->m_folder, "/d_ecn01_s");
+    std::ofstream *f_d_ecn_pdf10s = openFileW(tp->m_folder, "/d_ecn10_s");
+    std::ofstream *f_d_ecn_pdf11s = openFileW(tp->m_folder, "/d_ecn11_s");
 
     std::ofstream *f_qs_ecn_avg = openFileW(tp->m_folder, "/qs_ecn_avg");
     std::ofstream *f_qs_nonecn_avg = openFileW(tp->m_folder, "/qs_nonecn_avg");
@@ -442,7 +436,11 @@ void *printInfo(void *)
     *f_qs_ecn_pdf01s << QS_LIMIT;
     *f_qs_ecn_pdf10s << QS_LIMIT;
     *f_qs_ecn_pdf11s << QS_LIMIT;
-    *f_qs_ecn_pdfsums << QS_LIMIT;
+    *f_d_ecn_pdf00s << QS_LIMIT;
+    *f_d_ecn_pdf01s << QS_LIMIT;
+    *f_d_ecn_pdf10s << QS_LIMIT;
+    *f_d_ecn_pdf11s << QS_LIMIT;
+
 
     // header row contains the queue delay this column represents
     // e.g. a cell value multiplied by this header cell yields queue delay in us
@@ -451,13 +449,19 @@ void *printInfo(void *)
         *f_qs_ecn_pdf01s << " " << qdelay_decode_table[i];
         *f_qs_ecn_pdf10s << " " << qdelay_decode_table[i];
         *f_qs_ecn_pdf11s << " " << qdelay_decode_table[i];
-        *f_qs_ecn_pdfsums << " " << qdelay_decode_table[i];
+        *f_d_ecn_pdf00s << " " << qdelay_decode_table[i];
+        *f_d_ecn_pdf01s << " " << qdelay_decode_table[i];
+        *f_d_ecn_pdf10s << " " << qdelay_decode_table[i];
+        *f_d_ecn_pdf11s << " " << qdelay_decode_table[i];
     }
     *f_qs_ecn_pdf00s << std::endl;
     *f_qs_ecn_pdf01s << std::endl;
     *f_qs_ecn_pdf10s << std::endl;
     *f_qs_ecn_pdf11s << std::endl;
-    *f_qs_ecn_pdfsums << std::endl;
+    *f_d_ecn_pdf00s << std::endl;
+    *f_d_ecn_pdf01s << std::endl;
+    *f_d_ecn_pdf10s << std::endl;
+    *f_d_ecn_pdf11s << std::endl;
 
     // first run
     // to get accurate results we swap the database and initialize timers here
@@ -477,14 +481,6 @@ void *printInfo(void *)
         std::vector<uint32_t> rvec_nonecn;
         uint64_t recn_tot_s = 0;
         uint64_t rnonecn_tot_s = 0;
-
-        // PDF - all samples summed up
-        std::ofstream *f_qs_drops_ecn_pdf = openFileW(tp->m_folder, "/qs_drops_ecn_pdf");
-        std::ofstream *f_qs_drops_nonecn_pdf = openFileW(tp->m_folder, "/qs_drops_nonecn_pdf");
-
-        // CDF - all samples summed up
-        std::ofstream *f_qs_drops_ecn_cdf = openFileW(tp->m_folder,  "/qs_drops_ecn_cdf");
-        std::ofstream *f_qs_drops_nonecn_cdf = openFileW(tp->m_folder,  "/qs_drops_nonecn_cdf");
 
         // time since we started processing
         time_ms = (tp->db2->last - tp->start) / 1000;
@@ -506,12 +502,10 @@ void *printInfo(void *)
         *f_qs_ecn_pdf01s << time_ms;
         *f_qs_ecn_pdf10s << time_ms;
         *f_qs_ecn_pdf11s << time_ms;
-        *f_qs_ecn_pdfsums << time_ms;
-
-        uint64_t cdf_qs_ecn = 0;
-        uint64_t cdf_qs_nonecn = 0;
-        uint64_t cdf_drops_ecn = 0;
-        uint64_t cdf_drops_nonecn = 0;
+        *f_d_ecn_pdf00s << time_ms;
+        *f_d_ecn_pdf01s << time_ms;
+        *f_d_ecn_pdf10s << time_ms;
+        *f_d_ecn_pdf11s << time_ms;
 
         double qs_ecn_sum = 0; // sum of queue delay in us for ecn queue
         double qs_nonecn_sum = 0; // sum of queue delay in us for nonecn queue
@@ -534,41 +528,22 @@ void *printInfo(void *)
                 nr_ecn = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
                 nr_nonecn = tp->db2->qs.ecn00[i];
 
-                qs_pdf_ecn[i] += nr_ecn;
-                qs_pdf_nonecn[i] += nr_nonecn;
-
                 qs_ecn_sum += nr_ecn * qdelay_decode_table[i];
                 qs_nonecn_sum += nr_nonecn * qdelay_decode_table[i];
 
                 nr_samples_ecn += nr_ecn;
                 nr_samples_nonecn += nr_nonecn;
-
-                drops_pdf_ecn[i] += tp->db2->d_qs.ecn01[i] + tp->db2->d_qs.ecn10[i] + tp->db2->d_qs.ecn11[i];
-                drops_pdf_nonecn[i] += tp->db2->d_qs.ecn00[i];
             }
 
             *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
             *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
             *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
             *f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
-            *f_qs_ecn_pdfsums << " " << nr_ecn;
-
-            // PDF and CDF tables are overwritten at each while loop iteration
-            *f_qs_drops_ecn_pdf << qdelay_decode_table[i] << " " << qs_pdf_ecn[i] << " " << drops_pdf_ecn[i] << std::endl;
-            *f_qs_drops_nonecn_pdf << qdelay_decode_table[i] << " " << qs_pdf_nonecn[i] << " " << drops_pdf_nonecn[i] << std::endl;
-
-            cdf_qs_ecn += qs_pdf_ecn[i];
-            cdf_qs_nonecn += qs_pdf_nonecn[i];
-            cdf_drops_ecn += drops_pdf_ecn[i];
-            cdf_drops_nonecn += drops_pdf_nonecn[i];
-            *f_qs_drops_ecn_cdf << qdelay_decode_table[i] << " " << cdf_qs_ecn << " " << cdf_drops_ecn << std::endl;
-            *f_qs_drops_nonecn_cdf << qdelay_decode_table[i] << " " << cdf_qs_nonecn << " " << cdf_drops_nonecn << std::endl;
+            *f_d_ecn_pdf00s << " " << tp->db2->d_qs.ecn00[i];
+            *f_d_ecn_pdf01s << " " << tp->db2->d_qs.ecn01[i];
+            *f_d_ecn_pdf10s << " " << tp->db2->d_qs.ecn10[i];
+            *f_d_ecn_pdf11s << " " << tp->db2->d_qs.ecn11[i];
         }
-
-        f_qs_drops_ecn_pdf->close();
-        f_qs_drops_nonecn_pdf->close();
-        f_qs_drops_ecn_cdf->close();
-        f_qs_drops_nonecn_cdf->close();
 
         double qs_ecn_avg = 0;
         double qs_nonecn_avg = 0;
@@ -584,7 +559,10 @@ void *printInfo(void *)
         *f_qs_ecn_pdf01s << std::endl;
         *f_qs_ecn_pdf10s << std::endl;
         *f_qs_ecn_pdf11s << std::endl;
-        *f_qs_ecn_pdfsums << std::endl;
+        *f_d_ecn_pdf00s << std::endl;
+        *f_d_ecn_pdf01s << std::endl;
+        *f_d_ecn_pdf10s << std::endl;
+        *f_d_ecn_pdf11s << std::endl;
 
         *f_r_tot_ecn << tp->sample_id << " " << time_ms;
         *f_r_tot_nonecn << tp->sample_id << " " << time_ms;
@@ -668,7 +646,12 @@ void *printInfo(void *)
     f_qs_ecn_pdf01s->close();
     f_qs_ecn_pdf10s->close();
     f_qs_ecn_pdf11s->close();
-    f_qs_ecn_pdfsums->close();
+
+    f_d_ecn_pdf00s->close();
+    f_d_ecn_pdf01s->close();
+    f_d_ecn_pdf10s->close();
+    f_d_ecn_pdf11s->close();
+
     f_tot_packets_ecn->close();
     f_tot_packets_nonecn->close();
 

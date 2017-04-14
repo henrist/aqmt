@@ -37,9 +37,12 @@ def analyze_test(testfolder):
     if not os.path.exists(testfolder + '/derived'):
         os.makedirs(testfolder + '/derived')
 
+    cmd = local['./framework/calc_qd_sent_drops'][testfolder + '/ta', testfolder + '/ta']
+    logger.debug(get_log_cmd(cmd))
+    cmd()
+
     cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
     logger.debug(get_log_cmd(cmd))
-
     cmd()
 
     calc_queuedelay.process_test(testfolder)
