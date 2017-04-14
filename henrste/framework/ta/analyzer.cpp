@@ -547,14 +547,11 @@ void *printInfo(void *)
                 drops_pdf_nonecn[i] += tp->db2->d_qs.ecn00[i];
             }
 
-            // FIXME: why is this check? this must be a bug?!
-            if (tp->sample_id < QS_LIMIT) {
-                *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
-                *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
-                *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
-                *f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
-                *f_qs_ecn_pdfsums << " " << nr_ecn;
-            }
+            *f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
+            *f_qs_ecn_pdf01s << " " << tp->db2->qs.ecn01[i];
+            *f_qs_ecn_pdf10s << " " << tp->db2->qs.ecn10[i];
+            *f_qs_ecn_pdf11s << " " << tp->db2->qs.ecn11[i];
+            *f_qs_ecn_pdfsums << " " << nr_ecn;
 
             // PDF and CDF tables are overwritten at each while loop iteration
             *f_qs_drops_ecn_pdf << qdelay_decode_table[i] << " " << qs_pdf_ecn[i] << " " << drops_pdf_ecn[i] << std::endl;
