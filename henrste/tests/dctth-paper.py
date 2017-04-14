@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework import Testbed, TestEnv, run_test, steps
+from framework.plot import collection_components
 from framework.traffic import greedy
 
 
@@ -45,10 +46,11 @@ def test():
         title='Testing similar to page 8 of DCttH paper',
         testenv=TestEnv(testbed),
         steps=[
-            steps.plot_compare(
-                utilization_queues=False,
-                utilization_tags=True,
-            ),
+            steps.plot_compare(components=[
+                collection_components.utilization_tags(),
+                collection_components.queueing_delay(),
+                collection_components.drops_marks(),
+            ]),
             steps.branch_sched([
                 # tag, title, name, params
                 ('pie', 'PIE', 'pie', ''),

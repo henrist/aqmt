@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework import Testbed, TestEnv, run_test, steps
+from framework.plot import collection_components
 from framework.traffic import greedy
 
 
@@ -32,7 +33,11 @@ def test():
         title='Just a simple test to verify setup',
         testenv=TestEnv(testbed, retest=True, reanalyze=True),
         steps=(
-            steps.plot_compare(swap_levels=[1]),
+            steps.plot_compare(swap_levels=[1], components=[
+                collection_components.utilization_tags(),
+                collection_components.queueing_delay(),
+                collection_components.drops_marks(),
+            ]),
             steps.plot_flows(swap_levels=[1]),
             steps.branch_sched([
                 # tag, title, name, params

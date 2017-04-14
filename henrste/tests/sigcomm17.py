@@ -6,8 +6,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework import MBIT, Testbed, TestEnv, run_test, steps
+from framework.plot import PlotAxis, collection_components
 from framework.traffic import greedy, udp
-from framework.plot import PlotAxis
 import datetime
 import time
 
@@ -92,12 +92,12 @@ def test():
         subtitle='Testrate: 100 Mb/s',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            steps.plot_compare(
-                utilization_tags=True,
-                utilization_queues=True,
-                swap_levels=[],
-                x_axis=PlotAxis.LOGARITHMIC,
-            ),
+            steps.plot_compare(swap_levels=[], x_axis=PlotAxis.LOGARITHMIC, components=[
+                collection_components.utilization_queues(),
+                collection_components.utilization_tags(),
+                collection_components.queueing_delay(),
+                collection_components.drops_marks(),
+            ]),
             steps.branch_rtt([
                 #2,
                 10,

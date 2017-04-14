@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework import MBIT, Testbed, TestEnv, run_test, steps
+from framework.plot import collection_components
 from framework.traffic import greedy, udp
 
 
@@ -69,10 +70,11 @@ def test():
         title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera,
         testenv=TestEnv(testbed),
         steps=[
-            steps.plot_compare(
-                swap_levels=[1],
-                utilization_tags=True,
-            ),
+            steps.plot_compare(swap_levels=[1], components=[
+                collection_components.utilization_tags(),
+                collection_components.queueing_delay(),
+                collection_components.drops_marks(),
+            ]),
             branch_custom_cc([
                 # cctag, cctitle, cc1n, node1, cc1, ecn1, cctag1, cc2n, node2, cc2, ecn2, cctag2
                 #('dctcp', 'Only DCTCP for TCP', 0, 'a', 'cubic', testbed.ECN_ALLOW, 'TCP', 1, 'b', 'dctcp-drop', testbed.ECN_INITIATE, 'TCP'),

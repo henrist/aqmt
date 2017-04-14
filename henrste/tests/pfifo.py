@@ -7,8 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import datetime
 from framework import Testbed, TestEnv, run_test, steps
+from framework.plot import PlotAxis, collection_components
 from framework.traffic import greedy
-from framework.plot import PlotAxis
 
 
 def test():
@@ -37,12 +37,11 @@ def test():
         title='Testing pfifo',
         testenv=TestEnv(testbed, retest=True),
         steps=(
-            steps.plot_compare(
-                utilization_tags=True,
-                utilization_queues=False,
-                swap_levels=[],
-                x_axis=PlotAxis.CATEGORY,
-            ),
+            steps.plot_compare(swap_levels=[], x_axis=PlotAxis.CATEGORY, components=[
+                collection_components.utilization_tags(),
+                collection_components.queueing_delay(),
+                collection_components.drops_marks(),
+            ]),
             steps.plot_flows(),
             steps.branch_sched([
                 # tag, title, name, params

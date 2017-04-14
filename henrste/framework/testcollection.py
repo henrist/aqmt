@@ -7,7 +7,7 @@ import time
 import sys
 
 from . import logger
-from .plot import Plot
+from .plot import plot_test
 from . import processes
 from .testcase import TestCase
 from .testenv import remove_hint, save_hint_to_folder
@@ -108,8 +108,7 @@ class TestCollection:
             if testenv.reanalyze or testenv.replot or not self.test.already_exists:
                 start = time.time()
 
-                p = Plot()
-                p.plot_flow(self.test.test_folder)
+                plot_test(self.test.test_folder)
 
                 logger.info('Plotted test (%.2f s)' % (time.time()-start))
 

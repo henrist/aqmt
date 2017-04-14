@@ -6,8 +6,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from framework import Testbed, TestEnv, run_test, steps
-from framework.traffic import greedy
 from framework.plot import PlotAxis
+from framework.traffic import greedy
 
 def test(result_folder):
 
