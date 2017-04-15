@@ -134,7 +134,7 @@ class TestCase:
             echo 'Idling a bit before running analyzer...'
             sleep %f
             . vars.sh
-            mkdir -p '%s'
+            mkdir -p '%s/ta'
             sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %d
             """ % (
                 self.testenv.testbed.get_ta_idle(),
