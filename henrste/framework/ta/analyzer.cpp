@@ -69,9 +69,6 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, 
     m_folder = folder;
     m_nrs = nrs;
 
-    nr_ecn_flows = 0;
-    nr_nonecn_flows = 0;
-
     packets_captured = 0;
     packets_processed = 0;
 
@@ -412,9 +409,6 @@ void *printInfo(void *)
     std::ofstream f_d_ecn_pdf10s;       openFileW(&f_d_ecn_pdf10s,       tp->m_folder + "/d_ecn10_s");
     std::ofstream f_d_ecn_pdf11s;       openFileW(&f_d_ecn_pdf11s,       tp->m_folder + "/d_ecn11_s");
 
-    std::ofstream f_qs_ecn_avg;         openFileW(&f_qs_ecn_avg,         tp->m_folder + "/qs_ecn_avg");
-    std::ofstream f_qs_nonecn_avg;      openFileW(&f_qs_nonecn_avg,      tp->m_folder + "/qs_nonecn_avg");
-
     // per sample total of rate, drops, marks
     std::ofstream f_r_tot_ecn;          openFileW(&f_r_tot_ecn,          tp->m_folder + "/r_tot_ecn");
     std::ofstream f_r_tot_nonecn;       openFileW(&f_r_tot_nonecn,       tp->m_folder + "/r_tot_nonecn");
@@ -492,14 +486,7 @@ void *printInfo(void *)
         f_d_ecn_pdf01s << time_ms;
         f_d_ecn_pdf10s << time_ms;
         f_d_ecn_pdf11s << time_ms;
-
-        double qs_ecn_sum = 0; // sum of queue delay in us for ecn queue
-        double qs_nonecn_sum = 0; // sum of queue delay in us for nonecn queue
-        double nr_samples_ecn = 0;
-        double nr_samples_nonecn = 0;
         for (int i = 0; i < QS_LIMIT; ++i) {
-            uint64_t nr_ecn = 0;
-            uint64_t nr_nonecn = 0;
 
             if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
                 // TODO: can we make it less verbose? e.g. group by some intervals?
@@ -510,15 +497,6 @@ void *printInfo(void *)
                     tp->db2->qs.ecn10[i],
                     tp->db2->qs.ecn11[i]
                 );
-
-                nr_ecn = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
-                nr_nonecn = tp->db2->qs.ecn00[i];
-
-                qs_ecn_sum += nr_ecn * qdelay_decode_table[i];
-                qs_nonecn_sum += nr_nonecn * qdelay_decode_table[i];
-
-                nr_samples_ecn += nr_ecn;
-                nr_samples_nonecn += nr_nonecn;
             }
 
             f_qs_ecn_pdf00s << " " << tp->db2->qs.ecn00[i];
@@ -530,16 +508,6 @@ void *printInfo(void *)
             f_d_ecn_pdf10s << " " << tp->db2->d_qs.ecn10[i];
             f_d_ecn_pdf11s << " " << tp->db2->d_qs.ecn11[i];
         }
-
-        double qs_ecn_avg = 0;
-        double qs_nonecn_avg = 0;
-        if (nr_samples_ecn > 0)
-            qs_ecn_avg = qs_ecn_sum/nr_samples_ecn;
-        if (nr_samples_nonecn > 0)
-            qs_nonecn_avg = qs_nonecn_sum/nr_samples_nonecn;
-
-        f_qs_ecn_avg << (double)time_ms/1000.0 << " " << qs_ecn_avg <<  std::endl;
-        f_qs_nonecn_avg << (double)time_ms/1000.0 << " " << qs_nonecn_avg << std::endl;
 
         f_qs_ecn_pdf00s << std::endl;
         f_qs_ecn_pdf01s << std::endl;
@@ -647,9 +615,6 @@ void *printInfo(void *)
     f_d_tot_nonecn.close();
     f_m_tot_ecn.close();
     f_r_tot.close();
-
-    f_qs_ecn_avg.close();
-    f_qs_nonecn_avg.close();
 
     // write per flow stats
     // (we wait till here because we don't know how many
