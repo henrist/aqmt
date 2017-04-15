@@ -161,7 +161,7 @@ def merge_testcase_data_set_x(testcases, x_axis):
     """
 
     # for category axis we don't calculate anything
-    if x_axis == PlotAxis.CATEGORY:
+    if not PlotAxis.is_logarithmic(x_axis) and not PlotAxis.is_linear(x_axis):
         out = []
         i = 0
         for xval, line in testcases:
@@ -179,14 +179,14 @@ def merge_testcase_data_set_x(testcases, x_axis):
         if maxval is None or x > maxval:
             maxval = x
 
-    if x_axis == PlotAxis.LOGARITHMIC:
+    if PlotAxis.is_logarithmic(x_axis):
         minval = math.log10(minval)
         maxval = math.log10(maxval)
 
     out = []
     for xval, line in testcases:
         pos = float(xval)
-        if x_axis == PlotAxis.LOGARITHMIC:
+        if PlotAxis.is_logarithmic(x_axis):
             pos = math.log10(pos)
         x = (pos - minval) / (maxval - minval) * (len(testcases) - 1) if maxval != minval else 0
         out.append('%f %s' % (x, line))

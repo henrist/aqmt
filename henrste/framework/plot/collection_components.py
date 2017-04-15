@@ -1,5 +1,5 @@
-from .collection import get_tmargin_base, is_custom_xtics
-from .common import add_plot, add_scale
+from .collection import get_tmargin_base
+from .common import PlotAxis, add_plot, add_scale
 from . import collectionutil
 from . import treeutil
 from . import colors
@@ -20,7 +20,7 @@ def utilization_queues(y_logarithmic=False):
             set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
-        if is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -34,7 +34,7 @@ def utilization_queues(y_logarithmic=False):
             leaf_hook(subtree, is_first_set, x)
 
             xtics = ":xtic(2)"
-            if is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(x_axis):
                 xtics = ""
                 gpi += """
                     set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
@@ -100,7 +100,7 @@ def utilization_tags(y_logarithmic=False):
             set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
-        if is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -117,7 +117,7 @@ def utilization_tags(y_logarithmic=False):
             leaf_hook(subtree, is_first_set, x)
 
             xtics = ":xtic(2)"
-            if is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(x_axis):
                 xtics = ""
                 gpi += """
                     set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
@@ -182,7 +182,7 @@ def queueing_delay(y_logarithmic=False):
             #set xtic offset first .1
             """ + add_scale(y_logarithmic, range_to='10<*')
 
-        if is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -196,7 +196,7 @@ def queueing_delay(y_logarithmic=False):
             leaf_hook(subtree, is_first_set, x)
 
             xtics = ":xtic(2)"
-            if is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(x_axis):
                 xtics = ""
                 gpi += """
                     set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
@@ -251,7 +251,7 @@ def drops_marks(y_logarithmic=False):
             set xtic offset first 0
             """ + add_scale(y_logarithmic, range_from_log='.1', range_to='1<*')
 
-        if is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -265,7 +265,7 @@ def drops_marks(y_logarithmic=False):
             leaf_hook(subtree, is_first_set, x)
 
             xtics = ":xtic(2)"
-            if is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(x_axis):
                 xtics = ""
                 gpi += """
                     set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
@@ -329,7 +329,7 @@ def window_rate_ratio(y_logarithmic=False):
             set arrow 100 from graph 0, first 1 to graph 1, first 1 nohead ls 100 back
             """ + add_scale(y_logarithmic, range_from='*<.5', range_from_log='.5', range_to='2<*')
 
-        if is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -343,7 +343,7 @@ def window_rate_ratio(y_logarithmic=False):
             leaf_hook(subtree, is_first_set, x)
 
             xtics = ":xtic(2)"
-            if is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(x_axis):
                 xtics = ""
                 gpi += """
                     set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)

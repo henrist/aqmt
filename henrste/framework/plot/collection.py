@@ -11,10 +11,6 @@ from . import collectionutil
 from . import treeutil
 
 
-def is_custom_xtics(x_axis):
-    return x_axis != PlotAxis.CATEGORY and False
-
-
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
     tmargin_base = .8 * n_depth + 2.5

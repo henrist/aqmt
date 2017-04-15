@@ -147,6 +147,20 @@ class PlotAxis:
     """
     Different ways to display x axis in each test
     """
-    LOGARITHMIC = 'log'
-    LINEAR = 'linear'
-    CATEGORY = 'category'
+    LOGARITHMIC = 'log'  # will generate xtics
+    LOGARITHMIC_XTICS = 'log_xtics'  # will use provided xtics
+    LINEAR = 'linear'  # will generate xtics
+    LINEAR_XTICS = 'linear_xtics'  # will use provided xtics
+    CATEGORY = 'category_xtics'  # will use provided xtics
+
+    @staticmethod
+    def is_custom_xtics(x_axis):
+        return 'xtics' not in x_axis
+
+    @staticmethod
+    def is_logarithmic(x_axis):
+        return 'log' in x_axis
+
+    @staticmethod
+    def is_linear(x_axis):
+        return 'linear' in x_axis
