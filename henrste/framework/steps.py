@@ -14,6 +14,8 @@ A step is required to yield (minimum one time) in two different ways:
   - titlelabel
 """
 
+import os.path
+
 from .plot import plot_folder_flows, plot_folder_compare
 
 MBIT = 1000*1000
@@ -128,7 +130,7 @@ def skipif(fn):
 def plot_compare(**plot_args):
     def step(testdef):
         yield
-        if not testdef.dry_run:
+        if not testdef.dry_run and os.path.isdir(testdef.collection.folder):
             plot_folder_compare(testdef.collection.folder, **plot_args)
     return step
 
@@ -136,6 +138,6 @@ def plot_compare(**plot_args):
 def plot_flows(**plot_args):
     def step(testdef):
         yield
-        if not testdef.dry_run:
+        if not testdef.dry_run and os.path.isdir(testdef.collection.folder):
             plot_folder_flows(testdef.collection.folder, **plot_args)
     return step
