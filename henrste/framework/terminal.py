@@ -77,7 +77,7 @@ class Tmux(Terminal):
 
         tmux['select-layout', '-t', self.win_id, 'tiled']()
 
-        logger.trace('RUN_FG (TMUX PID: %d): %s' % (pane_pid, get_log_cmd(cmd, prefix='')))
+        logger.trace('RUN_FG (TMUX PID: %d): %s' % (int(pane_pid), get_log_cmd(cmd, prefix='')))
         return int(pane_pid)
 
     def run_bg(self, cmd):
@@ -96,7 +96,7 @@ class Tmux(Terminal):
             pane_pid = tmux['split-window', '-dP', '-t', self.get_pane_id(self.win_bg_id), '-F', '#{pane_pid}', cmd]().strip()
             tmux['select-layout', '-t', self.win_bg_id, 'tiled'] & FG
 
-        logger.trace('RUN_BG (TMUX PID: %d): %s' % (pane_pid, get_log_cmd(cmd, prefix='')))
+        logger.trace('RUN_BG (TMUX PID: %d): %s' % (int(pane_pid), get_log_cmd(cmd, prefix='')))
         return int(pane_pid)
 
     def have_bg_win(self):
