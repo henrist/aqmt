@@ -468,11 +468,6 @@ void *printInfo(void *)
     while (1) {
         tp->swapDB();
 
-        std::vector<uint32_t> rvec_ecn;
-        std::vector<uint32_t> rvec_nonecn;
-        uint64_t recn_tot_s = 0;
-        uint64_t rnonecn_tot_s = 0;
-
         // time since we started processing
         time_ms = (tp->db2->last - tp->start) / 1000;
         tp->sample_times.push_back(time_ms);
