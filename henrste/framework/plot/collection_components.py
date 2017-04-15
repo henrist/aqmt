@@ -249,7 +249,7 @@ def drops_marks(y_logarithmic=False):
             # drops and marks
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             set xtic offset first 0
-            """ + add_scale(y_logarithmic, range_to='1<*')
+            """ + add_scale(y_logarithmic, range_from_log='.1', range_to='1<*')
 
         if is_custom_xtics(x_axis):
             gpi += """
