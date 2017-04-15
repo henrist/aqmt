@@ -7,6 +7,7 @@
 
 import numpy as np
 import os
+import sys
 
 
 def parse_header(line):
@@ -29,7 +30,7 @@ def parse_line(line, header_us):
 
 def generate_stats(numbers):
     if numbers.size == 0:
-        res = ['0', '0', '0', '0', '0', '0', '0', '0', '0']
+        res = ['-', '-', '-', '-', '-', '-', '-', '-', '-']
     else:
         res = [
             np.average(numbers).astype('str'),
@@ -97,4 +98,6 @@ def process_test(folder):
 
 
 if __name__ == '__main__':
-    process_test('testset-a/test-001')
+    if len(sys.argv) < 2:
+        print('Syntax: %s <test_folder>', sys.argv[0])
+    process_test(sys.argv[1])
