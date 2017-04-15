@@ -99,17 +99,20 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
         for xoffset in lines_at_x_offset:
             gpi += line_at_x_offset(x, xoffset, subtree, x_axis)
 
+    i = 0
     for component in components:
         res = component(tree, x_axis, leaf_hook)
         gpi += common_header(tree)
 
-        gpi += res['gpi']
+        # show xlabel at bottom of the multiplot, so do it only for latest component
+        if i + 1 == len(components):
+            xlabel = collectionutil.get_xlabel(tree)
+            if xlabel is not None:
+                gpi += """
+                    set xlabel '""" + xlabel + """'"""
 
-    # show xlabel at bottom of the multiplot
-    xlabel = collectionutil.get_xlabel(tree)
-    if xlabel is not None:
-        gpi += """
-            set xlabel '""" + xlabel + """'"""
+        gpi += res['gpi']
+        i += 1
 
     gpi += """
         unset multiplot"""

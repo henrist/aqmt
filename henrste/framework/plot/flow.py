@@ -29,11 +29,18 @@ def build_plot(testfolder, components):
         set xrange [1:""" + str(get_number_samples(testfolder)) + """]
         """
 
+    i = 0
     for component in components:
+        # show xlabel at bottom of the multiplot, so do it only for latest component
+        if i + 1 == len(components):
+            gpi += """
+                set xlabel 'Sample #'
+                """
+
         gpi += component(testfolder)
+        i += 1
 
     gpi += """
-        set xlabel 'Sample #'
         unset multiplot
         reset"""
 
