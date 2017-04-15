@@ -17,7 +17,7 @@ def is_custom_xtics(x_axis):
 
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    tmargin_base = 1 * n_depth + 2
+    tmargin_base = .8 * n_depth + 2.5
     if 'subtitle' in tree and tree['subtitle']:
         tmargin_base += .8
     return tmargin_base
@@ -40,21 +40,23 @@ def plot_labels(tree):
     gpi = ""
     depth_sizes = treeutil.get_depth_sizes(tree)
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
+    first_titlelabel = {}
 
     def branch(treenode, x, depth, width):
-        nonlocal gpi
-        fontsize = fontsize = max(5, min(9, 10 - depth_sizes[depth] / 4.5))
+        nonlocal first_titlelabel, gpi
+        fontsize = fontsize = max(6, min(10, 11 - depth_sizes[depth] / 10))
 
         centering = False
         x_offset = x + (width - 2) / 2 if centering else x
 
-        if treenode['titlelabel'] != '':
+        if treenode['titlelabel'] != '' and depth not in first_titlelabel:
+            first_titlelabel[depth] = False
             gpi += """
-                set label \"""" + treenode['titlelabel'] + """:\" at graph -.01, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
+                set label \"""" + treenode['titlelabel'] + """:\" at graph -.01, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
                 """
 
         gpi += """
-            set label \"""" + treenode['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
+            set label \"""" + treenode['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
             """
 
     treeutil.walk_tree_reverse(tree, branch)
@@ -62,7 +64,7 @@ def plot_labels(tree):
     xlabel = collectionutil.get_xlabel(tree)
     if xlabel is not None:
         gpi += """
-            set label \"""" + xlabel + """:\" at graph -.01, graph -.07 font 'Times-Roman,8pt' tc rgb 'black' right
+            set label \"""" + xlabel + """:\" at graph -.01, graph -.07 font 'Times-Roman,10pt' tc rgb 'black' right
             """
 
     return gpi
@@ -73,7 +75,7 @@ def common_header(tree):
 
     gpi = """
         unset bars
-        set xtic rotate by -65 font ',""" + str(max(3, min(10, 15 - n_nodes / 18))) + """'
+        set xtic rotate by -65 font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
         set key above
         set xrange [-2:""" + str(n_nodes + 1) + """]
         set boxwidth 0.2
@@ -93,7 +95,7 @@ def plot_title(tree, n_components):
         set multiplot layout """ + str(n_components) + """,1 title \"""" + title + """\\n\" scale 1,1"""
 
 
-def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offset=None):
+def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offset=None, x_scale=1, y_scale=1):
     """
     Plot the collection tree provided using the provided components
     """
@@ -122,6 +124,6 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
 
     return {
         'gpi': gpi,
-        'width': '21cm',
-        'height': '%dcm' % (7 * len(components)),
+        'width': '%dcm' % (x_scale * 21),
+        'height': '%dcm' % (y_scale * 7 * len(components)),
     }

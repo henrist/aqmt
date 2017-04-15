@@ -14,7 +14,7 @@ from .common import PlotAxis, generate_hierarchy_data_from_folder, export
 import pprint
 import sys
 
-def plot_folder_compare(folder, swap_levels=None, x_axis=PlotAxis.CATEGORY, components=None):
+def plot_folder_compare(folder, swap_levels=None, x_axis=PlotAxis.CATEGORY, components=None, x_scale=1, y_scale=1):
     if components is None:
         components = [
             collection_components.utilization_queues(),
@@ -32,6 +32,8 @@ def plot_folder_compare(folder, swap_levels=None, x_axis=PlotAxis.CATEGORY, comp
             generate_hierarchy_data_from_folder(folder, swap_levels),
             x_axis=x_axis,
             components=components,
+            x_scale=x_scale,
+            y_scale=y_scale,
         )
     )
 
