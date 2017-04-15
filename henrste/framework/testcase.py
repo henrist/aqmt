@@ -19,7 +19,7 @@ from .terminal import get_log_cmd
 from .testenv import get_pid_ta, remove_hint, save_hint_to_folder, set_pid_ta, read_metadata
 
 
-def analyze_test(testfolder):
+def analyze_test(testfolder, samples_to_skip):
     bitrate = 0
     with open(testfolder + '/details', 'r') as f:
         for line in f:
@@ -49,12 +49,12 @@ def analyze_test(testfolder):
     logger.debug(get_log_cmd(cmd))
     cmd()
 
-    cmd = local['./framework/calc_basic'][testfolder, str(bitrate), str(rtt_l4s), str(rtt_classic)]
+    cmd = local['./framework/calc_basic'][testfolder, str(bitrate), str(rtt_l4s), str(rtt_classic), str(samples_to_skip)]
     logger.debug(get_log_cmd(cmd))
     cmd()
 
     calc_queuedelay.process_test(testfolder)
-    calc_tagged_rate.process_test(testfolder)
+    calc_tagged_rate.process_test(testfolder, samples_to_skip)
     calc_utilization.process_test(testfolder, bitrate)
 
 
@@ -138,18 +138,15 @@ class TestCase:
             """
             # running analyzer
             set -e
-            echo 'Idling a bit before running analyzer...'
-            sleep %f
             . vars.sh
             mkdir -p '%s/ta'
             sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %d
             """ % (
-                self.testenv.testbed.get_ta_idle(),
                 self.test_folder,
                 pcapfilter,
                 self.test_folder,
                 self.testenv.testbed.ta_delay,
-                self.testenv.testbed.ta_samples
+                self.testenv.testbed.ta_samples + self.testenv.testbed.get_ta_samples_to_skip(),
             )
         ]
 
@@ -170,7 +167,8 @@ class TestCase:
 
     def calc_estimated_run_time(self):
         # add one second for various delay
-        return self.testenv.testbed.ta_samples * self.testenv.testbed.ta_delay / 1000 + self.testenv.testbed.get_ta_idle() + self.calc_post_wait_time() + 1
+        samples = self.testenv.testbed.ta_samples + self.testenv.testbed.get_ta_samples_to_skip()
+        return samples * self.testenv.testbed.ta_delay / 1000 + self.calc_post_wait_time() + 1
 
     def run(self, test_fn):
         if self.directory_error:
@@ -197,9 +195,10 @@ class TestCase:
 
         logger.info('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
 
-        self.save_hint('ta_idle %s' % self.testenv.testbed.get_ta_idle())
+        self.save_hint('ta_idle %s' % self.testenv.testbed.ta_idle)
         self.save_hint('ta_delay %s' % self.testenv.testbed.ta_delay)
         self.save_hint('ta_samples %s' % self.testenv.testbed.ta_samples)
+        self.save_hint('ta_samples_pre %s' % self.testenv.testbed.get_ta_samples_to_skip())
 
         hint = self.testenv.testbed.get_hint(dry_run=self.testenv.dry_run)
         for line in hint.split('\n'):
@@ -242,6 +241,11 @@ class TestCase:
         return self.already_exists or (not self.testenv.dry_run and self.data_collected)
 
     def analyze(self):
-        remove_hint(self.test_folder, ['data_analyzed'])
-        analyze_test(self.test_folder)
+        samples_to_skip = self.testenv.testbed.get_ta_samples_to_skip()
+
+        remove_hint(self.test_folder, ['data_analyzed', 'analyzed_aggregated_samples_skipped'])
+
+        analyze_test(self.test_folder, samples_to_skip)
+
         self.save_hint('data_analyzed')
+        self.save_hint('analyzed_aggregated_samples_skipped %d' % samples_to_skip)

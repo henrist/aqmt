@@ -37,7 +37,7 @@ def generate_stats(numbers):
     return ' '.join(res)
 
 
-def save_tag_rates(folder, rates):
+def save_tag_rates(folder, rates, samples_to_skip):
     with open(folder + '/derived/rate_tagged', 'w') as fall:
         fall.write('#sample rate\n')
 
@@ -46,18 +46,26 @@ def save_tag_rates(folder, rates):
 
             first = True
             for tag, values in rates.items():
+                list_rate = []
+                skip = samples_to_skip
+
                 if not first:
                     fall.write('\n\n')
                 first = False
                 fall.write('"%s"\n' % tag)
 
                 for i, rate in enumerate(values):
+                    if skip > 0:
+                        skip -= 1
+                    else:
+                        list_rate.append(rate)
+
                     fall.write('%d %d\n' % (i, rate))
 
-                fstats.write('"%s" %s\n' % (tag, generate_stats(values)))
+                fstats.write('"%s" %s\n' % (tag, generate_stats(list_rate)))
 
 
-def save_tag_util(folder, rates, bitrate):
+def save_tag_util(folder, rates, bitrate, samples_to_skip):
     with open(folder + '/derived/util_tagged', 'w') as fall:
         fall.write('#sample util\n')
 
@@ -67,6 +75,7 @@ def save_tag_util(folder, rates, bitrate):
             first = True
             for tag, values in rates.items():
                 list_util = []
+                skip = samples_to_skip
 
                 if not first:
                     fall.write('\n\n')
@@ -75,7 +84,11 @@ def save_tag_util(folder, rates, bitrate):
 
                 for i, rate in enumerate(values):
                     util = rate / bitrate
-                    list_util.append(util)
+
+                    if skip > 0:
+                        skip -= 1
+                    else:
+                        list_util.append(util)
 
                     fall.write('%d %f\n' % (i, util))
 
@@ -185,7 +198,7 @@ def get_flows(folder, classify):
     return flows
 
 
-def process_test(folder):
+def process_test(folder, samples_to_skip):
     if not os.path.exists(folder + '/derived'):
         os.makedirs(folder + '/derived')
 
@@ -198,11 +211,11 @@ def process_test(folder):
 
     rates = get_rates(folder, flows, tags)
 
-    save_tag_rates(folder, rates)
-    save_tag_util(folder, rates, bitrate)
+    save_tag_rates(folder, rates, samples_to_skip)
+    save_tag_util(folder, rates, bitrate, samples_to_skip)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('Usage: %s <test_folder>', sys.argv[0])
-    process_test(sys.argv[1])
+    if len(sys.argv) < 3:
+        print('Usage: %s <test_folder> <samples_to_skip>', sys.argv[0])
+    process_test(sys.argv[1], int(sys.argv[2]))

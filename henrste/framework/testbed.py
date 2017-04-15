@@ -2,6 +2,7 @@
 This module contains the testbed logic
 """
 
+import math
 import os
 from plumbum import local, FG
 from plumbum.cmd import bash
@@ -49,7 +50,7 @@ class Testbed:
         self.cc_b = 'cubic'
         self.ecn_b = self.ECN_ALLOW
 
-        self.ta_idle = None  # time to wait before collecting traffic, default to RTT-dependent
+        self.ta_idle = None  # time to skip in seconds when building aggregated data, default to be RTT-dependent
         self.ta_delay = 1000
         self.ta_samples = 250
 
@@ -73,10 +74,13 @@ class Testbed:
             self.cc_b = cc
             self.ecn_b = ecn
 
-    def get_ta_idle(self):
-        if self.ta_idle is None:
-            return (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 20 + 3
-        return self.ta_idle
+    def get_ta_samples_to_skip(self):
+        time = self.ta_idle
+        if time is None:
+            time = (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 20 + 3
+
+        samples = time * 1000 / self.ta_delay
+        return math.ceil(samples)
 
     def setup(self, dry_run=False, log_level=logger.DEBUG):
         cmd = bash['-c', """

@@ -1,6 +1,15 @@
 from .common import plot_header
 
 
+def get_aggregated_samples_to_skip(testfolder):
+    with open(testfolder + '/details', 'r') as f:
+        for line in f:
+            if line.startswith('analyzed_aggregated_samples_skipped'):
+                return int(line.split()[1])
+
+    return 0
+
+
 def get_number_samples(testfolder):
     """
     Get the number of samples this test consists of.
@@ -21,12 +30,18 @@ def build_plot(testfolder, components):
     Generate a plot for a single test case
     """
 
+    aggregated_samples_to_skip = get_aggregated_samples_to_skip(testfolder)
+
     gpi = plot_header()
     gpi += """
         set multiplot layout """ + str(len(components)) + """,1 columnsfirst title '""" + testfolder + """'
         set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
         set lmargin 13
         set xrange [1:""" + str(get_number_samples(testfolder)) + """]
+
+        # draw line where the statistics for aggregated data is collected from
+        set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
+        set arrow from first """ + str(aggregated_samples_to_skip - .5) + """, graph 0 to first """ + str(aggregated_samples_to_skip - .5) + """, graph 1 nohead ls 100 back
         """
 
     i = 0

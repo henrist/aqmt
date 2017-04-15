@@ -23,12 +23,14 @@ struct Parameters {
     double rtt_r;
     std::string folder;
     double link;
+    int samples_to_skip;
 
     Parameters() {
         rtt_d = 0;
         rtt_r = 0;
         folder = "";
         link = 0;
+        samples_to_skip = 0;
     }
 };
 
@@ -234,6 +236,13 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
     // Columns in total packets file we are reading:
     // <number of packets>
 
+    // skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < params->samples_to_skip; i++) {
+        getline(infile_tot, line);
+        getline(infile_marks, line);
+    }
+
     while (1) {
         double marks;
         double tot_packets;
@@ -274,6 +283,13 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
 
     // Columns in total packets file we are reading:
     // <number of packets>
+
+    // skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < params->samples_to_skip; i++) {
+        getline(infile_tot, line);
+        getline(infile_drops, line);
+    }
 
     while (1) {
         double drops;
@@ -316,6 +332,12 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
 
     // Columns in file we are reading:
     // <sample number> <sample time> <rate>
+
+    // skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < params->samples_to_skip; i++) {
+        getline(infile, line);
+    }
 
     while (1) {
         double rate;
@@ -363,6 +385,13 @@ void getSamplesUtilization() {
     // Columns in file we are reading:
     // <sample number> <sample time> <rate>
 
+    // skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < params->samples_to_skip; i++) {
+        getline(infile_ecn, line);
+        getline(infile_nonecn, line);
+    }
+
     while (1) {
         double rate_ecn;
         double rate_nonecn;
@@ -408,6 +437,12 @@ void readFileQS(std::string filename, Statistics *stats) {
     // Columns in file we are reading:
     // <queuing delay in us> <number of packes not dropped> <number of packets dropped>
 
+    // skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < params->samples_to_skip; i++) {
+        getline(infile, line);
+    }
+
     while (1) {
         double us;
         double nrpackets;
@@ -445,12 +480,12 @@ void getSamplesQS() {
 }
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <test_folder> <link b/s> <rtt_d> <rtt_r>\n", argv[0]);
+    printf("Usage: %s <test_folder> <link b/s> <rtt_d> <rtt_r> <samples_to_skip>\n", argv[0]);
     exit(1);
 }
 
 void loadParameters(int argc, char **argv) {
-    if (argc < 5) {
+    if (argc < 6) {
         usage(argc, argv);
     }
 
@@ -458,6 +493,7 @@ void loadParameters(int argc, char **argv) {
     params->link = atoi(argv[2]);
     params->rtt_d = (double) atoi(argv[3]);
     params->rtt_r = (double) atoi(argv[4]);
+    params->samples_to_skip = atoi(argv[5]);
 }
 
 int main(int argc, char **argv) {
