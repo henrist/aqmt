@@ -511,11 +511,13 @@ int main(int argc, char **argv) {
     writeStatistics("util_ecn_stats", res->util_ecn);
     writeStatistics("util_total_stats", res->util_total);
 
-    //out << res->rr_static << std::endl;
-    //writeToFile("rr", out.str()); out.str("");
+    std::stringstream out;
 
-    //out << res->wr_static << std::endl;
-    //writeToFile("wr", out.str()); out.str("");
+    out << res->rr_static << std::endl;
+    writeToFile("rate_ratio", out.str()); out.str("");
+
+    out << res->wr_static << std::endl;
+    writeToFile("window_ratio", out.str()); out.str("");
 
     return 0;
 }

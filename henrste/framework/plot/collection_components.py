@@ -178,8 +178,6 @@ def queueing_delay(y_logarithmic=False):
     def plot(tree, x_axis, leaf_hook):
         gpi = """
             # queueing delay
-            set yrange [""" + ('1' if y_logarithmic else '0') + """:1<*]
-
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             #set xtic offset first .1
             """ + add_scale(y_logarithmic, range_to='10<*')
@@ -249,7 +247,6 @@ def drops_marks(y_logarithmic=False):
     def plot(tree, x_axis, leaf_hook):
         gpi = """
             # drops and marks
-            #set yrange [""" + ('1' if y_logarithmic else '0') + """:1<*]
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             set xtic offset first 0
             """ + add_scale(y_logarithmic, range_to='1<*')
@@ -305,6 +302,75 @@ def drops_marks(y_logarithmic=False):
             plot \\
             """ + add_plot(plot_gpi) + """
 
+            unset logscale y
+            """
+
+        return {
+            'y_logarithmic': y_logarithmic,
+            'gpi': gpi,
+        }
+
+    return plot
+
+
+def window_rate_ratio(y_logarithmic=False):
+    """
+    Plot graph of window and rate ratio between ECN and non-ECN queues
+    """
+
+    def plot(tree, x_axis, leaf_hook):
+        gpi = """
+            # window and rate ratio
+            set ylabel "Window and rate ratio\\n{/Times:Italic=10 Above 1 is advantage to ECN-flow}"
+            set xtic offset first 0
+
+            # line at y 1 (the perfect balance)
+            set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
+            set arrow 100 from graph 0, first 1 to graph 1, first 1 nohead ls 100 back
+            """ + add_scale(y_logarithmic, range_from='*<.5', range_from_log='.5', range_to='2<*')
+
+        if is_custom_xtics(x_axis):
+            gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
+
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
+
+        def leaf(subtree, is_first_set, x):
+            nonlocal gpi, plot_gpi
+            leaf_hook(subtree, is_first_set, x)
+
+            xtics = ":xtic(2)"
+            if is_custom_xtics(x_axis):
+                xtics = ""
+                gpi += """
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    """
+
+            gpi += """
+                $data_window_ratio""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'derived/window_ratio', x_axis) + """
+                EOD
+                $data_rate_ratio""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'derived/rate_ratio', x_axis) + """
+                EOD
+                """
+
+            plot_gpi += "$data_window_ratio" + str(x) + "  using ($1+" + str(x) + "+0.00):3" + xtics + " with points lc rgb '" + colors.BLACK + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Window ratio' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_rate_ratio" + str(x) + "    using ($1+" + str(x) + "+0.10):3              with points lc rgb '" + colors.GREEN + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Rate ratio' if is_first_set else '') + "', \\\n"
+
+            # gray lines between average values
+            plot_gpi += "$data_window_ratio" + str(x) + "  using ($1+" + str(x) + "+0.00):3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_rate_ratio" + str(x) + "    using ($1+" + str(x) + "+0.10):3     with lines lc rgb 'gray'         title '', \\\n"
+
+        treeutil.walk_leaf(tree, leaf)
+        gpi += """
+            plot \\
+            """ + add_plot(plot_gpi) + """
+
+            unset arrow 100
             unset logscale y
             """
 

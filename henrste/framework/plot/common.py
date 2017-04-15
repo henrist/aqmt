@@ -3,6 +3,7 @@ from plumbum import local
 import re
 
 from . import treeutil
+from ..testenv import read_metadata
 
 
 def add_plot(gpi):
@@ -13,7 +14,7 @@ def add_plot(gpi):
     return re.sub(r',(\s*\\?\s*)$', '\g<1>', gpi)
 
 
-def add_scale(y_logarithmic, range_from_log='1', range_to='1<*', range_to_log=None):
+def add_scale(y_logarithmic, range_from='0', range_from_log='1', range_to='1<*', range_to_log=None):
     if y_logarithmic:
         if range_to_log is None:
             range_to_log = '*'
@@ -23,7 +24,7 @@ def add_scale(y_logarithmic, range_from_log='1', range_to='1<*', range_to_log=No
             """
     else:
         return """
-            set yrange [0:""" + range_to + """]
+            set yrange [""" + range_from + """:""" + range_to + """]
             """
 
 def plot_header():
@@ -149,27 +150,3 @@ class PlotAxis:
     LOGARITHMIC = 'log'
     LINEAR = 'linear'
     CATEGORY = 'category'
-
-
-def read_metadata(file):
-    """
-    Reads metadata from a `details` file
-
-    Returns a map of the properties as well as a list of properties to be used
-    if properties of the same key is repeated
-    """
-    if not os.path.isfile(file):
-        raise Exception('Missing metadata file: ' + file)
-
-    metadata = {}
-    lines = []
-
-    with open(file, 'r') as f:
-        for line in f:
-            s = line.split(maxsplit=1)
-            key = s[0]
-            value = s[1].strip() if len(s) > 1 else ''
-            metadata[key.strip()] = value
-            lines.append((key, value))
-
-    return metadata, lines

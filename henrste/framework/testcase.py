@@ -16,7 +16,7 @@ from . import calc_utilization
 from . import logger
 from . import processes
 from .terminal import get_log_cmd
-from .testenv import get_pid_ta, remove_hint, save_hint_to_folder, set_pid_ta
+from .testenv import get_pid_ta, remove_hint, save_hint_to_folder, set_pid_ta, read_metadata
 
 
 def analyze_test(testfolder):
@@ -30,9 +30,10 @@ def analyze_test(testfolder):
     if bitrate == 0:
         raise Exception("Could not determine bitrate of test '%s'" % testfolder)
 
-    # TODO: how can we get this from `details` ?
-    rtt_l4s = 0            # used to calculate window size, we don't use it now
-    rtt_classic = 0        # used to calculate window size, we don't use it now
+    # FIXME: properly handle rtt for different queues/servers
+    metadata_kv, metadata_lines = read_metadata(testfolder + '/details')
+    rtt_l4s = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
+    rtt_classic = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
 
     if not os.path.exists(testfolder + '/derived'):
         os.makedirs(testfolder + '/derived')
