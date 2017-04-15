@@ -48,10 +48,23 @@ def plot_labels(tree):
         centering = False
         x_offset = x + (width - 2) / 2 if centering else x
 
+        if treenode['titlelabel'] != '':
+            gpi += """
+                set label \"""" + treenode['titlelabel'] + """:\" at graph -.01, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
+                """
+
         gpi += """
-            set label \"""" + treenode['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left"""
+            set label \"""" + treenode['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.05 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
+            """
 
     treeutil.walk_tree_reverse(tree, branch)
+
+    xlabel = collectionutil.get_xlabel(tree)
+    if xlabel is not None:
+        gpi += """
+            set label \"""" + xlabel + """:\" at graph -.01, graph -.07 font 'Times-Roman,8pt' tc rgb 'black' right
+            """
+
     return gpi
 
 
@@ -99,20 +112,10 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
         for xoffset in lines_at_x_offset:
             gpi += line_at_x_offset(x, xoffset, subtree, x_axis)
 
-    i = 0
     for component in components:
         res = component(tree, x_axis, leaf_hook)
         gpi += common_header(tree)
-
-        # show xlabel at bottom of the multiplot, so do it only for latest component
-        if i + 1 == len(components):
-            xlabel = collectionutil.get_xlabel(tree)
-            if xlabel is not None:
-                gpi += """
-                    set xlabel '""" + xlabel + """'"""
-
         gpi += res['gpi']
-        i += 1
 
     gpi += """
         unset multiplot"""
