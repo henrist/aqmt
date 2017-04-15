@@ -22,16 +22,12 @@ struct Parameters {
     double rtt_d;
     double rtt_r;
     std::string folder;
-    uint32_t n_ecn;
-    uint32_t n_nonecn;
     double link;
 
     Parameters() {
         rtt_d = 0;
         rtt_r = 0;
         folder = "";
-        n_ecn = 0;
-        n_nonecn = 0;
         link = 0;
     }
 };
@@ -166,9 +162,6 @@ struct Results {
     double ecn_avg;
     double nonecn_avg;
 
-    uint64_t tot_sent_dropped_ecn;
-    uint64_t tot_sent_dropped_nonecn;
-
     Results() {
         rate_ecn = new Statistics();
         rate_nonecn = new Statistics();
@@ -188,9 +181,6 @@ struct Results {
 
         ecn_avg = NAN;
         nonecn_avg = NAN;
-
-        tot_sent_dropped_ecn = 0;
-        tot_sent_dropped_nonecn = 0;
     }
 };
 
@@ -409,18 +399,14 @@ void getSamplesUtilization() {
     res->util_total->samples(samples_total);
 }
 
-void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_dropped) {
+void readFileQS(std::string filename, Statistics *stats) {
     std::ifstream infile;
     openFileR(&infile, filename);
 
-    double tot_sent = 0;
-    double tot_dropped = 0;
     std::vector<double> *samples = new std::vector<double>();
 
     // Columns in file we are reading:
     // <queuing delay in us> <number of packes not dropped> <number of packets dropped>
-
-    int i = 0;
 
     while (1) {
         double us;
@@ -438,15 +424,11 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
         for (int i = 0; i < nrpackets; ++i) {
             samples->push_back(us);
         }
-
-        tot_sent += nrpackets;
-        tot_dropped += drops;
     }
 
     infile.close();
 
     stats->samples(samples);
-    *tot_sent_dropped = (uint64_t)(tot_sent + tot_dropped);
 }
 
 void getSamplesRateMarksDrops() {
@@ -458,8 +440,8 @@ void getSamplesRateMarksDrops() {
 }
 
 void getSamplesQS() {
-    readFileQS(params->folder + "/derived/queue_packets_drops_ecn_pdf", res->queue_ecn, &res->tot_sent_dropped_ecn);
-    readFileQS(params->folder + "/derived/queue_packets_drops_nonecn_pdf", res->queue_nonecn, &res->tot_sent_dropped_nonecn);
+    readFileQS(params->folder + "/derived/queue_packets_drops_ecn_pdf", res->queue_ecn);
+    readFileQS(params->folder + "/derived/queue_packets_drops_nonecn_pdf", res->queue_nonecn);
 }
 
 void usage(int argc, char* argv[]) {
