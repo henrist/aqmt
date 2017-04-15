@@ -24,7 +24,7 @@ def get_tmargin_base(tree):
 
 
 def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
-    xpos = get_x_coordinate(testmeta, value_at_x, x_axis)
+    xpos = collectionutil.get_x_coordinate(testmeta, value_at_x, x_axis)
 
     return """
         set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
