@@ -21,8 +21,7 @@
 struct Parameters {
     double rtt_d;
     double rtt_r;
-    std::string analyzer_folder;
-    std::string output_folder;
+    std::string folder;
     uint32_t n_ecn;
     uint32_t n_nonecn;
     double link;
@@ -30,8 +29,7 @@ struct Parameters {
     Parameters() {
         rtt_d = 0;
         rtt_r = 0;
-        analyzer_folder = "";
-        output_folder = "";
+        folder = "";
         n_ecn = 0;
         n_nonecn = 0;
         link = 0;
@@ -153,10 +151,10 @@ struct Results {
     Statistics *rate_nonecn;
     Statistics *win_ecn;
     Statistics *win_nonecn;
-    Statistics *qs_ecn;
-    Statistics *qs_nonecn;
-    Statistics *drops_qs_ecn;
-    Statistics *drops_qs_nonecn;
+    Statistics *queue_ecn;
+    Statistics *queue_nonecn;
+    Statistics *drops_ecn;
+    Statistics *drops_nonecn;
     Statistics *marks_ecn;
     Statistics *util_ecn;
     Statistics *util_nonecn;
@@ -176,10 +174,10 @@ struct Results {
         rate_nonecn = new Statistics();
         win_ecn = new Statistics();
         win_nonecn = new Statistics();
-        qs_ecn = new Statistics();
-        qs_nonecn = new Statistics();
-        drops_qs_ecn = new Statistics();
-        drops_qs_nonecn = new Statistics();
+        queue_ecn = new Statistics();
+        queue_nonecn = new Statistics();
+        drops_ecn = new Statistics();
+        drops_nonecn = new Statistics();
         marks_ecn = new Statistics();
         util_ecn = new Statistics();
         util_nonecn = new Statistics();
@@ -217,7 +215,7 @@ void openFileW(std::ofstream *file, std::string filename) {
 
 void writeToFile(std::string filename, std::string data) {
     std::ofstream file;
-    openFileW(&file, params->output_folder + "/" + filename);
+    openFileW(&file, params->folder + "/" + filename);
     file << data;
     file.close();
 }
@@ -319,7 +317,7 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
     stats->samples(samples);
 }
 
-void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stats_win, double avg_qs, double rtt) {
+void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stats_win, double avg_queue, double rtt) {
     std::ifstream infile;
     openFileR(&infile, filename);
 
@@ -347,8 +345,8 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
             break;
         }
 
-        if (avg_qs != 0) {
-            win = rate * (avg_qs + rtt) / 1000;
+        if (avg_queue != 0) {
+            win = rate * (avg_queue + rtt) / 1000;
         }
 
         samples_rate->push_back(rate);
@@ -361,8 +359,8 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
 }
 
 void getSamplesUtilization() {
-    std::string filename_ecn = params->analyzer_folder + "/r_tot_ecn";
-    std::string filename_nonecn = params->analyzer_folder + "/r_tot_nonecn";
+    std::string filename_ecn = params->folder + "/ta/rate_ecn";
+    std::string filename_nonecn = params->folder + "/ta/rate_nonecn";
 
     std::ifstream infile_ecn, infile_nonecn;
     openFileR(&infile_ecn, filename_ecn);
@@ -452,33 +450,32 @@ void readFileQS(std::string filename, Statistics *stats, uint64_t *tot_sent_drop
 }
 
 void getSamplesRateMarksDrops() {
-    readFileRate(params->analyzer_folder + "/r_tot_ecn", res->rate_ecn, res->win_ecn, res->qs_ecn->average(), params->rtt_d);
-    readFileMarks(params->analyzer_folder + "/m_tot_ecn", res->marks_ecn, params->analyzer_folder + "/tot_packets_ecn");
-    readFileDrops(params->analyzer_folder + "/d_tot_ecn", res->drops_qs_ecn, params->analyzer_folder + "/tot_packets_ecn");
-    readFileRate(params->analyzer_folder + "/r_tot_nonecn", res->rate_nonecn, res->win_nonecn, res->qs_nonecn->average(), params->rtt_r);
-    readFileDrops(params->analyzer_folder + "/d_tot_nonecn", res->drops_qs_nonecn, params->analyzer_folder + "/tot_packets_nonecn");
+    readFileRate(params->folder + "/ta/rate_ecn", res->rate_ecn, res->win_ecn, res->queue_ecn->average(), params->rtt_d);
+    readFileMarks(params->folder + "/ta/marks_ecn", res->marks_ecn, params->folder + "/ta/packets_ecn");
+    readFileDrops(params->folder + "/ta/drops_ecn", res->drops_ecn, params->folder + "/ta/packets_ecn");
+    readFileRate(params->folder + "/ta/rate_nonecn", res->rate_nonecn, res->win_nonecn, res->queue_nonecn->average(), params->rtt_r);
+    readFileDrops(params->folder + "/ta/drops_nonecn", res->drops_nonecn, params->folder + "/ta/packets_nonecn");
 }
 
 void getSamplesQS() {
-    readFileQS(params->analyzer_folder + "/qs_drops_ecn_pdf", res->qs_ecn, &res->tot_sent_dropped_ecn);
-    readFileQS(params->analyzer_folder + "/qs_drops_nonecn_pdf", res->qs_nonecn, &res->tot_sent_dropped_nonecn);
+    readFileQS(params->folder + "/derived/queue_packets_drops_ecn_pdf", res->queue_ecn, &res->tot_sent_dropped_ecn);
+    readFileQS(params->folder + "/derived/queue_packets_drops_nonecn_pdf", res->queue_nonecn, &res->tot_sent_dropped_nonecn);
 }
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <analyzer_folder> <output_folder> <link b/s> <rtt_d> <rtt_r>\n", argv[0]);
+    printf("Usage: %s <test_folder> <link b/s> <rtt_d> <rtt_r>\n", argv[0]);
     exit(1);
 }
 
 void loadParameters(int argc, char **argv) {
-    if (argc < 6) {
+    if (argc < 5) {
         usage(argc, argv);
     }
 
-    params->analyzer_folder = argv[1];
-    params->output_folder = argv[2];
-    params->link = atoi(argv[3]);
-    params->rtt_d = (double) atoi(argv[4]);
-    params->rtt_r = (double) atoi(argv[5]);
+    params->folder = argv[1];
+    params->link = atoi(argv[2]);
+    params->rtt_d = (double) atoi(argv[3]);
+    params->rtt_r = (double) atoi(argv[4]);
 }
 
 int main(int argc, char **argv) {
@@ -493,31 +490,31 @@ int main(int argc, char **argv) {
         res->wr_static = res->win_ecn->average() / res->win_nonecn->average();
     }
 
-    if (res->drops_qs_nonecn->p(99) > 100) {
-        std::cerr << "too high drops p99: " << res->drops_qs_nonecn->p(99) << std::endl;
+    if (res->drops_nonecn->p(99) > 100) {
+        std::cerr << "too high drops p99: " << res->drops_nonecn->p(99) << std::endl;
         exit(1);
     }
 
-    writeStatistics("qs_ecn_stats", res->qs_ecn);
-    writeStatistics("qs_nonecn_stats", res->qs_nonecn);
-    //writeStatistics("r_tot_ecn_stats", res->rate_ecn);
-    //writeStatistics("r_tot_nonecn_stats", res->rate_nonecn);
-    //writeStatistics("win_ecn_stats", res->win_ecn);
-    //writeStatistics("win_nonecn_stats", res->win_nonecn);
-    writeStatistics("d_percent_ecn_stats", res->drops_qs_ecn);
-    writeStatistics("d_percent_nonecn_stats", res->drops_qs_nonecn);
-    writeStatistics("m_percent_ecn_stats", res->marks_ecn);
-    writeStatistics("util_nonecn_stats", res->util_nonecn);
-    writeStatistics("util_ecn_stats", res->util_ecn);
-    writeStatistics("util_total_stats", res->util_total);
+    writeStatistics("aggregated/queue_ecn_stats", res->queue_ecn);
+    writeStatistics("aggregated/queue_nonecn_stats", res->queue_nonecn);
+    //writeStatistics("aggregated/rate_ecn_stats", res->rate_ecn);
+    //writeStatistics("aggregated/rate_nonecn_stats", res->rate_nonecn);
+    //writeStatistics("aggregated/win_ecn_stats", res->win_ecn);
+    //writeStatistics("aggregated/win_nonecn_stats", res->win_nonecn);
+    writeStatistics("aggregated/drops_percent_ecn_stats", res->drops_ecn);
+    writeStatistics("aggregated/drops_percent_nonecn_stats", res->drops_nonecn);
+    writeStatistics("aggregated/marks_percent_ecn_stats", res->marks_ecn);
+    writeStatistics("aggregated/util_nonecn_stats", res->util_nonecn);
+    writeStatistics("aggregated/util_ecn_stats", res->util_ecn);
+    writeStatistics("aggregated/util_stats", res->util_total);
 
     std::stringstream out;
 
     out << res->rr_static << std::endl;
-    writeToFile("rate_ratio", out.str()); out.str("");
+    writeToFile("aggregated/ecn_over_nonecn_rate_ratio", out.str()); out.str("");
 
     out << res->wr_static << std::endl;
-    writeToFile("window_ratio", out.str()); out.str("");
+    writeToFile("aggregated/ecn_over_nonecn_window_ratio", out.str()); out.str("");
 
     return 0;
 }

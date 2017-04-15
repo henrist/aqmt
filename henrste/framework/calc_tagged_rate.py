@@ -6,8 +6,8 @@
 # about which nodes that sends traffic
 #
 # the results are saved to:
-# - r_tagged
-# - r_tagged_stats
+# - rate_tagged
+# - rate_tagged_stats
 # - util_tagged
 # - util_tagged_stats
 
@@ -38,10 +38,10 @@ def generate_stats(numbers):
 
 
 def save_tag_rates(folder, rates):
-    with open(folder + '/derived/r_tagged', 'w') as fall:
+    with open(folder + '/derived/rate_tagged', 'w') as fall:
         fall.write('#sample rate\n')
 
-        with open(folder + '/derived/r_tagged_stats', 'w') as fstats:
+        with open(folder + '/aggregated/rate_tagged_stats', 'w') as fstats:
             fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
             first = True
@@ -61,7 +61,7 @@ def save_tag_util(folder, rates, bitrate):
     with open(folder + '/derived/util_tagged', 'w') as fall:
         fall.write('#sample util\n')
 
-        with open(folder + '/derived/util_tagged_stats', 'w') as fstats:
+        with open(folder + '/aggregated/util_tagged_stats', 'w') as fstats:
             fstats.write('#tag average stddev min p1 p25 p50 p75 p99 max\n')
 
             first = True
@@ -92,7 +92,7 @@ def get_rates(folder, flows, tags):
     n_samples = None  # will use the last one in following loop
     for ecntype in ['ecn', 'nonecn']:
         n_samples = 0
-        with open(folder + '/ta/r_pf_' + ecntype) as f:
+        with open(folder + '/ta/flows_rate_' + ecntype) as f:
             # 0 1000 6152397 3693860
             for line in f:
                 n_samples += 1
@@ -186,9 +186,11 @@ def get_flows(folder, classify):
 
 
 def process_test(folder):
-    outfolder = folder + '/derived'
-    if not os.path.exists(outfolder):
-        os.makedirs(outfolder)
+    if not os.path.exists(folder + '/derived'):
+        os.makedirs(folder + '/derived')
+
+    if not os.path.exists(folder + '/aggregated'):
+        os.makedirs(folder + '/aggregated')
 
     tags, classify = get_classification(folder)
     bitrate = get_bitrate(folder)
@@ -201,4 +203,6 @@ def process_test(folder):
 
 
 if __name__ == '__main__':
-    process_test('testsets/fairness/pi2/dctcp-vs-dctcp/test-rtt-100')
+    if len(sys.argv) < 2:
+        print('Usage: %s <test_folder>', sys.argv[0])
+    process_test(sys.argv[1])

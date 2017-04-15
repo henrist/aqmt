@@ -35,14 +35,21 @@ def analyze_test(testfolder):
     rtt_l4s = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
     rtt_classic = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
 
+    # the derived folder contains per sample data derived data
+    # from analyzer data
     if not os.path.exists(testfolder + '/derived'):
         os.makedirs(testfolder + '/derived')
 
-    cmd = local['./framework/calc_qd_sent_drops'][testfolder + '/ta', testfolder + '/ta']
+    # the aggregated folder contains aggregated numbers used in
+    # collection comparison plots
+    if not os.path.exists(testfolder + '/aggregated'):
+        os.makedirs(testfolder + '/aggregated')
+
+    cmd = local['./framework/calc_queue_packets_drops'][testfolder]
     logger.debug(get_log_cmd(cmd))
     cmd()
 
-    cmd = local['./framework/calc_basic'][testfolder + '/ta', testfolder + '/derived', str(bitrate), str(rtt_l4s), str(rtt_classic)]
+    cmd = local['./framework/calc_basic'][testfolder, str(bitrate), str(rtt_l4s), str(rtt_classic)]
     logger.debug(get_log_cmd(cmd))
     cmd()
 

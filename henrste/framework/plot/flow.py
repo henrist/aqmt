@@ -9,7 +9,7 @@ def get_number_samples(testfolder):
     the test might have been interrupted.
     """
     n = 0
-    with open(testfolder + '/ta/r_tot', 'r') as f:
+    with open(testfolder + '/ta/rate', 'r') as f:
         for _ in f:
             n += 1
 

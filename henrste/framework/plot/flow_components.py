@@ -66,7 +66,7 @@ def rate_per_flow(y_logarithmic=False):
             for flow in items:
                 pt = 2 if type == 'ecn' else 6
                 ls = 2 if type == 'ecn' else 3
-                plot_gpi += "'" + testfolder + "/ta/r_pf_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', \\\n"
+                plot_gpi += "'" + testfolder + "/ta/flows_rate_" + type + "'    using ($0+1):" + str(3 + j) + ":xtic($2/1000)   with linespoints ls " + str(ls) + " pointtype " + str(pt) + " ps 0.2 lw 1.5    title '" + type + " - " + flow + "', \\\n"
                 j += 1
 
         gpi += """
@@ -95,11 +95,11 @@ def queueing_delay(y_logarithmic=False):
 
         # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
         #             4     6     2         9    10
-        plot_gpi += "'" + testfolder + "/derived/qs_samples_ecn' using ($0+0.95):($2/1000):($4/1000):($9/1000) with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
+        plot_gpi += "'" + testfolder + "/derived/queue_ecn_samplestats' using ($0+0.95):($2/1000):($4/1000):($9/1000) with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
         plot_gpi += "''                                          using ($0+0.95):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
         plot_gpi += "''                                          using ($0+0.95):($10/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
         plot_gpi += "''                                          using ($0+0.95):($6/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        plot_gpi += "'" + testfolder + "/derived/qs_samples_nonecn' using ($0+1.05):($2/1000):($4/1000):($9/1000) with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
+        plot_gpi += "'" + testfolder + "/derived/queue_nonecn_samplestats' using ($0+1.05):($2/1000):($4/1000):($9/1000) with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
         plot_gpi += "''                                             using ($0+1.05):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
         plot_gpi += "''                                             using ($0+1.05):($10/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
         plot_gpi += "''                                             using ($0+1.05):($6/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
@@ -129,12 +129,12 @@ def drops_marks(y_logarithmic=False):
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
-        plot_gpi += "'" + testfolder + "/ta/d_tot_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', \\\n"
-        plot_gpi += "'" + testfolder + "/ta/m_tot_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', \\\n"
-        plot_gpi += "'" + testfolder + "/ta/d_tot_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', \\\n"
+        plot_gpi += "'" + testfolder + "/ta/drops_ecn'   using ($0+1):3 with linespoints pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'Drops (ECN)', \\\n"
+        plot_gpi += "'" + testfolder + "/ta/marks_ecn'   using ($0+1):3 with linespoints ls 8 pointtype 7 ps 0.2 lw 1.5 title 'Marks (ECN)', \\\n"
+        plot_gpi += "'" + testfolder + "/ta/drops_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', \\\n"
 
-        #plot_gpi += "'" + testfolder + "/ta/tot_packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
-        #plot_gpi += "'" + testfolder + "/ta/tot_packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
+        #plot_gpi += "'" + testfolder + "/ta/packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
+        #plot_gpi += "'" + testfolder + "/ta/packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
 
         gpi += """
             plot \\

@@ -41,18 +41,18 @@ def utilization_queues(y_logarithmic=False):
                     """
 
             gpi += """
-                $data_util_total""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/util_total_stats', x_axis) + """
+                $data_util""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
                 EOD
                 $data_util_ecn""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/util_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_ecn_stats', x_axis) + """
                 EOD
                 $data_util_nonecn""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/util_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_nonecn_stats', x_axis) + """
                 EOD"""
 
             # total
-            plot_gpi += "$data_util_total" + str(x) + "  using ($1+" + str(x) + "+0.0):3:10:6" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_util" + str(x) + "        using ($1+" + str(x) + "+0.0):3:10:6" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
             #plot_gpi += "''                              using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
             #plot_gpi += "''                              using ($1+" + str(x) + "+0.0):9  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                              using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
@@ -125,14 +125,14 @@ def utilization_tags(y_logarithmic=False):
 
             gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/util_total_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
                 EOD"""
 
             # total
             plot_gpi += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3:9:7" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
             plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n"
 
-            tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'derived/util_tagged_stats', x_axis)
+            tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', x_axis)
             x_distance = .4 / len(tagged_flows)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -203,25 +203,25 @@ def queueing_delay(y_logarithmic=False):
                     """
 
             gpi += """
-                $data_qs_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/qs_ecn_stats', x_axis) + """
+                $data_queue_ecn_stats""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_ecn_stats', x_axis) + """
                 EOD
-                $data_qs_nonecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/qs_nonecn_stats', x_axis) + """
+                $data_queue_nonecn_stats""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_nonecn_stats', x_axis) + """
                 EOD"""
 
             ls_l4s = "ls 1 lc rgb '" + colors.L4S + "'"
             ls_classic = "ls 1 lc rgb '" + colors.CLASSIC + "'"
 
-            plot_gpi += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000):($7/1000):($9/1000)" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                  using ($1+" + str(x) + "+0.05):($6/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                  using ($1+" + str(x) + "+0.05):($10/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000):($7/1000):($9/1000)  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                  using ($1+" + str(x) + "+0.15):($6/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                  using ($1+" + str(x) + "+0.15):($10/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000):($7/1000):($9/1000)" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                     using ($1+" + str(x) + "+0.05):($6/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                                     using ($1+" + str(x) + "+0.05):($10/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000):($7/1000):($9/1000)  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                     using ($1+" + str(x) + "+0.15):($6/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                                     using ($1+" + str(x) + "+0.15):($10/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
 
-            plot_gpi += "$data_qs_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
-            plot_gpi += "$data_qs_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -273,13 +273,13 @@ def drops_marks(y_logarithmic=False):
 
             gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/d_percent_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_ecn_stats', x_axis) + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/m_percent_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/marks_percent_ecn_stats', x_axis) + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/d_percent_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_nonecn_stats', x_axis) + """
                 EOD"""
 
             plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):3:7:9" + xtics + " with yerrorbars lc rgb '" + colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', \\\n"
@@ -351,10 +351,10 @@ def window_rate_ratio(y_logarithmic=False):
 
             gpi += """
                 $data_window_ratio""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/window_ratio', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_window_ratio', x_axis) + """
                 EOD
                 $data_rate_ratio""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'derived/rate_ratio', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_rate_ratio', x_axis) + """
                 EOD
                 """
 

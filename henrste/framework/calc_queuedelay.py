@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-# this file generates queue statistics for _each_ sample
+# this file generates packets in queue statistics for _each_ sample
 # the results are saved to:
-# - qs_samples_ecn
-# - qs_samples_nonecn
+# - queue_packets_ecn_samplestats
+# - queue_packets_nonecn_samplestats
 
 import numpy as np
 import os
@@ -12,7 +12,7 @@ import sys
 
 def parse_header(line):
     """
-    The header in qs_ecnXX_s contains the queueing delay in us that
+    The header in queue_packets_ecnXX_s contains the queueing delay in us that
     this column represents.
 
     The first column in the header contains number of columns following.
@@ -23,9 +23,7 @@ def parse_header(line):
 
 def parse_line(line, header_us):
     num = np.fromstring(line, dtype=int, sep=' ')[1:]
-    arr = np.repeat(header_us, num)
-
-    return arr
+    return np.repeat(header_us, num)
 
 
 def generate_stats(numbers):
@@ -48,13 +46,12 @@ def generate_stats(numbers):
 
 
 def process_test(folder):
-    outfolder = folder + '/derived'
-    if not os.path.exists(outfolder):
-        os.makedirs(outfolder)
+    if not os.path.exists(folder + '/derived'):
+        os.makedirs(folder + '/derived')
 
-    with open(outfolder + '/qs_samples_nonecn', 'w') as fout:
+    with open(folder + '/derived/queue_nonecn_samplestats', 'w') as fout:
         fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
-        with open(folder + '/ta/qs_ecn00_s', 'r') as f:
+        with open(folder + '/ta/queue_packets_ecn00', 'r') as f:
             header_us = parse_header(f.readline())
 
             for line in f:
@@ -65,12 +62,12 @@ def process_test(folder):
                     )
                 ))
 
-    with open(outfolder + '/qs_samples_ecn', 'w') as fout:
+    with open(folder + '/derived/queue_ecn_samplestats', 'w') as fout:
         fout.write('#average stddev min p1 p25 p50 p75 p99 max\n')
 
-        f1 = open(folder + '/ta/qs_ecn01_s', 'r')
-        f2 = open(folder + '/ta/qs_ecn10_s', 'r')
-        f3 = open(folder + '/ta/qs_ecn11_s', 'r')
+        f1 = open(folder + '/ta/queue_packets_ecn01', 'r')
+        f2 = open(folder + '/ta/queue_packets_ecn10', 'r')
+        f3 = open(folder + '/ta/queue_packets_ecn11', 'r')
 
         header_us = parse_header(f1.readline())
         f2.readline()  # skip the other headers, they should be same
@@ -99,5 +96,5 @@ def process_test(folder):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Syntax: %s <test_folder>', sys.argv[0])
+        print('Usage: %s <test_folder>', sys.argv[0])
     process_test(sys.argv[1])

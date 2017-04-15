@@ -100,17 +100,16 @@ void writePdfCdf(std::string filename_pdf, std::string filename_cdf, std::vector
 }
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <analyzer_folder> <output_folder>\n", argv[0]);
+    printf("Usage: %s <test_folder>\n", argv[0]);
     exit(1);
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
+    if (argc < 2) {
         usage(argc, argv);
     }
 
-    std::string analyzer_folder = argv[1];
-    std::string output_folder = argv[2];
+    std::string folder = argv[1];
 
     std::vector<uint64_t> *header = NULL;
     std::vector<uint64_t> *values_qd_classic = NULL;
@@ -118,27 +117,27 @@ int main(int argc, char **argv) {
     std::vector<uint64_t> *values_d_classic = NULL;
     std::vector<uint64_t> *values_d_l4s = NULL;
 
-    readFile(analyzer_folder + "/qs_ecn00_s", &header, &values_qd_classic);
-    readFile(analyzer_folder + "/qs_ecn01_s", NULL, &values_qd_l4s);
-    readFile(analyzer_folder + "/qs_ecn10_s", NULL, &values_qd_l4s);
-    readFile(analyzer_folder + "/qs_ecn11_s", NULL, &values_qd_l4s);
+    readFile(folder + "/ta/queue_packets_ecn00", &header, &values_qd_classic);
+    readFile(folder + "/ta/queue_packets_ecn01", NULL, &values_qd_l4s);
+    readFile(folder + "/ta/queue_packets_ecn10", NULL, &values_qd_l4s);
+    readFile(folder + "/ta/queue_packets_ecn11", NULL, &values_qd_l4s);
 
-    readFile(analyzer_folder + "/d_ecn00_s", NULL, &values_d_classic);
-    readFile(analyzer_folder + "/d_ecn01_s", NULL, &values_d_l4s);
-    readFile(analyzer_folder + "/d_ecn10_s", NULL, &values_d_l4s);
-    readFile(analyzer_folder + "/d_ecn11_s", NULL, &values_d_l4s);
+    readFile(folder + "/ta/queue_drops_ecn00", NULL, &values_d_classic);
+    readFile(folder + "/ta/queue_drops_ecn01", NULL, &values_d_l4s);
+    readFile(folder + "/ta/queue_drops_ecn10", NULL, &values_d_l4s);
+    readFile(folder + "/ta/queue_drops_ecn11", NULL, &values_d_l4s);
 
     writePdfCdf(
-        output_folder + "/qs_drops_nonecn_pdf",
-        output_folder + "/qs_drops_nonecn_cdf",
+        folder + "/derived/queue_packets_drops_nonecn_pdf",
+        folder + "/derived/queue_packets_drops_nonecn_cdf",
         header,
         values_qd_classic,
         values_d_classic
     );
 
     writePdfCdf(
-        output_folder + "/qs_drops_ecn_pdf",
-        output_folder + "/qs_drops_ecn_cdf",
+        folder + "/derived/queue_packets_drops_ecn_pdf",
+        folder + "/derived/queue_packets_drops_ecn_cdf",
         header,
         values_qd_l4s,
         values_d_l4s
