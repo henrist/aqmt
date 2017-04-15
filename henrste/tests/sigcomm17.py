@@ -8,10 +8,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from framework import MBIT, Testbed, TestEnv, run_test, steps
 from framework.plot import PlotAxis, collection_components
 from framework.traffic import greedy, udp
-import datetime
 import time
 
-def test():
+def test(result_folder):
 
     def custom_cc(testdef):
         # no yield as we don't cause a new branch
@@ -79,43 +78,41 @@ def test():
 
     testbed.bitrate = 100 * MBIT
 
-    testbed.ta_samples = 30
-    testbed.ta_idle = 5
+    testbed.ta_samples = 60
+    #testbed.ta_idle = 5
     testbed.ta_delay = 500
 
-    #testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
-    #testbed.cc('b', 'dctcp-drop', testbed.ECN_INITIATE)
-
     run_test(
-        folder='results/sigcomm17/%s' % datetime.datetime.utcnow().isoformat(),
+        folder=result_folder,
         title='Sigcomm 17',
         subtitle='Testrate: 100 Mb/s',
-        testenv=TestEnv(testbed, retest=False),
+        testenv=TestEnv(testbed, retest=False, reanalyze=True),
         steps=(
             steps.plot_compare(swap_levels=[], x_axis=PlotAxis.LOGARITHMIC, components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),
-            ]),
+            ], lines_at_x_offset=[100]),
+            #steps.plot_flows(),
             steps.branch_rtt([
-                #2,
-                10,
-                #50,
+                2,
+                #10,
+                50,
             ]),
             steps.branch_sched([
                 # tag, title, name, params
                 ('pi2',
-                    'PI2: dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30ms l\\\\_drop 100',
+                    'PI2: dc\\\\_dualq dc\\\\_ecn t:15ms tu:15ms a:5 b:50 k:2 t\\\\_s:30ms l\\\\_d:100',
                     'pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100'),
-                #('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
+                ('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
                 #('pfifo', 'pfifo', 'pfifo', ''),
             ]),
             custom_cc,
             branch_flow_set([
                 # num normal in a, num normal in b
-                #[0, 1],
-                #[1, 0],
+                [0, 1],
+                [1, 0],
                 #[1, 1],
                 #[1, 2],
                 #[2, 1],
@@ -124,60 +121,60 @@ def test():
             ]),
             branch_udp_ect([
                 # node, tag/flag, title
-                #['a', 'nonect', 'UDP=Non ECT'],
+                ['a', 'nonect', 'UDP=Non ECT'],
                 ['b', 'ect1', 'UDP=ECT(1)'],
             ]),
             steps.branch_define_udp_rate([x + 0 for x in [
                 #50,
-                #70,
+                70,
                 #75,
-                #80,
+                80,
                 #85,
                 #86,
                 #87,
                 #88,
                 #89,
-                #90,
+                90,
                 #91,
                 #92,
-                #93,
+                93,
                 #94,
-                #95,
-                #96,
+                95,
+                96,
                 #96.5,
-                #97,
-                #97.5,
-                #98,
-                #98.5,
-                #99,
-                #99.5,
+                97,
+                97.5,
+                98,
+                98.5,
+                99,
+                99.5,
                 100,
-                #100.5,
-                #101,
-                #102,
-                #103,
-                #104,
-                #105,
-                #106,
-                #107,
-                #108,
-                #109,
-                #110,
-                #111,
-                #112,
-                #113,
-                #114,
-                #115,
-                #116,
-                #117,
-                #118,
-                #119,
+                100.5,
+                101,
+                102,
+                103,
+                104,
+                105,
+                106,
+                107,
+                108,
+                109,
+                110,
+                111,
+                112,
+                113,
+                114,
+                115,
+                116,
+                117,
+                118,
+                119,
                 120,
-                #121,
-                #122,
-                #123,
-                #124,
-                #125,
+                121,
+                122,
+                123,
+                124,
+                125,
                 #126,
                 #127,
                 #128,
@@ -193,7 +190,7 @@ def test():
                 #138,
                 #139,
                 #140,
-                #150,
+                150,
                 #160,
                 #170,
                 #180,
@@ -214,4 +211,8 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    result_folder = 'results/sigcomm17'
+    if len(sys.argv) >= 2:
+        result_folder = sys.argv[1]
+
+    test(result_folder)
