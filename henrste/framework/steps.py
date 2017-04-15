@@ -85,14 +85,14 @@ def branch_rtt(rtt_list, title='RTT: %d ms'):
     return step
 
 
-def branch_bitrate(bitrate_list, title='%d Mb/s'):
+def branch_bitrate(bitrate_list, title='%d Mb/s', titlelabel='Linkrate'):
     def step(testdef):
         for bitrate in bitrate_list:
             testdef.testenv.testbed.bitrate = bitrate * MBIT
             yield {
                 'tag': 'linkrate-%d' % bitrate,
                 'title': title % bitrate,
-                'titlelabel': 'Linkrate',
+                'titlelabel': titlelabel,
             }
     return step
 
