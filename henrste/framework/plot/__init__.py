@@ -46,10 +46,11 @@ def plot_folder_flows(folder, swap_levels=None, components=None):
         components = [
             flow_components.utilization_queues(),
             flow_components.rate_per_flow(),
+            flow_components.rate_per_flow(y_logarithmic=True),
             flow_components.queueing_delay(),
-            #flow_components.queueing_delay(y_logarithmic=True),
+            flow_components.queueing_delay(y_logarithmic=True),
             flow_components.drops_marks(),
-            #flow_components.drops_marks(y_logarithmic=True),
+            flow_components.drops_marks(y_logarithmic=True),
         ]
 
     tree = generate_hierarchy_data_from_folder(folder, swap_levels)
