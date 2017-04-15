@@ -92,8 +92,8 @@ void testbed_add_metrics(struct sk_buff *skb, struct testbed_metrics *testbed)
 		/* queue delay is converted from ns to units of 32 us and encoded as float */
 		qdelay = ((__force __u64)(ktime_get_real_ns() - ktime_to_ns(skb_get_ktime(skb)))) >> 15;
 		qdelay = int2fl(qdelay, QDELAY_M, QDELAY_E, &qdelay_remainder);
-		if (qdelay_remainder > 10) {
-			pr_info("High (>10) queue delay remainder:  %u\n", qdelay_remainder);
+		if (qdelay_remainder > 20) {
+			pr_info("High (>20) queue delay remainder:  %u\n", qdelay_remainder);
 		}
 
 		id = (__force __u16) qdelay;
