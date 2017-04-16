@@ -68,7 +68,7 @@ def branch_repeat(num, title='Test %d'):
         for i in range(num):
             yield {
                 'tag': 'repeat-%d' % i,
-                'title': title % i,
+                'title': title % (i + 1),
                 'titlelabel': 'Test #',
             }
     return step
