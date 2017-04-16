@@ -38,9 +38,9 @@ def test(result_folder):
         folder=result_folder,
         title='Testing VM',
         subtitle='Using 10 flows of CUBIC, 10 flows of DCTCP (with ECN) and 1 flow UDP',
-        testenv=TestEnv(testbed, retest=False),
+        testenv=TestEnv(testbed, retest=True, reanalyze=True),
         steps=(
-            steps.plot_compare(x_axis=PlotAxis.LINEAR, swap_levels=[3,2,1,0], components=[
+            steps.plot_compare(swap_levels=[3,2,1,0,1,2,3,2,1], components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
                 collection_components.window_rate_ratio(y_logarithmic=True),
@@ -49,13 +49,13 @@ def test(result_folder):
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(y_logarithmic=True),
                 collection_components.drops_marks(),
-            ]),
-            steps.plot_flows(swap_levels=[3,2,1,0]),
+            ], x_scale=2),
+            #steps.plot_flows(),
             steps.branch_runif([
-                ('simula', lambda testenv: hostname() == 'ford', 'Simula testbed'),
-                ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', 'Simula docker'),
-                ('x250', lambda testenv: hostname() == 'DARASK-X250', 'Henriks laptop'),
-                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'KVM host'),
+                ('simula', lambda testenv: hostname() == 'ford', 'PHY'),
+                ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', '-SM'),
+                ('x250', lambda testenv: hostname() == 'DARASK-X250', 'X250'),
+                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'VM'),
             ]),
             steps.branch_sched([
                 # tag, title, name, params
@@ -78,6 +78,7 @@ def test(result_folder):
                 50,
                 300,
             ], title='%g'),
+            steps.plot_flows(),
             steps.branch_repeat(8),
             my_test,
         ),
