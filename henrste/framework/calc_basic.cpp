@@ -331,13 +331,16 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
     std::vector<double> *samples_win = new std::vector<double>();
 
     // Columns in file we are reading:
-    // <sample number> <sample time> <rate>
+    // <sample number> <sample time> <rate b/s>
 
     // skip samples we are not interested in
     std::string line;
     for (int i = 0; i < params->samples_to_skip; i++) {
         getline(infile, line);
     }
+
+    /* avg_queue is in us, rtt is in ms - add them and convert to s */
+    double rtt_with_queue_in_s = (avg_queue / 1000 + rtt) / 1000
 
     while (1) {
         double rate;
@@ -358,7 +361,8 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
         }
 
         if (avg_queue != 0) {
-            win = rate * (avg_queue + rtt) / 1000;
+            /* window is in bits, not packets as we don't know packet size! */
+            win = rate * rtt_with_queue_in_s;
         }
 
         samples_rate->push_back(rate);
@@ -383,7 +387,7 @@ void getSamplesUtilization() {
     std::vector<double> *samples_total = new std::vector<double>();
 
     // Columns in file we are reading:
-    // <sample number> <sample time> <rate>
+    // <sample number> <sample time> <rate b/s>
 
     // skip samples we are not interested in
     std::string line;
