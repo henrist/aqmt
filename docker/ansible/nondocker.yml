@@ -1,0 +1,37 @@
+---
+
+# This playbook is used to provision hosts that are running without Docker.
+# This means there should be 5 machines in each environment:
+# - 1 aqm machine
+# - 2 client machines
+# - 2 server machines
+
+- hosts: all
+  become: yes
+
+  vars:
+    testbed_user: 'testbed'
+
+    kernel_images:
+      - { tree: 'v4.10.4', file: 'linux-headers-4.10.4-041004_4.10.4-041004.201703180831_all.deb' }
+      - { tree: 'v4.10.4', file: 'linux-headers-4.10.4-041004-generic_4.10.4-041004.201703180831_amd64.deb' }
+      - { tree: 'v4.10.4', file: 'linux-image-4.10.4-041004-generic_4.10.4-041004.201703180831_amd64.deb' }
+      - { tree: 'v3.18.47', file: 'linux-headers-3.18.47-031847_3.18.47-031847.201701181631_all.deb' }
+      - { tree: 'v3.18.47', file: 'linux-headers-3.18.47-031847-generic_3.18.47-031847.201701181631_amd64.deb' }
+      - { tree: 'v3.18.47', file: 'linux-image-3.18.47-031847-generic_3.18.47-031847.201701181631_amd64.deb' }
+
+  roles:
+    - common
+    - kernel
+
+- hosts: aqm
+  become: yes
+
+  roles:
+    - aqm
+
+- hosts: client:server
+  become: yes
+
+  roles:
+    - clientorserver

@@ -1,0 +1,7 @@
+---
+
+- name: Add traffic generation packages
+  apt:
+    name:
+      - iperf
+    state: present

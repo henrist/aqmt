@@ -1,9 +1,11 @@
 ---
 
+# This playbook is used to provision hosts that will run the Docker
+# setup. This means we should only have ONE server for each test
+# environment.
+
 - hosts: all
   become: yes
-  #remote_user: testbed
-  #connection: local
 
   vars:
     testbed_user: 'testbed'
@@ -21,17 +23,16 @@
     - kernel
     #- vboxadditions
 
-- hosts: aqm
-  become: yes
+- hosts: vbox
 
   roles:
-    - aqm
+    - vboxadditions
 
-- hosts: docker
+- hosts: dockerhost
   become: yes
 
   vars:
     docker_compose_version: '1.11.1'
 
   roles:
-    - docker
+    - dockerhost

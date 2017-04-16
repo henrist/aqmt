@@ -1,0 +1,8 @@
+---
+
+- name: Add packages used on both aqm and clients/servers
+  apt:
+    name:
+      - ethtool
+      - ipython3
+    state: present

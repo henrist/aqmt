@@ -1,6 +1,13 @@
 ---
 
-# todo: sudo apt-get install build-essential linux-headers-`uname -r`
+# NOTE: This must be run AFTER installing custom kernel AND restarting..
+# (We also need linux-headers-xxx that should be installed with kernel role.)
+
+- name: Add packages for compiling VBoxLinuxAdditions
+  apt:
+    name:
+      - build-essential
+    state: present
 
 - name: Ensure cdrom mount point exists
   file:

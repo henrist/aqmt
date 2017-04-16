@@ -1,25 +1,19 @@
 [aqm]
-10.174.0.62 ansible_ssh_user=testbed testbed_user=testbed
-[ford]
+# ford
 10.174.0.62 ansible_ssh_user=testbed testbed_user=testbed
 
-[clienta]
-10.174.0.60 ansible_ssh_user=testbed testbed_user=testbed
-[kennedy]
+
+[client]
+# kennedy
 10.174.0.60 ansible_ssh_user=testbed testbed_user=testbed
 
-[clientb]
-10.174.0.61 ansible_ssh_user=testbed testbed_user=testbed
-[johnson]
+# johnson
 10.174.0.61 ansible_ssh_user=testbed testbed_user=testbed
 
-[servera]
-10.174.0.63 ansible_ssh_user=testbed testbed_user=testbed
-[bush]
+
+[server]
+# bush
 10.174.0.63 ansible_ssh_user=testbed testbed_user=testbed
 
-[serverb]
+# clinton
 10.174.0.64 ansible_ssh_user=testbed testbed_user=testbed
-[clinton]
-10.174.0.64 ansible_ssh_user=testbed testbed_user=testbed
-

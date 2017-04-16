@@ -6,4 +6,8 @@
       - flex # to compile iproute2-l4s
       - libbison-dev # to compile iproute2-l4s
       - pkg-config # to compile iproute2-l4s
+      - gnuplot
+      - python-urwid
+      - python3-numpy
+      - python3-plumbum
     state: present
