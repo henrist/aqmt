@@ -25,7 +25,7 @@ def get_number_samples(testfolder):
     return n
 
 
-def build_plot(testfolder, components):
+def build_plot(testfolder, components, x_scale=1, y_scale=1):
     """
     Generate a plot for a single test case
     """
@@ -61,12 +61,12 @@ def build_plot(testfolder, components):
 
     return {
         'gpi': gpi,
-        'width': '21cm',
-        'height': '%fcm' % (len(components) * 7.5),
+        'width': '%fcm' % (x_scale * 21),
+        'height': '%fcm' % (y_scale * 7.5 * len(components)),
     }
 
 
-def build_multiple_plot(testfolders, components):
+def build_multiple_plot(testfolders, components, **kwargs):
     """
     Generate a PDF with one page with graphs per flow
     """
@@ -76,7 +76,7 @@ def build_multiple_plot(testfolders, components):
     height = None
 
     for testfolder in testfolders:
-        res = build_plot(testfolder, components)
+        res = build_plot(testfolder, components, **kwargs)
         gpi += res['gpi']
         width = res['width']
         height = res['height']

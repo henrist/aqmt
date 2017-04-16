@@ -38,7 +38,7 @@ def plot_folder_compare(folder, swap_levels=None, components=None, **kwargs):
     print('Plotted comparison of %s' % folder)
 
 
-def plot_folder_flows(folder, swap_levels=None, components=None):
+def plot_folder_flows(folder, swap_levels=None, components=None, **kwargs):
     if swap_levels is None:
         swap_levels = []
 
@@ -59,13 +59,13 @@ def plot_folder_flows(folder, swap_levels=None, components=None):
     if len(folders) > 0:
         export(
             '%s/analysis_merged' % folder,
-            flow.build_multiple_plot(folders, components)
+            flow.build_multiple_plot(folders, components, **kwargs)
         )
 
         print('Plotted merge of %s' % folder)
 
 
-def plot_test(folder, components=None):
+def plot_test(folder, components=None, **kwargs):
     if components is None:
         components = [
             flow_components.utilization_queues(),
@@ -78,7 +78,7 @@ def plot_test(folder, components=None):
 
     export(
         folder + '/analysis',
-        flow.build_plot(folder, components),
+        flow.build_plot(folder, components, **kwargs),
     )
 
     print('Plotted %s' % folder)

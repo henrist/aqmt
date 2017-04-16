@@ -120,6 +120,6 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
 
     return {
         'gpi': gpi,
-        'width': '%dcm' % (x_scale * 21),
-        'height': '%dcm' % (y_scale * 7 * len(components)),
+        'width': '%fcm' % (x_scale * 21),
+        'height': '%fcm' % (y_scale * 7 * len(components)),
     }
