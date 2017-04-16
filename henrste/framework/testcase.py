@@ -219,6 +219,14 @@ class TestCase:
         processes.kill_known_pids()
 
         logger.info('%.2f s: Data collection finished' % (time.time()-start))
+
+        if processes.is_exiting:
+            print("You have aborted an active test")
+            print("In 5 seconds we will store the results of it")
+            print("Press Ctrl+C again NOW to not store the test")
+            time.sleep(5)
+            # if Ctrl+C is pressed here, we will be killed by a hook in TestEnv
+
         self.save_hint('data_collected')
         self.data_collected = True
 
