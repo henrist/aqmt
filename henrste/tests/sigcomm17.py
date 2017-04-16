@@ -86,14 +86,14 @@ def test(result_folder):
         folder=result_folder,
         title='Sigcomm 17',
         subtitle='Testrate: 100 Mb/s',
-        testenv=TestEnv(testbed, retest=False, reanalyze=True),
+        testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
             steps.plot_compare(swap_levels=[], x_axis=PlotAxis.LOGARITHMIC, components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),
-            ], lines_at_x_offset=[100]),
+            ], lines_at_x_offset=[100], x_scale=3),
             #steps.plot_flows(),
             steps.branch_rtt([
                 2,
@@ -124,6 +124,7 @@ def test(result_folder):
                 ['a', 'nonect', 'UDP=Non ECT'],
                 ['b', 'ect1', 'UDP=ECT(1)'],
             ]),
+            steps.plot_flows(),
             steps.branch_define_udp_rate([x + 0 for x in [
                 #50,
                 70,
