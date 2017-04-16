@@ -13,6 +13,7 @@ import time
 from . import calc_queuedelay
 from . import calc_tagged_rate
 from . import calc_utilization
+from . import calc_window
 from . import logger
 from . import processes
 from .terminal import get_log_cmd
@@ -32,8 +33,8 @@ def analyze_test(testfolder, samples_to_skip):
 
     # FIXME: properly handle rtt for different queues/servers
     metadata_kv, metadata_lines = read_metadata(testfolder + '/details')
-    rtt_l4s = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
-    rtt_classic = metadata_kv['testbed_rtt_servera'] + metadata_kv['testbed_rtt_clients']
+    rtt_l4s = float(metadata_kv['testbed_rtt_servera']) + float(metadata_kv['testbed_rtt_clients'])
+    rtt_classic = float(metadata_kv['testbed_rtt_servera']) + float(metadata_kv['testbed_rtt_clients'])
 
     # the derived folder contains per sample data derived data
     # from analyzer data
@@ -56,6 +57,7 @@ def analyze_test(testfolder, samples_to_skip):
     calc_queuedelay.process_test(testfolder)
     calc_tagged_rate.process_test(testfolder, samples_to_skip)
     calc_utilization.process_test(testfolder, bitrate)
+    calc_window.process_test(testfolder, rtt_l4s, rtt_classic)
 
 
 class TestCase:

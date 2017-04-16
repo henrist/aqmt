@@ -146,3 +146,32 @@ def drops_marks(y_logarithmic=False):
         return gpi
 
     return plot
+
+
+def window(y_logarithmic=False):
+    def plot(testfolder):
+        gpi = """
+            set format y "%g"
+            set ylabel "Estimated window size\\n{/Times:Italic=10 [1500 B]}"
+            set bars
+            set xtics in mirror
+            set key above
+            """ + add_scale(y_logarithmic, range_to='10<*')
+
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
+
+        # line format: sample_id window_ecn_in_bits window_nonecn_in_bits
+        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($2/1500/8) with linespoints      pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'ECN', \\\n"
+        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($3/1500/8) with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5              title 'Non-ECN', \\\n"
+
+        gpi += """
+            plot \\
+            """ + add_plot(plot_gpi) + """
+
+            unset logscale y
+            """
+
+        return gpi
+
+    return plot
