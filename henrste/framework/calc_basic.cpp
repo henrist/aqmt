@@ -437,11 +437,8 @@ void readFileQS(std::string filename, Statistics *stats) {
     // Columns in file we are reading:
     // <queuing delay in us> <number of packes not dropped> <number of packets dropped>
 
-    // skip samples we are not interested in
-    std::string line;
-    for (int i = 0; i < params->samples_to_skip; i++) {
-        getline(infile, line);
-    }
+    // we don't skip any samples for this one, as the input data
+    // is already aggregated over all samples
 
     while (1) {
         double us;
@@ -475,8 +472,8 @@ void getSamplesRateMarksDrops() {
 }
 
 void getSamplesQS() {
-    readFileQS(params->folder + "/derived/queue_packets_drops_ecn_pdf", res->queue_ecn);
-    readFileQS(params->folder + "/derived/queue_packets_drops_nonecn_pdf", res->queue_nonecn);
+    readFileQS(params->folder + "/aggregated/queue_packets_drops_ecn_pdf", res->queue_ecn);
+    readFileQS(params->folder + "/aggregated/queue_packets_drops_nonecn_pdf", res->queue_nonecn);
 }
 
 void usage(int argc, char* argv[]) {

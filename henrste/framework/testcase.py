@@ -45,7 +45,7 @@ def analyze_test(testfolder, samples_to_skip):
     if not os.path.exists(testfolder + '/aggregated'):
         os.makedirs(testfolder + '/aggregated')
 
-    cmd = local['./framework/calc_queue_packets_drops'][testfolder]
+    cmd = local['./framework/calc_queue_packets_drops'][testfolder, str(samples_to_skip)]
     logger.debug(get_log_cmd(cmd))
     cmd()
 

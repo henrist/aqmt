@@ -19,7 +19,9 @@ void openFileW(std::ofstream *file, std::string filename) {
     }
 }
 
-void readFile(std::string filename, std::vector<uint64_t> **header, std::vector<uint64_t> **values) {
+void readFile(std::string filename, std::vector<uint64_t> **header,
+    std::vector<uint64_t> **values, int samples_to_skip)
+{
     std::ifstream infile;
     openFileR(&infile, filename);
 
@@ -41,6 +43,12 @@ void readFile(std::string filename, std::vector<uint64_t> **header, std::vector<
         if (header != NULL) {
             (*header)->push_back(value);
         }
+    }
+
+    // Skip samples we are not interested in
+    std::string line;
+    for (int i = 0; i < samples_to_skip; i++) {
+        getline(infile, line);
     }
 
     // Read samples and aggregate the rows
@@ -100,16 +108,17 @@ void writePdfCdf(std::string filename_pdf, std::string filename_cdf, std::vector
 }
 
 void usage(int argc, char* argv[]) {
-    printf("Usage: %s <test_folder>\n", argv[0]);
+    printf("Usage: %s <test_folder> <samples_to_skip>\n", argv[0]);
     exit(1);
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc < 3) {
         usage(argc, argv);
     }
 
     std::string folder = argv[1];
+    int samples_to_skip = atoi(argv[2]);
 
     std::vector<uint64_t> *header = NULL;
     std::vector<uint64_t> *values_qd_classic = NULL;
@@ -117,27 +126,27 @@ int main(int argc, char **argv) {
     std::vector<uint64_t> *values_d_classic = NULL;
     std::vector<uint64_t> *values_d_l4s = NULL;
 
-    readFile(folder + "/ta/queue_packets_ecn00", &header, &values_qd_classic);
-    readFile(folder + "/ta/queue_packets_ecn01", NULL, &values_qd_l4s);
-    readFile(folder + "/ta/queue_packets_ecn10", NULL, &values_qd_l4s);
-    readFile(folder + "/ta/queue_packets_ecn11", NULL, &values_qd_l4s);
+    readFile(folder + "/ta/queue_packets_ecn00", &header, &values_qd_classic, samples_to_skip);
+    readFile(folder + "/ta/queue_packets_ecn01", NULL, &values_qd_l4s, samples_to_skip);
+    readFile(folder + "/ta/queue_packets_ecn10", NULL, &values_qd_l4s, samples_to_skip);
+    readFile(folder + "/ta/queue_packets_ecn11", NULL, &values_qd_l4s, samples_to_skip);
 
-    readFile(folder + "/ta/queue_drops_ecn00", NULL, &values_d_classic);
-    readFile(folder + "/ta/queue_drops_ecn01", NULL, &values_d_l4s);
-    readFile(folder + "/ta/queue_drops_ecn10", NULL, &values_d_l4s);
-    readFile(folder + "/ta/queue_drops_ecn11", NULL, &values_d_l4s);
+    readFile(folder + "/ta/queue_drops_ecn00", NULL, &values_d_classic, samples_to_skip);
+    readFile(folder + "/ta/queue_drops_ecn01", NULL, &values_d_l4s, samples_to_skip);
+    readFile(folder + "/ta/queue_drops_ecn10", NULL, &values_d_l4s, samples_to_skip);
+    readFile(folder + "/ta/queue_drops_ecn11", NULL, &values_d_l4s, samples_to_skip);
 
     writePdfCdf(
-        folder + "/derived/queue_packets_drops_nonecn_pdf",
-        folder + "/derived/queue_packets_drops_nonecn_cdf",
+        folder + "/aggregated/queue_packets_drops_nonecn_pdf",
+        folder + "/aggregated/queue_packets_drops_nonecn_cdf",
         header,
         values_qd_classic,
         values_d_classic
     );
 
     writePdfCdf(
-        folder + "/derived/queue_packets_drops_ecn_pdf",
-        folder + "/derived/queue_packets_drops_ecn_cdf",
+        folder + "/aggregated/queue_packets_drops_ecn_pdf",
+        folder + "/aggregated/queue_packets_drops_ecn_cdf",
         header,
         values_qd_l4s,
         values_d_l4s
