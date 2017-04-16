@@ -65,6 +65,7 @@ setup_aqm() {
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.1.11 02:42:0a:19:01:0b)
+    (set -x && arp -i $iface -s 10.25.1.12 02:42:0a:19:01:0c)
 
     disable_so $iface
 
