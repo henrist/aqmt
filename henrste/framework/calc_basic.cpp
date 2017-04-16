@@ -340,7 +340,7 @@ void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stat
     }
 
     /* avg_queue is in us, rtt is in ms - add them and convert to s */
-    double rtt_with_queue_in_s = (avg_queue / 1000 + rtt) / 1000
+    double rtt_with_queue_in_s = (avg_queue / 1000 + rtt) / 1000;
 
     while (1) {
         double rate;
