@@ -10,7 +10,7 @@ from framework.plot import collection_components
 from framework.traffic import greedy
 
 
-def test():
+def test(result_folder):
 
     def my_test(testcase):
         testcase.traffic(greedy, node='a', tag='cubic 1')
@@ -29,7 +29,7 @@ def test():
     testbed.cc('b', 'cubic', testbed.ECN_INITIATE)
 
     run_test(
-        folder='results/simple',
+        folder=result_folder,
         title='Just a simple test to verify setup',
         testenv=TestEnv(testbed, retest=False, reanalyze=True),
         steps=(
@@ -63,4 +63,8 @@ def test():
     )
 
 if __name__ == '__main__':
-    test()
+    result_folder = 'results/simple'
+    if len(sys.argv) >= 2:
+        result_folder = sys.argv[1]
+
+    test(result_folder)
