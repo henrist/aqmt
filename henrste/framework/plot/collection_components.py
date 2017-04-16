@@ -11,6 +11,7 @@ def utilization_queues(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
 
         gpi = """
             # utilization
@@ -51,23 +52,27 @@ def utilization_queues(y_logarithmic=False):
                 """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_nonecn_stats', x_axis) + """
                 EOD"""
 
+            x0 = "($1+" + str(x) + "-" + str(gap/2) + ")"
+            x1 = "($1+" + str(x) + ")"
+            x2 = "($1+" + str(x) + "+" + str(gap/2) + ")"
+
             # total
-            plot_gpi += "$data_util" + str(x) + "        using ($1+" + str(x) + "+0.0):3:10:6" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
-            #plot_gpi += "''                              using ($1+" + str(x) + "+0.0):7  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot_gpi += "''                              using ($1+" + str(x) + "+0.0):9  with points  ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                              using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
+            plot_gpi += "$data_util" + str(x) + "      using " + x0 + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+           #plot_gpi += "''                            using " + x0 + ":7          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+           #plot_gpi += "''                            using " + x0 + ":9          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                            using " + x0 + ":3          with lines      lc rgb 'gray'         title '', \\\n"
 
             # ecn
-            plot_gpi += "$data_util_ecn" + str(x) + "  using ($1+" + str(x) + "+0.1):3:10:6    with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
-            #plot_gpi += "''                            using ($1+" + str(x) + "+0.1):7   with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot_gpi += "''                            using ($1+" + str(x) + "+0.1):9  with points  ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                            using ($1+" + str(x) + "+0.1):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
+            plot_gpi += "$data_util_ecn" + str(x) + "  using " + x1 + ":3:10:6" + xtics + "  with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
+           #plot_gpi += "''                            using " + x1 + ":7                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+           #plot_gpi += "''                            using " + x1 + ":9                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                            using " + x1 + ":3                    with lines      lc rgb 'gray'         title '', \\\n"
 
             # nonecn
-            plot_gpi += "$data_util_nonecn" + str(x) + "  using ($1+" + str(x) + "+0.2):3:10:5  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
-            #plot_gpi += "''                               using ($1+" + str(x) + "+0.2):7  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
-            #plot_gpi += "''                               using ($1+" + str(x) + "+0.2):9  with points  ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                               using ($1+" + str(x) + "+0.2):3  with lines lc rgb 'gray'         title '', \\\n" # gray lines total, ecn, nonecn
+            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:5  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
+           #plot_gpi += "''                               using " + x2 + ":7       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
+           #plot_gpi += "''                               using " + x2 + ":9       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                               using " + x2 + ":3       with lines      lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -92,6 +97,8 @@ def utilization_tags(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
         gpi = """
             # utilization of tags
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
@@ -129,11 +136,12 @@ def utilization_tags(y_logarithmic=False):
                 EOD"""
 
             # total
-            plot_gpi += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3:9:7" + xtics + "       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
-            plot_lines += "$dataUtil" + str(x) + "  using ($1+" + str(x) + "+0.0):3  with lines lc rgb 'gray'         title '', \\\n"
+            xpos = "($1+" + str(x) + ")"
+            plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtics + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_lines += "$dataUtil" + str(x) + "  using " + xpos + ":3                     with lines lc rgb 'gray'         title '', \\\n"
 
             tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', x_axis)
-            x_distance = .4 / len(tagged_flows)
+            x_distance = gap / (len(tagged_flows) + 1)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
                 gpi += """
@@ -147,8 +155,9 @@ def utilization_tags(y_logarithmic=False):
                     titles_used.append(tagname)
                     title = tagname
 
-                plot_gpi += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($4*100):($10*100):($8*100)       with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', \\\n"
-                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using ($1+" + str(x+((i+1) * x_distance)) + "):($4*100) with lines lc rgb 'gray' title '', \\\n"
+                xpos = "($1+" + str(x + ((i + 1) * x_distance)) + ")"
+                plot_gpi   += "$dataUtil" + str(x) + "_" + str(i) + "  using " + xpos + ":($4*100):($10*99):($8*100)  with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.get_from_tagname(tagname) + "' lw 1.5 title '" + title + "', \\\n"
+                plot_lines += "$dataUtil" + str(x) + "_" + str(i) + "  using " + xpos + ":($4*100)                    with lines lc rgb 'gray' title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
 
@@ -176,6 +185,8 @@ def queueing_delay(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
         gpi = """
             # queueing delay
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
@@ -213,15 +224,18 @@ def queueing_delay(y_logarithmic=False):
             ls_l4s = "ls 1 lc rgb '" + colors.L4S + "'"
             ls_classic = "ls 1 lc rgb '" + colors.CLASSIC + "'"
 
-            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000):($7/1000):($9/1000)" + xtics + "   with yerrorbars " + ls_l4s + " lw 1.5 pointtype 7 pointsize 0.4            title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                     using ($1+" + str(x) + "+0.05):($6/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                     using ($1+" + str(x) + "+0.05):($10/1000)  with points  " + ls_l4s + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000):($7/1000):($9/1000)  with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4           title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                     using ($1+" + str(x) + "+0.15):($6/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                     using ($1+" + str(x) + "+0.15):($10/1000)  with points " + ls_classic + " pointtype 1 pointsize 0.4        title '', \\\n"
+            x0 = "($1+" + str(x) + ")"
+            x1 = "($1+" + str(x) + "+" + str(gap/2) + ")"
 
-            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using ($1+" + str(x) + "+0.05):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
-            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using ($1+" + str(x) + "+0.15):($3/1000)  with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using " + x0 + ":($3/1000):($7/1000):($9/1000)              with yerrorbars " + ls_l4s + "     lw 1.5 pointtype 7 pointsize 0.4 title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                     using " + x0 + ":($6/1000)                                  with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "''                                     using " + x0 + ":($10/1000)                                 with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using " + x1 + ":($3/1000):($7/1000):($9/1000)" + xtics + " with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4 title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                     using " + x1 + ":($6/1000)                                  with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "''                                     using " + x1 + ":($10/1000)                                 with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
+
+            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using " + x0 + ":($3/1000)                                  with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using " + x1 + ":($3/1000)                                  with lines lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -245,6 +259,8 @@ def drops_marks(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
         gpi = """
             # drops and marks
             set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
@@ -282,20 +298,24 @@ def drops_marks(y_logarithmic=False):
                 """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_nonecn_stats', x_axis) + """
                 EOD"""
 
-            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):3:7:9" + xtics + " with yerrorbars lc rgb '" + colors.DROPS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.00):6  with points  lc rgb '" + colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.00):10  with points  lc rgb '" + colors.DROPS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):3:7:9 with yerrorbars lc rgb '" + colors.MARKS_L4S + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.10):6  with points  lc rgb '" + colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.10):10  with points  lc rgb '" + colors.MARKS_L4S + "' pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):3:7:9 with yerrorbars lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.20):6  with points  lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "''                                          using ($1+" + str(x) + "+0.20):10  with points  lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            x0 = "($1+" + str(x) + "-" + str(gap/2) + ")"
+            x1 = "($1+" + str(x) + ")"
+            x2 = "($1+" + str(x) + "+" + str(gap/2) + ")"
+
+            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using " + x0 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                          using " + x0 + ":6                  with points     lc rgb '" + colors.DROPS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                                          using " + x0 + ":10                 with points     lc rgb '" + colors.DROPS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using " + x1 + ":3:7:9" + xtics + " with yerrorbars lc rgb '" + colors.MARKS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                          using " + x1 + ":6                  with points     lc rgb '" + colors.MARKS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                                          using " + x1 + ":10                 with points     lc rgb '" + colors.MARKS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using " + x2 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                                          using " + x2 + ":6                  with points     lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
+            plot_gpi += "''                                          using " + x2 + ":10                 with points     lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
 
             # gray lines between average values
-            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.00):3     with lines lc rgb 'gray'         title '', \\\n"
-            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using ($1+" + str(x) + "+0.10):3     with lines lc rgb 'gray'         title '', \\\n"
-            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using ($1+" + str(x) + "+0.20):3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using " + x0 + ":3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using " + x1 + ":3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using " + x2 + ":3     with lines lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -319,6 +339,8 @@ def window_rate_ratio(y_logarithmic=False):
     """
 
     def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
         gpi = """
             # window and rate ratio
             set ylabel "Window and rate ratio\\n{/Times:Italic=10 Above 1 is advantage to ECN-flow}"
@@ -358,12 +380,15 @@ def window_rate_ratio(y_logarithmic=False):
                 EOD
                 """
 
-            plot_gpi += "$data_window_ratio" + str(x) + "  using ($1+" + str(x) + "+0.00):3" + xtics + " with points lc rgb '" + colors.BLACK + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Window ratio' if is_first_set else '') + "', \\\n"
-            plot_gpi += "$data_rate_ratio" + str(x) + "    using ($1+" + str(x) + "+0.10):3              with points lc rgb '" + colors.GREEN + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Rate ratio' if is_first_set else '') + "', \\\n"
+            x0 = "($1+" + str(x) + ")"
+            x1 = "($1+" + str(x) + "+" + str(gap/2) + ")"
+
+            plot_gpi += "$data_window_ratio" + str(x) + "  using " + x0 + ":3" + xtics + " with points lc rgb '" + colors.BLACK + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Window ratio' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_rate_ratio" + str(x) + "    using " + x1 + ":3              with points lc rgb '" + colors.GREEN + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Rate ratio' if is_first_set else '') + "', \\\n"
 
             # gray lines between average values
-            plot_gpi += "$data_window_ratio" + str(x) + "  using ($1+" + str(x) + "+0.00):3     with lines lc rgb 'gray'         title '', \\\n"
-            plot_gpi += "$data_rate_ratio" + str(x) + "    using ($1+" + str(x) + "+0.10):3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_window_ratio" + str(x) + "  using " + x0 + ":3     with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_rate_ratio" + str(x) + "    using " + x1 + ":3     with lines lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """

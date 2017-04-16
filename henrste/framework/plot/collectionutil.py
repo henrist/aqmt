@@ -52,6 +52,15 @@ def get_tree_details(tree):
     return leafs, tests, depth, nodes - depth
 
 
+def get_gap(tree):
+    """
+    Calculate the gap that a single test can fill in the graph.
+    This tries to make the gap be visually the same for few/many tests.
+    """
+    _, _, _, n_nodes = get_tree_details(tree)
+    return min(0.8, (n_nodes + 2) / 100)
+
+
 def get_testcases(leaf):
     """
     Get list of testcases of a test collection
