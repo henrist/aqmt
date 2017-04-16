@@ -70,10 +70,13 @@ def plot_test(folder, components=None, **kwargs):
         components = [
             flow_components.utilization_queues(),
             flow_components.rate_per_flow(),
+            flow_components.rate_per_flow(y_logarithmic=True),
+            flow_components.window(),
+            flow_components.window(y_logarithmic=True),
             flow_components.queueing_delay(),
-            #flow_components.queueing_delay(y_logarithmic=True),
+            flow_components.queueing_delay(y_logarithmic=True),
             flow_components.drops_marks(),
-            #flow_components.drops_marks(y_logarithmic=True),
+            flow_components.drops_marks(y_logarithmic=True),
         ]
 
     export(
