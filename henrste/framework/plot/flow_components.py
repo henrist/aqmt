@@ -2,7 +2,16 @@ from collections import OrderedDict
 from .common import add_plot, add_scale
 
 
-def utilization_queues(y_logarithmic=False):
+def utilization_queues():
+    y_logarithmic = False
+
+    """
+    Plot utilization per queue
+
+    We do not support logarithmic scale as we are using 'stats'
+    command in gnuplot that don't support it.
+    """
+
     def plot(testfolder):
         gpi = """
             set format y "%g"
