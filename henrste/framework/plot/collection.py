@@ -13,7 +13,7 @@ from . import treeutil
 
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    tmargin_base = .8 * n_depth + 2.5
+    tmargin_base = .5 * n_depth + 2.5
     if 'subtitle' in tree and tree['subtitle']:
         tmargin_base += .8
     return tmargin_base
