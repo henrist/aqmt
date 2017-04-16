@@ -68,10 +68,10 @@ class TestCase:
         self.already_exists = False
         self.is_skip_test = False
 
-        self.check_folder()
-
         self.h1 = 'TESTCASE %s' % self.test_folder
         self.h2 = None
+
+        self.check_folder()
 
     def traffic(self, traffic_fn, **kwargs):
         """
@@ -114,6 +114,7 @@ class TestCase:
                     with open(self.test_folder + '/details') as f:
                         for line in f:
                             if line.strip() == 'data_collected':
+                                self.h2 = 'Using existing data'
                                 self.already_exists = True
                                 return
 

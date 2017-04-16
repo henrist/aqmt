@@ -94,12 +94,20 @@ class TestCollection:
         test_folder = 'test'
 
         self.test = TestCase(testenv=testenv, folder=self.folder + '/' + test_folder)
-        self.test.log_header()
+
+        # only log header if we actually do anything with this test
+        logged_header = False
 
         if not self.test.should_skip():
+            self.test.log_header()
+            logged_header = True
             self.test.run(test_fn)
 
         if (self.test.data_collected or self.test.already_exists) and not testenv.dry_run:
+            if not logged_header:
+                self.test.log_header()
+                logged_header = True
+
             if testenv.reanalyze or not self.test.already_exists:
                 start = time.time()
                 self.test.analyze()
@@ -107,14 +115,16 @@ class TestCollection:
 
             if testenv.reanalyze or testenv.replot or not self.test.already_exists:
                 start = time.time()
-
                 plot_test(self.test.test_folder)
-
                 logger.info('Plotted test (%.2f s)' % (time.time()-start))
 
             self.add_child(test_folder)
 
         elif self.test.already_exists:
+            if not logged_header:
+                self.test.log_header()
+                logged_header = True
+
             self.add_child(test_folder)
 
         # if we have received a SIGTERM we will terminate TA but allow the plotting
