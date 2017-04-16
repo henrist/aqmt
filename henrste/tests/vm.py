@@ -18,12 +18,12 @@ def test(result_folder):
         testdef = testcase.testenv.testdef
 
         for i in range(10):
-            testcase.traffic(greedy, node='a', tag='node-a')
-            testcase.traffic(greedy, node='b', tag='node-b')
+            testcase.traffic(greedy, node='a', tag='CUBIC')
+            testcase.traffic(greedy, node='b', tag='DCTCP')
 
         if testdef.udp_rate > 0:
             time.sleep(1)
-            testcase.traffic(udp, node='a', bitrate=testdef.udp_rate * MBIT, ect='nonect', tag='udp-rate')
+            testcase.traffic(udp, node='a', bitrate=testdef.udp_rate * MBIT, ect='nonect', tag='UDP Non-ECT')
 
     testbed = Testbed()
 
@@ -60,7 +60,7 @@ def test(result_folder):
             steps.branch_sched([
                 # tag, title, name, params
                 ('pi2',
-                    'PI2',
+                    'PI2 dc',
                     'pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100'),
                 ('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
                 ('pfifo', 'pfifo', 'pfifo', ''),
@@ -79,7 +79,7 @@ def test(result_folder):
                 300,
             ], title='%g'),
             steps.plot_flows(),
-            steps.branch_repeat(8),
+            steps.branch_repeat(5),
             my_test,
         ),
     )
