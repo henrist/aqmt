@@ -82,7 +82,7 @@ def test(result_folder):
                 300,
             ], title='%g'),
             steps.plot_flows(),
-            steps.branch_repeat(5),
+            steps.branch_repeat(4),
             my_test,
         ),
     )
