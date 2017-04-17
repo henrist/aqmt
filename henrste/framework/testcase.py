@@ -3,6 +3,7 @@ This module contains the individual test case logic
 """
 
 from datetime import datetime
+import functools
 import os
 from plumbum import local
 from plumbum.cmd import bash
@@ -85,7 +86,7 @@ class TestCase:
             dry_run=self.testenv.dry_run,
             testbed=self.testenv.testbed,
             hint_fn=self.save_hint,
-            run_fn=self.testenv.run,
+            run_fn=functools.partial(self.testenv.run, bg=True),
             **kwargs,  # pass on any custom arguments
         )
 

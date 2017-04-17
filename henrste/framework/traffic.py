@@ -31,8 +31,8 @@ def tcp_netcat(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
             pass
 
     else:
-        pid1 = run_fn(cmd1, bg=True)
-        pid2 = run_fn(cmd2, bg=True)
+        pid1 = run_fn(cmd1)
+        pid2 = run_fn(cmd2)
         processes.add_known_pid(pid1)
         processes.add_known_pid(pid2)
 
@@ -63,8 +63,8 @@ def tcp_iperf(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
             pass
 
     else:
-        pid1 = run_fn(cmd1, bg=True)
-        pid2 = run_fn(cmd2, bg=True)
+        pid1 = run_fn(cmd1)
+        pid2 = run_fn(cmd2)
         processes.add_known_pid(pid1)
         processes.add_known_pid(pid2)
 
@@ -104,7 +104,7 @@ def scp(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
             pass
 
     else:
-        pid_server = run_fn(cmd, bg=True)
+        pid_server = run_fn(cmd)
         processes.add_known_pid(pid_server)
 
         def stop_test():
@@ -142,8 +142,8 @@ def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
             pass
 
     else:
-        pid_server = run_fn(cmd1, bg=True)
-        pid_client = run_fn(cmd2, bg=True)
+        pid_server = run_fn(cmd1)
+        pid_client = run_fn(cmd2)
         processes.add_known_pid(pid_server)
         processes.add_known_pid(pid_client)
 
@@ -203,8 +203,8 @@ def udp(dry_run, testbed, hint_fn, run_fn, bitrate, node='a', ect="nonect", tag=
             pass
 
     else:
-        pid_server = run_fn(cmd_server, bg=True)
-        pid_client = run_fn(cmd_client, bg=True)
+        pid_server = run_fn(cmd_server)
+        pid_client = run_fn(cmd_client)
 
         processes.add_known_pid(pid_server)
         processes.add_known_pid(pid_client)
