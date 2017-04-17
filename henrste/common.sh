@@ -242,11 +242,13 @@ set_offloading() {(set -e
     for i in ${!hosts[@]}; do
         ssh root@${hosts[$i]} "
             set -e
+            ethtool -K ${ifaces[$i]} gro $onoff
             ethtool -K ${ifaces[$i]} gso $onoff
             ethtool -K ${ifaces[$i]} tso $onoff"
     done
 
     for iface in $IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB; do
+        sudo ethtool -K $iface gro $onoff
         sudo ethtool -K $iface gso $onoff
         sudo ethtool -K $iface tso $onoff
     done
