@@ -74,6 +74,14 @@ class Testbed:
             self.cc_b = cc
             self.ecn_b = ecn
 
+    def rtt(self, rtt_servera, rtt_serverb=None, rtt_clients=0):
+        if rtt_serverb is None:
+            rtt_serverb = rtt_servera
+
+        self.rtt_clients = rtt_clients  # in ms
+        self.rtt_servera = rtt_servera  # in ms
+        self.rtt_serverb = rtt_serverb  # in ms
+
     def get_ta_samples_to_skip(self):
         time = self.ta_idle
         if time is None:
