@@ -28,7 +28,7 @@ def test(result_folder):
     testbed = Testbed()
 
     testbed.ta_samples = 500
-    #testbed.ta_idle = 5
+    testbed.ta_idle = 6
     testbed.ta_delay = 125
 
     testbed.cc('a', 'cubic', testbed.ECN_ALLOW)
@@ -66,6 +66,7 @@ def test(result_folder):
                 ('pfifo', 'pfifo', 'pfifo', ''),
             ]),
             steps.branch_rtt([
+                2,
                 10,
                 100,
             ], title='%d ms'),
