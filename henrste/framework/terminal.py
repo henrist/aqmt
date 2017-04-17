@@ -6,6 +6,7 @@ import os
 from plumbum import local, FG
 from plumbum.cmd import bash, tmux
 import subprocess
+import time
 
 from . import logger
 
@@ -56,9 +57,12 @@ class Tmux(Terminal):
         self.win_bg_id = None
 
         tmux['set-window-option', '-t', self.win_id, 'remain-on-exit', 'on']()
-        self.cleanup()
+        self.cleanup(sleep=0)
 
-    def cleanup(self):
+    def cleanup(self, sleep=.5):
+        # this sleep seems to help against tmux crashing
+        if sleep > 0:
+            time.sleep(sleep)
         self.kill_dead_panes()
 
     def kill_dead_panes(self):
