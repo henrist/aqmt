@@ -55,7 +55,8 @@ def test(result_folder):
                 ('simula', lambda testenv: hostname() == 'ford', 'PHY'),
                 ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', '-SM'),
                 ('x250', lambda testenv: hostname() == 'DARASK-X250', 'X250'),
-                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'VM'),
+                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'VM-0'),
+                ('uio-vm-1', lambda testenv: hostname() == 'henrste-20170405-1', 'VM-1'),
             ]),
             steps.branch_sched([
                 # tag, title, name, params
