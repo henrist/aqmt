@@ -16,6 +16,7 @@ Environment variables:
 __title__ = 'AQM test framework'
 __author__ = 'Henrik Steen'
 
+import os
 import sys
 
 from . import traffic
@@ -37,7 +38,7 @@ class Testdef:
         self.level = 0
 
 
-def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, ask_confirmation=True):
+def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, ask_confirmation=None):
     """
     Run a complete test using list of steps.
 
@@ -107,6 +108,11 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, a
     walk(get_root(), steps)
     print('Estimated time: %d seconds for running %d (of %d) tests (average %g sec/test)\n' % (
         estimated_time, num_tests, num_tests_total, estimated_time / num_tests if num_tests > 0 else 0))
+
+    if ask_confirmation is None:
+        ask_confirmation = True
+        if 'TEST_NO_ASK' in os.environ and os.environ['TEST_NO_ASK'] != '':
+            ask_confirmation = False
 
     should_run_test = not ask_confirmation
     if ask_confirmation:
