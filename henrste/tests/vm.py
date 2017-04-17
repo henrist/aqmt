@@ -38,7 +38,7 @@ def test(result_folder):
         folder=result_folder,
         title='Testing VM',
         subtitle='Using 10 flows of CUBIC, 10 flows of DCTCP (with ECN) and 1 flow UDP',
-        testenv=TestEnv(testbed, retest=True, reanalyze=True),
+        testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
             steps.plot_compare(swap_levels=[3,2,1,0,1,2,3,2,1], components=[
                 collection_components.utilization_queues(),
@@ -77,11 +77,12 @@ def test(result_folder):
                 500,
             ], title='%d', titlelabel='Linkrate [Mb/s]'),
             steps.branch_define_udp_rate([
+                0,
                 50,
                 300,
             ], title='%g'),
             steps.plot_flows(),
-            steps.branch_repeat(5),
+            steps.branch_repeat(3),
             my_test,
         ),
     )
