@@ -78,7 +78,7 @@ def test(result_folder):
 
     testbed.bitrate = 100 * MBIT
 
-    testbed.ta_samples = 60
+    testbed.ta_samples = 50
     #testbed.ta_idle = 5
     testbed.ta_delay = 500
 
@@ -106,7 +106,7 @@ def test(result_folder):
                     'PI2: dc\\\\_dualq dc\\\\_ecn t:15ms tu:15ms a:5 b:50 k:2 t\\\\_s:30ms l\\\\_d:100',
                     'pi2', 'dc_dualq dc_ecn target 15ms tupdate 15ms alpha 5 beta 50 k 2 t_shift 30ms l_drop 100'),
                 ('pie', 'PIE', 'pie', 'ecn target 15ms tupdate 15ms alpha 1 beta 10 ecndrop 25'),
-                #('pfifo', 'pfifo', 'pfifo', ''),
+                ('pfifo', 'pfifo', 'pfifo', ''),
             ]),
             custom_cc,
             branch_flow_set([
