@@ -85,7 +85,7 @@ class Testbed:
     def get_ta_samples_to_skip(self):
         time = self.ta_idle
         if time is None:
-            time = (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 20 + 3
+            time = (max(self.rtt_clients, self.rtt_servera, self.rtt_serverb) / 1000) * 40 + 4
 
         samples = time * 1000 / self.ta_delay
         return math.ceil(samples)
