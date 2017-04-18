@@ -1,5 +1,5 @@
 *.swp
 .idea
 __pycache__
-results/
+results
 test_framework.log
