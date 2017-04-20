@@ -80,6 +80,13 @@ services:
     volumes:
       - ../:/opt/testbed/
       - .vars.sh:/tmp/testbed-vars.sh
+  fix_permissions:
+    build: .
+    image: testbed
+    volumes:
+      - ../:/opt/testbed/
+    network_mode: none
+    entrypoint: /opt/testbed/docker/fix_permissions.sh
 
 networks:
   management:
