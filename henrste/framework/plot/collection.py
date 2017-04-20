@@ -28,10 +28,13 @@ def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
     """
 
 
-def plot_labels(tree):
+def plot_labels(tree, plot_width):
     """
     Plot labels located above the graphs
     """
+
+    # calculate the position where the label is right aligned in the plot
+    xpos = -0.005 * 28 / plot_width
 
     gpi = ""
     depth_sizes = treeutil.get_depth_sizes(tree)
@@ -48,7 +51,7 @@ def plot_labels(tree):
         if treenode['titlelabel'] != '' and depth not in first_titlelabel:
             first_titlelabel[depth] = False
             gpi += """
-                set label \"""" + treenode['titlelabel'] + """:\" at graph -.01, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
+                set label \"""" + treenode['titlelabel'] + """:\" at graph """ + str(xpos) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
                 """
 
         gpi += """
@@ -60,7 +63,7 @@ def plot_labels(tree):
     xlabel = collectionutil.get_xlabel(tree)
     if xlabel is not None:
         gpi += """
-            set label \"""" + xlabel + """:\" at graph -.01, graph -.07 font 'Times-Roman,10pt' tc rgb 'black' right
+            set label \"""" + xlabel + """:\" at graph """ + str(xpos) + """, graph -.07 font 'Times-Roman,10pt' tc rgb 'black' right
             """
 
     return gpi
@@ -101,9 +104,11 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
     if components is None:
         components = []
 
+    width = x_scale * 21
+
     gpi = plot_header()
     gpi += plot_title(tree, len(components))
-    gpi += plot_labels(tree)
+    gpi += plot_labels(tree, width)
 
     def leaf_hook(subtree, is_first_set, x):
         nonlocal gpi
@@ -120,6 +125,6 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
 
     return {
         'gpi': gpi,
-        'width': '%fcm' % (x_scale * 21),
+        'width': '%fcm' % width,
         'height': '%fcm' % (y_scale * 7 * len(components)),
     }
