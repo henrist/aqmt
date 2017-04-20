@@ -282,3 +282,77 @@ def swap_levels(tree, level=0):
 
     tree['children'] = [val for key, val in new_children.items()]
     return tree
+
+
+def build_swap_list(level_order):
+    """
+    Build a list of levels that should be swapped to achieve
+    a specific ordering of levels.
+    """
+
+    # assert the values
+    distinct = []
+    for val in level_order:
+        if val in distinct:
+            raise Exception("Duplicate value: %s" % val)
+        if not isinstance(val, int):
+            raise Exception("Invalid type: %s" % val)
+        if val < 0:
+            raise Exception("Value out of bounds: %s" % val)
+        distinct.append(val)
+
+    # fill any missing values
+    for i in range(max(level_order)):
+        if i not in level_order:
+            level_order.append(i)
+
+    # work through the list and build a swap list
+    swap_list = []
+    to_process = list(range(len(level_order)))  # same as an sorted version of the list
+    for i in range(len(level_order)):
+        # find offset of this target
+        to_swap = 0
+        while level_order[i] != to_process[to_swap]:
+            to_swap += 1
+
+        # pull up the target so it become the current level
+        for x in range(to_swap):
+            swap_list.append(i + (to_swap - x - 1))
+
+        # remove the level we targeted
+        to_process.remove(level_order[i])
+
+    return swap_list
+
+
+def reorder_levels(tree, level_order=None):
+    """
+    Order the tree based on an ordering of levels
+    (number of branches in height in the tree)
+
+    E.g. a tree of 3 levels where we want to reorder the levels
+    so that the order is last level, then the first and then the
+    second:
+
+      level_order=[2,0,1]
+
+    Example reversing the order of three levels:
+
+      level_order=[2,1,0]
+    """
+
+    if level_order is None or len(level_order) == 0:
+        return tree
+
+    # get the depth of the tree only counting branches
+    levels = len(get_depth_sizes(tree))
+
+    swap_list = build_swap_list(level_order)
+    if max(swap_list) >= levels:
+        raise Exception("Out of bound level: %d. Only have %d levels" % (max(swap_list, levels)))
+
+    # apply the calculated node swapping to the tree
+    for level in swap_list:
+        tree = swap_levels(tree, level)
+
+    return tree
