@@ -29,8 +29,8 @@ def test(result_folder):
         title='Testing new pi2 API',
         testenv=TestEnv(testbed, retest=False),
         steps=(
-            steps.plot_flows(swap_levels=[1]),
-            steps.plot_compare(swap_levels=[1], x_axis=PlotAxis.LINEAR),
+            steps.plot_flows(level_order=[0,2]),
+            steps.plot_compare(level_order=[0,2], x_axis=PlotAxis.LINEAR),
             steps.branch_sched([
                 # tag, title, name, params
                 ('pi2-1',

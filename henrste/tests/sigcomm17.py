@@ -88,7 +88,7 @@ def test(result_folder):
         subtitle='Testrate: 100 Mb/s',
         testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
-            steps.plot_compare(swap_levels=[], x_axis=PlotAxis.LOGARITHMIC, components=[
+            steps.plot_compare(level_order=[], x_axis=PlotAxis.LOGARITHMIC, components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),

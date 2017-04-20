@@ -55,7 +55,7 @@ def test():
         title='Testing traffic fairness',
         testenv=TestEnv(testbed),
         steps=[
-            steps.plot_compare(swap_levels=[0], components=[
+            steps.plot_compare(level_order=[1], components=[
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),

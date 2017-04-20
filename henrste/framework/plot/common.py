@@ -70,16 +70,13 @@ def plot_header():
         """
 
 
-def generate_hierarchy_data_from_folder(folder, swap_levels=None):
+def generate_hierarchy_data_from_folder(folder):
     """
     Generate a dict that can be sent to CollectionPlot by analyzing the directory
 
     It will look in all the metadata stored while running test
     to generate the final result
     """
-
-    if swap_levels is None:
-        swap_levels = []
 
     def parse_folder(subfolder):
         if not os.path.isdir(subfolder):
@@ -113,11 +110,6 @@ def generate_hierarchy_data_from_folder(folder, swap_levels=None):
         return node
 
     root = parse_folder(folder)
-
-    # rearrange levels in the tree so the grouping is different
-    for level in swap_levels:
-        root = treeutil.swap_levels(root, level)
-
     return root
 
 

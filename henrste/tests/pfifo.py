@@ -37,7 +37,7 @@ def test():
         title='Testing pfifo',
         testenv=TestEnv(testbed, retest=True),
         steps=(
-            steps.plot_compare(swap_levels=[], x_axis=PlotAxis.CATEGORY, components=[
+            steps.plot_compare(level_order=[], x_axis=PlotAxis.CATEGORY, components=[
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),

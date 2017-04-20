@@ -37,7 +37,7 @@ def command_comparison(args):
 
     plot_folder_compare(
         args.folder,
-        swap_levels=[] if args.swap == '' else [int(x) for x in args.swap.split(',')],
+        level_order=[] if args.order == '' else [int(x) for x in args.order.split(',')],
         x_axis=x_axis,
         components=components,
     )
@@ -46,7 +46,7 @@ def command_comparison(args):
 def command_merge(args):
     plot_folder_flows(
         args.folder,
-        swap_levels=[] if args.swap == '' else [int(x) for x in args.swap.split(',')],
+        level_order=[] if args.order == '' else [int(x) for x in args.order.split(',')],
     )
 
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     parser_a = subparsers.add_parser('comparison', help='plot a comparison for collections')
     parser_a.add_argument('folder', help='directory containing collections to include')
-    parser_a.add_argument('-s', '--swap', help='list of levels to swap', default='')
+    parser_a.add_argument('-o', '--order', help='sequence for order of levels', default='')
     parser_a.add_argument('--nouq', help='skip utilization plot for each queue', action='store_true')
     parser_a.add_argument('--ut', help='include utilization plot for each tag', action='store_true')
     axis = parser_a.add_mutually_exclusive_group()
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     parser_b = subparsers.add_parser('merge', help='merge plots from multiple tests')
     parser_b.add_argument('folder', help='directory containing collections to include')
-    parser_b.add_argument('-s', '--swap', help='list of levels to swap', default='')
+    parser_b.add_argument('-o', '--order', help='sequence for order of levels', default='')
     parser_b.set_defaults(func=command_merge)
 
     parser_c = subparsers.add_parser('tests', help='individual plots for tests')

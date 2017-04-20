@@ -32,14 +32,14 @@ def test(result_folder):
         title='Just a simple test to verify setup',
         testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
-            steps.plot_compare(swap_levels=[], components=[
+            steps.plot_compare(level_order=[], components=[
                 collection_components.utilization_tags(),
                 collection_components.window_rate_ratio(),
                 collection_components.window_rate_ratio(y_logarithmic=True),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),
             ]),
-            steps.plot_flows(swap_levels=[], components=[
+            steps.plot_flows(level_order=[], components=[
                 flow_components.utilization_queues(),
                 flow_components.rate_per_flow(),
                 flow_components.rate_per_flow(y_logarithmic=True),

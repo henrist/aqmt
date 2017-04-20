@@ -70,7 +70,7 @@ def test():
         title='Overload with UDP (rtt=%d ms, rate=10 Mbit)' % testbed.rtt_servera,
         testenv=TestEnv(testbed),
         steps=[
-            steps.plot_compare(swap_levels=[1], components=[
+            steps.plot_compare(level_order=[0,2], components=[
                 collection_components.utilization_tags(),
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(),

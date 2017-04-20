@@ -10,11 +10,12 @@ from . import collection
 from . import flow
 from . import flow_components
 from .common import PlotAxis, generate_hierarchy_data_from_folder, export
+from .treeutil import reorder_levels
 
 import pprint
 import sys
 
-def plot_folder_compare(folder, swap_levels=None, components=None, **kwargs):
+def plot_folder_compare(folder, level_order=None, components=None, **kwargs):
     if components is None:
         components = [
             collection_components.utilization_queues(),
@@ -23,13 +24,13 @@ def plot_folder_compare(folder, swap_levels=None, components=None, **kwargs):
             collection_components.drops_marks(),
         ]
 
-    if swap_levels is None:
-        swap_levels = []
-
     export(
         folder + '/comparison',
         collection.build_plot(
-            generate_hierarchy_data_from_folder(folder, swap_levels),
+            reorder_levels(
+                generate_hierarchy_data_from_folder(folder),
+                level_order,
+            ),
             components=components,
             **kwargs,
         )
@@ -38,10 +39,7 @@ def plot_folder_compare(folder, swap_levels=None, components=None, **kwargs):
     print('Plotted comparison of %s' % folder)
 
 
-def plot_folder_flows(folder, swap_levels=None, components=None, **kwargs):
-    if swap_levels is None:
-        swap_levels = []
-
+def plot_folder_flows(folder, level_order=None, components=None, **kwargs):
     if components is None:
         components = [
             flow_components.utilization_queues(),
@@ -53,7 +51,10 @@ def plot_folder_flows(folder, swap_levels=None, components=None, **kwargs):
             flow_components.drops_marks(y_logarithmic=True),
         ]
 
-    tree = generate_hierarchy_data_from_folder(folder, swap_levels)
+    tree = reorder_levels(
+        generate_hierarchy_data_from_folder(folder, level_order),
+        level_order,
+    )
     folders = collectionutil.get_all_testcases_folders(tree)
 
     if len(folders) > 0:

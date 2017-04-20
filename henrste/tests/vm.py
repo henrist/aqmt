@@ -40,7 +40,7 @@ def test(result_folder):
         subtitle='Using 10 flows of CUBIC, 10 flows of DCTCP (with ECN) and 1 flow UDP',
         testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
-            steps.plot_compare(swap_levels=[3,2,1,0,1,2,3,2,1], components=[
+            steps.plot_compare(level_order=[4,1,2,3,0], components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
                 collection_components.window_rate_ratio(y_logarithmic=True),
