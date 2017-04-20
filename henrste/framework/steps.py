@@ -21,7 +21,7 @@ from .plot import plot_folder_flows, plot_folder_compare
 MBIT = 1000*1000
 
 
-def branch_sched(sched_list):
+def branch_sched(sched_list, titlelabel='Scheduler'):
     def step(testdef):
         for tag, title, sched_name, sched_params in sched_list:
             testdef.testenv.testbed.aqm(sched_name, sched_params)
@@ -30,7 +30,7 @@ def branch_sched(sched_list):
             yield {
                 'tag': 'sched-%s' % tag,
                 'title': title,
-                'titlelabel': 'Scheduler',
+                'titlelabel': titlelabel,
             }
     return step
 
@@ -47,7 +47,7 @@ def branch_custom(list, fn_testdef, fn_tag, fn_title, titlelabel=''):
     return step
 
 
-def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s'):
+def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s', titlelabel='UDP Rate [Mb/s]'):
     """
     This method don't actually change the setup, it only sets a variable
     that can be used when running the actual test.
@@ -58,23 +58,23 @@ def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s'):
             yield {
                 'tag': 'udp-rate-%s' % rate,
                 'title': title % rate,
-                'titlelabel': 'UDP Rate [Mb/s]',
+                'titlelabel': titlelabel,
             }
     return branch
 
 
-def branch_repeat(num, title='Test %d'):
+def branch_repeat(num, title='Test %d', titlelabel='Test #'):
     def step(testdef):
         for i in range(num):
             yield {
                 'tag': 'repeat-%d' % i,
                 'title': title % (i + 1),
-                'titlelabel': 'Test #',
+                'titlelabel': titlelabel,
             }
     return step
 
 
-def branch_rtt(rtt_list, title='RTT: %d ms'):
+def branch_rtt(rtt_list, title='RTT: %d ms', titlelabel='RTT'):
     def step(testdef):
         for rtt in rtt_list:
             testdef.testenv.testbed.rtt_servera = rtt
@@ -82,7 +82,7 @@ def branch_rtt(rtt_list, title='RTT: %d ms'):
             yield {
                 'tag': 'rtt-%d' % rtt,
                 'title': title % rtt,
-                'titlelabel': 'RTT',
+                'titlelabel': titlelabel,
             }
     return step
 
@@ -99,7 +99,7 @@ def branch_bitrate(bitrate_list, title='%d Mb/s', titlelabel='Linkrate'):
     return step
 
 
-def branch_runif(checks):
+def branch_runif(checks, titlelabel='Run if'):
     def step(testdef):
         for tag, fn, title in checks:
             prev = testdef.testenv.skip_test
@@ -108,7 +108,7 @@ def branch_runif(checks):
             yield {
                 'tag': 'runif-%s' % tag,
                 'title': title,
-                'titlelabel': 'Run if',
+                'titlelabel': titlelabel,
             }
 
             testdef.testenv.skip_test = prev
