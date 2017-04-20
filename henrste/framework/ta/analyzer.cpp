@@ -1,4 +1,4 @@
-#include "analysis.h"
+#include "analyzer.h"
 
 #include <csignal>
 #include <stdio.h>
@@ -7,6 +7,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h> /* includes net/ethernet.h */
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+#include <netinet/tcp.h>
 #include <iostream>
 #include <map>
 #include <unistd.h>
@@ -20,8 +23,6 @@
 #include <array>
 #include <time.h>
 #include <sys/types.h>
-
-#include "ipdefs.h"
 
 #define DEMO_QLIM 140
 #define DEMO_RTT 0.007
@@ -44,7 +45,6 @@ public:
 
 static void *pcapLoop(void *param);
 static void *printInfo(void *param);
-static void *demo(void *param);
 
 uint64_t getStamp()
 {
@@ -103,7 +103,7 @@ void DemoData::init()
     c_qsize_y.resize(DEMO_QLIM);
 }
 
-ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32_t nrs, bool ipc, DemoData *demodata)
+ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32_t nrs, bool ipc)
 : ipclass(ipc)
 {
     db1 = new DataBlock();
@@ -119,14 +119,6 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
     m_sinterval = sinterval;
     m_folder = folder;
     m_nrs = nrs;
-    demo_data = 0;
-
-    if (demodata == 0) {
-        m_demomode = false;
-    } else {
-        demo_data = demodata;
-        m_demomode = true;
-    }
 
     nr_ecn_flows = 0;
     nr_nonecn_flows = 0;
@@ -138,7 +130,7 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, char *folder, uint32
     sample_id = 0;
 }
 
-void ThreadParam::swapDB(){ // called by printInfo or demo
+void ThreadParam::swapDB(){ // called by printInfo
     // db2 is initialized already
     pthread_mutex_lock(&m_mutex);
     DataBlock *tmp = db1;
@@ -165,29 +157,29 @@ std::string IPtoString(in_addr_t ip) {
 
 void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buffer)
 {
-    IPHDR *iph = (IPHDR*)(buffer + 14); // ethernet header is 14 bytes
+    struct iphdr *iph = (struct iphdr*)(buffer + 14); // ethernet header is 14 bytes
 
-    uint8_t proto = PCOL(iph);
+    uint8_t proto = iph->protocol;
     uint16_t sport = 0;
     uint16_t dport = 0;
-    uint16_t id = ID(iph);
+    uint16_t id = ntohs(iph->id);
     uint16_t qsize = id & 2047;
     double tmp_qs = (double) qsize; // * 1.049318; // fix the error caused by bit shifting instead of division
     qsize = (uint16_t)round(tmp_qs);
     uint16_t drops = (id >> 11);
 
     if (proto == IPPROTO_TCP) {
-        TCPHDR *tcph = (TCPHDR*)(buffer + 14 + IHL(iph)*4);
-        sport = SPORT(tcph);
-        dport = DPORT(tcph);
+        struct tcphdr *tcph = (struct tcphdr*)(buffer + 14 + iph->ihl*4);
+        sport = ntohs(tcph->source);
+        dport = ntohs(tcph->dest);
     } else if (proto == IPPROTO_UDP) {
-        UDPHDR *udph = (UDPHDR*) (buffer + 14 + IHL(iph)*4);
-        sport = UDP_SPORT(udph);
-        dport = UDP_DPORT(udph);
+        struct udphdr *udph = (struct udphdr*) (buffer + 14 + iph->ihl*4);
+        sport = ntohs(udph->source);
+        dport = ntohs(udph->dest);
     }
 
-    SrcDst sd(proto, SADDR(iph), sport, DADDR(iph), dport);
-    uint64_t iplen = IP_LEN(iph) + 14; // include the 14 bytes in ethernet header
+    SrcDst sd(proto, iph->saddr, sport, iph->daddr, dport);
+    uint64_t iplen = ntohs(iph->tot_len) + 14; // include the 14 bytes in ethernet header
                                        // the link bandwidth includes it
     iplen *= 8; // use bits
     std::map<SrcDst,FlowData> *fmap;
@@ -196,12 +188,12 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     if (qsize >= QS_LIMIT)
         qsize = QS_LIMIT-1;
 
-    uint8_t ts = IP_TS(iph);
+    uint8_t ts = iph->tos;
     if ((ts & 3) == 3)
         mark = 1;
 
-    if ((tp->m_demomode == 0 && tp->ipclass) || (tp->m_demomode == 1 && tp->demo_data->ipclass))
-        ts = ntohl(SADDR(iph));
+    if (tp->ipclass)
+        ts = ntohl(iph->saddr);
 
     pthread_mutex_lock(&tp->m_mutex);
 
@@ -272,7 +264,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs, DemoData *demodata)
+int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs)
 {
     int i;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -316,7 +308,7 @@ int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pca
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_JOINABLE);
     int res;
-    tp = new ThreadParam(descr, sinterval, folder, nrs, ipclass, demodata);
+    tp = new ThreadParam(descr, sinterval, folder, nrs, ipclass);
 
     // initialize pthread condition used to quit threads on interrupts
     pthread_condattr_t attr;
@@ -334,10 +326,7 @@ int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pca
     }
 
     thread_id[1] = 0;
-    if (demodata != 0)
-        res = pthread_create(&thread_id[1], &attrs, &demo, NULL);
-    else
-        res = pthread_create(&thread_id[1], &attrs, &printInfo, NULL);
+    pthread_create(&thread_id[1], &attrs, &printInfo, NULL);
 
     if (res != 0) {
         fprintf(stderr, "Error while creating thread, exiting...\n");
@@ -775,200 +764,41 @@ void *printInfo(void *)
     return 0;
 }
 
-void processFDDemo() {
-    uint64_t samplelen = tp->db2->last - tp->db2->start;
-
-    tp->nr_ecn_flows = 0;
-    tp->nr_nonecn_flows = 0;
-
-    for (auto& kv: tp->db2->fm.ecn_rate) {
-        const SrcDst& srcdst = kv.first;
-        FlowData& fd = kv.second;
-
-        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
-
-        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
-            if (srcdst.m_proto == IPPROTO_UDP)
-                tp->demo_data->cbrrate_ecn = r;
-            else if (srcdst.m_srcport == 11000 || srcdst.m_srcport == 80 || srcdst.m_srcport == 9999)
-                tp->demo_data->alrate_ecn += r;
-            else if (srcdst.m_dstport == 22) {
-                if (tp->nr_ecn_flows < 10)
-                    tp->demo_data->ecn_th.at(tp->nr_ecn_flows) = r;
-                tp->nr_ecn_flows++;
-            }
-
-            tp->demo_data->util += r;
-            tp->demo_data->drop_ecn += fd.drops;
-            tp->demo_data->mark_ecn += fd.marks;
-        }
-    }
-
-    for (auto& kv: tp->db2->fm.nonecn_rate) {
-        const SrcDst& srcdst = kv.first;
-        FlowData& fd = kv.second;
-
-        uint32_t r = (uint32_t) (fd.rate * 1000000 / samplelen);
-
-        if (srcdst.m_proto == IPPROTO_TCP || srcdst.m_proto == IPPROTO_UDP) {
-            if (srcdst.m_proto == IPPROTO_UDP)
-                tp->demo_data->cbrrate_nonecn = r;
-            else if (srcdst.m_srcport == 11000 || srcdst.m_srcport == 80 || srcdst.m_srcport == 9999)
-                tp->demo_data->alrate_nonecn += r;
-            else if (srcdst.m_dstport == 22) {
-                if (tp->nr_nonecn_flows < 10)
-                    tp->demo_data->nonecn_th.at(tp->nr_nonecn_flows) = r;
-                tp->nr_nonecn_flows++;
-            }
-
-            tp->demo_data->util += r;
-            //std::cout << "util: " << tp->demo_data->util << std::endl;
-            tp->demo_data->drop_nonecn += fd.drops;
-            tp->demo_data->mark_nonecn += fd.marks;
-        }
-    }
+void usage(int argc, char* argv[])
+{
+    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> (optional:) <ip classification> <nrsamples>\n", argv[0]);
+    printf("pcap filter: what to capture. ex.: \"ip and src net 10.187.255.0/24\"\n");
+    printf("If nrsamples is not specified, the samples will be recorded until interrupted\nIp classification is t/f (default f); the 2 lsbits of the src ip are used.\n");
+    exit(1);
 }
 
-void *demo(void *)
+int main(int argc, char **argv)
 {
-    // init
-    usleep(tp->m_sinterval*1000);
-    while (1) {
-        tp->swapDB();
-        uint64_t s, e, diff;
-        s = getStamp();
-        tp->demo_data->init();
+    char *dev;
+    char *folder;
+    uint32_t sinterval;
+    uint32_t nrs = 0;
+    bool ipclass = false;
 
-        processFDDemo();
+    if (argc < 5)
+        usage(argc, argv);
 
-        // prepare data for demo
-        pthread_mutex_lock(&tp->demo_data->mutex);
-        // process qsizes first
-        double qs_at_i = 0;
-        std::vector<double> qs_all;
-        if (tp->db2->tot_packets_ecn > 0) {
-            double qs_ecn = 0;
-            for (int i = 0; i < QS_LIMIT; ++i) {
-                qs_at_i = tp->db2->qs.ecn01[i] + tp->db2->qs.ecn10[i] + tp->db2->qs.ecn11[i];
-                for (int j = 0; j < qs_at_i; ++j)
-                    qs_all.push_back(i);
-                if (i < DEMO_QLIM) {
-                    qs_ecn += qs_at_i * 100/tp->db2->tot_packets_ecn;
-                    tp->demo_data->ll_qsize_y[i] = 100-qs_ecn;
-                }
-                tp->demo_data->avg_qsize_ll += qs_at_i * i;
-            }
-            tp->demo_data->avg_qsize_ll = tp->demo_data->avg_qsize_ll / tp->db2->tot_packets_ecn / 1000; // to become sec
-            tp->demo_data->p99_qsize_ll = qs_all.at(percentile(99, qs_all.size())-1);
+    dev = argv[1];
 
-        }
-        tp->demo_data->avg_qsize_ll = tp->demo_data->avg_qsize_ll + tp->demo_data->rtt_base; // to become at least 7ms
-        qs_all.clear();
+    folder = argv[3];
+    sinterval = atoi(argv[4]);
+    std::string pcapfilter = argv[2];
 
-        if (tp->db2->tot_packets_nonecn > 0) {
-            double qs_nonecn = 0;
-            for (int i = 0; i < QS_LIMIT; ++i) {
-                qs_at_i = tp->db2->qs.ecn00[i];
-                for (int j = 0; j < qs_at_i; ++j)
-                    qs_all.push_back(i);
+    std::cout << "pcap filter: " << pcapfilter << std::endl;
 
-                if (i < DEMO_QLIM) {
-                    qs_nonecn += qs_at_i*100/tp->db2->tot_packets_nonecn;
-                    tp->demo_data->c_qsize_y[i] = 100-qs_nonecn;
-                }
-                tp->demo_data->avg_qsize_c += qs_at_i * i;
-            }
-            tp->demo_data->avg_qsize_c = tp->demo_data->avg_qsize_c / tp->db2->tot_packets_nonecn / 1000; // to become sec
-            tp->demo_data->p99_qsize_c = qs_all.at(percentile(99, qs_all.size())-1);
-        }
-        tp->demo_data->avg_qsize_c = tp->demo_data->avg_qsize_c + tp->demo_data->rtt_base; // to become at least 7ms
+    if (argc > 5)
+        ipclass = (argv[5][0] == 't');
 
-        std::cout << "avg Qdel L: " << tp->demo_data->avg_qsize_ll << " C: " << tp->demo_data->avg_qsize_c << std::endl;
+    if (argc > 6)
+        nrs = atoi(argv[6]);
 
-        uint32_t tot_flows = tp->nr_ecn_flows + tp->nr_nonecn_flows;
-        double remaining_bw = tp->demo_data->linkcap - tp->demo_data->cbrrate_ecn - tp->demo_data->cbrrate_nonecn;
-        if (tot_flows > 0) {
-            remaining_bw = remaining_bw - tp->demo_data->alrate_ecn - tp->demo_data->alrate_nonecn;
-            tp->demo_data->fair_rate = remaining_bw/tot_flows;
-            tp->demo_data->fair_window = remaining_bw /
-                (tp->nr_ecn_flows/(tp->demo_data->avg_qsize_ll + tp->demo_data->rtt_ecn) +
-                 tp->nr_nonecn_flows/(tp->demo_data->avg_qsize_c + tp->demo_data->rtt_nonecn));
-            //std::cout << "fair rate: " << tp->demo_data->fair_rate << std::endl;
-            //std::cout << "fair window: " << tp->demo_data->fair_window << std::endl;
-            std::cout << "ECN flows: " << tp->nr_ecn_flows << ", NONECN flows: " << tp->nr_nonecn_flows << std::endl;
-            for (uint32_t i = 0; i < 10; ++i) {
-                //  add window calculation before throughput is converted to percentage
-                tp->demo_data->ecn_w.at(i) = tp->demo_data->ecn_th.at(i)*(tp->demo_data->avg_qsize_ll+tp->demo_data->rtt_ecn)
-                *100/tp->demo_data->fair_window;
-                tp->demo_data->ecn_th.at(i) = tp->demo_data->ecn_th.at(i)*100/tp->demo_data->fair_rate;
-            }
-            for (uint32_t i = 0; i < 10; ++i) {
-                //  add window calculation before throughput is converted to percentage
-                tp->demo_data->nonecn_w.at(i) = tp->demo_data->nonecn_th.at(i)*(tp->demo_data->avg_qsize_c+tp->demo_data->rtt_nonecn)
-                *100/tp->demo_data->fair_window;
-                tp->demo_data->nonecn_th.at(i) = tp->demo_data->nonecn_th.at(i)*100/tp->demo_data->fair_rate;
-            }
-        } else {
-            tp->demo_data->fair_rate = remaining_bw;
-            int nr_al_flows_ecn = 0;
-            int nr_al_flows_nonecn = 0;
-            if (tp->demo_data->alrate_ecn > 0)
-                nr_al_flows_ecn++;
-            if (tp->demo_data->alrate_nonecn > 0)
-                nr_al_flows_nonecn++;
-            if ((nr_al_flows_ecn + nr_al_flows_nonecn) > 0) {
-                tp->demo_data->fair_rate /= (nr_al_flows_ecn + nr_al_flows_nonecn);
-                tp->demo_data->fair_window = remaining_bw / (nr_al_flows_ecn/(tp->demo_data->avg_qsize_ll+tp->demo_data->rtt_ecn) +
-                                nr_al_flows_nonecn/(tp->demo_data->avg_qsize_c+tp->demo_data->rtt_nonecn));
-            }
-        }
+    start_analysis(dev, folder, sinterval, pcapfilter, ipclass, nrs);
 
-        tp->demo_data->alw_ecn = tp->demo_data->alrate_ecn*(tp->demo_data->avg_qsize_ll+tp->demo_data->rtt_ecn)*100/tp->demo_data->fair_window;
-        tp->demo_data->alw_nonecn = tp->demo_data->alrate_nonecn*(tp->demo_data->avg_qsize_c+tp->demo_data->rtt_nonecn)*100/tp->demo_data->fair_window;
-
-        double tot_packets_ecn = tp->db2->tot_packets_ecn + tp->demo_data->drop_ecn;
-        double tot_packets_nonecn = tp->db2->tot_packets_nonecn + tp->demo_data->drop_nonecn;
-        tp->demo_data->cbrrate_ecn = tp->demo_data->cbrrate_ecn*100/tp->demo_data->linkcap;
-        tp->demo_data->cbrrate_nonecn = tp->demo_data->cbrrate_nonecn*100/tp->demo_data->linkcap;
-        tp->demo_data->alrate_ecn = tp->demo_data->alrate_ecn*100/tp->demo_data->fair_rate;
-        tp->demo_data->alrate_nonecn = tp->demo_data->alrate_nonecn*100/tp->demo_data->fair_rate;
-
-        double scale = 0.01;
-        if (tot_packets_ecn > 0) {
-            tp->demo_data->mark_ecn = floor((tp->demo_data->mark_ecn * 100 / tot_packets_ecn)/scale + 0.5)*scale;
-            tp->demo_data->drop_ecn = floor((tp->demo_data->drop_ecn * 100 / tot_packets_ecn)/scale + 0.5)*scale;
-        }
-        if (tot_packets_nonecn > 0) {
-            tp->demo_data->mark_nonecn = floor((tp->demo_data->mark_nonecn * 100 / tot_packets_nonecn)/scale + 0.5)*scale;
-            tp->demo_data->drop_nonecn = floor((tp->demo_data->drop_nonecn * 100 / tot_packets_nonecn)/scale + 0.5)*scale;
-        }
-
-        tp->demo_data->fair_rate = floor((tp->demo_data->fair_rate/1000000*8)/scale + 0.5)*scale;
-        std::cout << "fair rate: " << tp->demo_data->fair_rate << std::endl;
-        tp->demo_data->fair_window = floor((tp->demo_data->fair_window/1000)/scale + 0.5)*scale;
-        std::cout << "fair window: " << tp->demo_data->fair_window << std::endl;
-
-        std::cout << "util:" << tp->demo_data->util << std::endl;
-        std::cout << "cbr cubic rate: " << tp->demo_data->cbrrate_nonecn << std::endl;
-        tp->demo_data->util = ceil(tp->demo_data->util*100/tp->demo_data->linkcap);
-        if (tp->demo_data->util > 100)
-            tp->demo_data->util = 100;
-        // convert qsize back to ms without added RTT
-        tp->demo_data->avg_qsize_c = (tp->demo_data->avg_qsize_c-tp->demo_data->rtt_base)*1000;
-        tp->demo_data->avg_qsize_ll = (tp->demo_data->avg_qsize_ll-tp->demo_data->rtt_base)*1000;
-
-        std::cout << "util:" << tp->demo_data->util << std::endl;
-        pthread_cond_signal(&tp->demo_data->newdata);
-        pthread_mutex_unlock(&tp->demo_data->mutex);
-
-        tp->db2->init(); // init outside the critical area to save time
-
-        e = getStamp();
-        diff = e - s;
-        if (tp->m_sinterval*1000 > diff) {
-            uint64_t sleeptime = (uint64_t)tp->m_sinterval*1000 - diff;
-            printf("sleeping for %d us\n", (int)sleeptime);
-            usleep(sleeptime);
-        }
-    }
+    //fprintf(stderr,"main exiting..\n");
+    return 0;
 }

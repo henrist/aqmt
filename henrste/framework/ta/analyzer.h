@@ -172,14 +172,12 @@ public:
     uint32_t m_sinterval;
     char* m_folder;
     uint32_t m_nrs;
-    bool m_demomode;
     bool ipclass;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
     uint32_t nr_ecn_flows;
     uint32_t nr_nonecn_flows;
-    DemoData *demo_data;
-    ThreadParam(pcap_t* descr, uint32_t sinterval, char* folder, uint32_t nrs, bool ipc, DemoData *demodata);
+    ThreadParam(pcap_t* descr, uint32_t sinterval, char* folder, uint32_t nrs, bool ipc);
     void swapDB();
     volatile bool quit;
     pthread_cond_t quit_cond;
@@ -189,6 +187,6 @@ public:
 };
 
 uint64_t getStamp();
-int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs, DemoData *demodata);
+int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, bool ipclass, uint32_t nrs);
 
 #endif // ANALYSIS_H
