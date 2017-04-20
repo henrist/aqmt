@@ -23,7 +23,7 @@ ta: main.cpp $(HEADERS) Makefile libta
 debug: $(SRC) $(HEADERS) Makefile
 	$(CPP) -g $(SRC) -std=c++11 -lpcap -pthread -O0 -o $@
 calc_henrste: calc_henrste.cpp Makefile
-	$(CPP) calc_henrste.cpp -O3 -o $@
+	$(CPP) calc_henrste.cpp -std=c++11 -O3 -o $@
 
 ####################################################################
 ####################################################################

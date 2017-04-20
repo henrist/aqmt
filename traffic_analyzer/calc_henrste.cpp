@@ -20,15 +20,6 @@
 
 #define percentile(p, n) (ceil(float(p)/100*float(n)))
 
-struct QSDrops {
-    uint32_t qs;
-    uint32_t drops;
-    QSDrops(uint32_t q, uint32_t d) {
-        qs = q;
-        drops = d;
-    }
-};
-
 struct Parameters {
     double rtt_d;
     double rtt_r;
@@ -128,9 +119,9 @@ class Statistics {
         long double sumsq = 0;
         uint32_t n_samples = _samples->size();
 
-        for (std::vector<double>::iterator it = _samples->begin(); it != _samples->end(); ++it) {
-            tot += *it;
-            sumsq += (long double)*it * *it;
+        for (double val: *_samples) {
+            tot += val;
+            sumsq += (long double) val * val;
         }
 
         _variance = 0;
@@ -214,19 +205,15 @@ void writeToFile(std::string filename, std::string data) {
     fs->close();
 }
 
-/* currently not used
-void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ecn, std::string folder, int i) {
-    std::ofstream *f_decn_pdf;
-    std::ofstream *f_mecn_pdf;
+void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ecn, int i) {
+    std::ofstream *f_decn_pdf = openFileW("d_pf_ecn_pdf");
+    std::ofstream *f_mecn_pdf = openFileW("m_pf_ecn_pdf");
+    std::ofstream *f_dnonecn_pdf = openFileW("d_pf_nonecn_pdf");
 
     std::vector<double> *samples_drops_ecn = drops_ecn->samples();
     std::vector<double> *samples_drops_nonecn = drops_nonecn->samples();
     std::vector<double> *samples_marks_ecn = marks_ecn->samples();
 
-    f_decn_pdf = openFileW("d_pf_ecn_pdf");
-    f_mecn_pdf = openFileW("m_pf_ecn_pdf");
-
-    std::ofstream *f_dnonecn_pdf = openFileW("d_pf_nonecn_pdf");
     uint32_t decn_pdf[PDF_BINS];
     uint32_t dnonecn_pdf[PDF_BINS];
     uint32_t mecn_pdf[PDF_BINS];
@@ -234,7 +221,7 @@ void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ec
     bzero(dnonecn_pdf, sizeof(uint32_t)*PDF_BINS);
     bzero(mecn_pdf, sizeof(uint32_t)*PDF_BINS);
 
-    uint32_t max = 0;f
+    uint32_t max = 0;
 
     if (samples_drops_ecn->back() > max)
         max = samples_drops_ecn->back();
@@ -244,17 +231,15 @@ void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ec
     uint32_t binsize = max/PDF_BINS;
     uint32_t b;
 
-    for (std::vector<double>::iterator it = samples_drops_ecn->begin(); it != samples_drops_ecn->end(); ++it)
-    {
-        b = (*it)/binsize;
+    for (double val: *samples_drops_ecn) {
+        b = val / binsize;
         if (b >= PDF_BINS)
             b = PDF_BINS - 1;
         decn_pdf[b]++;
     }
 
-    for (std::vector<double>::iterator it = samples_drops_nonecn->begin(); it != samples_drops_nonecn->end(); ++it)
-    {
-        b = (*it)/binsize;
+    for (double val: *samples_drops_nonecn) {
+        b = val / binsize;
         if (b >= PDF_BINS)
             b = PDF_BINS - 1;
         dnonecn_pdf[b]++;
@@ -264,9 +249,8 @@ void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ec
         max = samples_marks_ecn->back();
 
     binsize = max/PDF_BINS;
-    for (std::vector<double>::iterator it = samples_marks_ecn->begin(); it != samples_marks_ecn->end(); ++it)
-    {
-        b = (*it)/binsize;
+    for (double val: *samples_marks_ecn) {
+        b = val / binsize;
         if (b >= PDF_BINS)
             b = PDF_BINS - 1;
         mecn_pdf[b]++;
@@ -275,19 +259,15 @@ void dmPDF(Statistics *drops_ecn, Statistics *drops_nonecn, Statistics *marks_ec
     for (int i = 0; i < PDF_BINS; ++i) {
         *f_decn_pdf << i << " " << decn_pdf[i] << std::endl;
         *f_mecn_pdf << i << " " << mecn_pdf[i] << std::endl;
-
         *f_dnonecn_pdf << i << " " << dnonecn_pdf[i] << std::endl;
     }
 
     f_decn_pdf->close();
     f_mecn_pdf->close();
-
     f_dnonecn_pdf->close();
 }
-*/
 
-/* currently not used
-void rPDF(std::vector<double> *samples_rate_ecn, std::vector<double> *samples_rate_nonecn, std::string folder, char fairness, int dctcp, int reno, int nbrf) {
+void rPDF(Statistics *rate_ecn, Statistics *rate_nonecn, char fairness, int dctcp, int reno, int nbrf) {
     std::ofstream *f_recn_pdf = openFileW("r_pf_ecn_pdf");
     std::ofstream *f_rnonecn_pdf = openFileW("r_pf_nonecn_pdf");
     uint32_t recn_pdf[PDF_BINS];
@@ -295,9 +275,10 @@ void rPDF(std::vector<double> *samples_rate_ecn, std::vector<double> *samples_ra
     bzero(recn_pdf, sizeof(uint32_t)*PDF_BINS);
     bzero(rnonecn_pdf, sizeof(uint32_t)*PDF_BINS);
 
-    uint32_t max = 0;
+    std::vector<double> *samples_rate_ecn = rate_ecn->samples();
+    std::vector<double> *samples_rate_nonecn = rate_nonecn->samples();
 
-    max = fairness == 'e' ? dctcp + reno : (dctcp ? dctcp : reno);
+    uint32_t max = fairness == 'e' ? dctcp + reno : (dctcp ? dctcp : reno);
     if (max == 0)
         max = 1;
 
@@ -306,17 +287,15 @@ void rPDF(std::vector<double> *samples_rate_ecn, std::vector<double> *samples_ra
     uint32_t binsize = max/PDF_BINS;
     uint32_t b;
 
-    for (std::vector<double>::iterator it = samples_rate_ecn->begin(); it != samples_rate_ecn->end(); ++it)
-    {
-        b = (*it)/binsize;
+    for (double val: *samples_rate_ecn) {
+        b = val / binsize;
         if (b >= PDF_BINS)
             b = PDF_BINS - 1;
         recn_pdf[b]++;
     }
 
-    for (std::vector<double>::iterator it = samples_rate_nonecn->begin(); it != samples_rate_nonecn->end(); ++it)
-    {
-        b = (*it)/binsize;
+    for (double val: *samples_rate_nonecn) {
+        b = val / binsize;
         if (b >= PDF_BINS)
             b = PDF_BINS - 1;
         rnonecn_pdf[b]++;
@@ -330,7 +309,6 @@ void rPDF(std::vector<double> *samples_rate_ecn, std::vector<double> *samples_ra
     f_recn_pdf->close();
     f_rnonecn_pdf->close();
 }
-*/
 
 void readFileMarks(std::string filename_marks, Statistics *stats, std::string filename_tot) {
     std::ifstream infile_marks(filename_marks.c_str());
@@ -342,9 +320,8 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
 
     for (int s = 0; s < NRSAMPLES; ++s) {
         for (int colnr = 0; colnr < 3; ++colnr) {
-            if (infile_marks.eof() || infile_tot.eof()) {
+            if (infile_marks.eof() || infile_tot.eof())
                 break;
-            }
 
             infile_marks >> marks;
 
@@ -353,7 +330,7 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
                 double marks_perc = 0;
 
                 if (tot_packets > 0) {
-                    marks_perc = marks*100/tot_packets;
+                    marks_perc = marks * 100 / tot_packets;
                 }
 
                 samples->push_back(marks_perc);
@@ -376,9 +353,8 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
 
     for (int s = 0; s < NRSAMPLES; ++s) {
         for (int colnr = 0; colnr < 3; ++colnr) {
-            if (infile_drops.eof() || infile_tot.eof()) {
+            if (infile_drops.eof() || infile_tot.eof())
                 break;
-            }
 
             infile_drops >> drops;
 
@@ -556,8 +532,8 @@ int main(int argc, char **argv) {
         res->wr_static = res->win_nonecn->average() / res->win_ecn->average();
     }
 
-    //rPDF(res->rate_ecn->samples, res->rate_nonecn->samples, params->folder.str(), params->fairness[0], params->n_dctcp, params->n_reno, params->nbrf);
-    //dmPDF(res->drops_qs_ecn->samples, res->drops_qs_nonecn->samples, res->marks_ecn->samples, params->folder.str(), i);
+    //rPDF(res->rate_ecn, res->rate_nonecn, params->fairness[0], params->n_dctcp, params->n_reno, params->nbrf);
+    //dmPDF(res->drops_qs_ecn, res->drops_qs_nonecn, res->marks_ecn, i);
 
     if (res->drops_qs_nonecn->p(99) > 100) {
         std::cerr << "too high drops p99: " << res->drops_qs_nonecn->p(99) << std::endl;
