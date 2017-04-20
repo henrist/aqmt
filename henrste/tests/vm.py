@@ -36,10 +36,11 @@ def test(result_folder):
 
     run_test(
         folder=result_folder,
-        title='Testing VM',
-        subtitle='Using 10 flows of CUBIC, 10 flows of DCTCP (with ECN) and 1 flow UDP',
+        title='Testing VM stability - 10 x CUBIC, 10 x DCTCP, 1 x UDP (non-ECN)',
+        subtitle='PI2 used has target 15ms tupdate 15ms alpha 5 beta 50 k 2 t\\\\_shift 30 ms l\\\\_drop 100',
         testenv=TestEnv(testbed, retest=False, reanalyze=False),
         steps=(
+            steps.html_index(level_order=[4,1,2,3,0]),
             steps.plot_compare(level_order=[4,1,2,3,0], components=[
                 collection_components.utilization_queues(),
                 collection_components.utilization_tags(),
@@ -49,14 +50,14 @@ def test(result_folder):
                 collection_components.queueing_delay(),
                 collection_components.drops_marks(y_logarithmic=True),
                 collection_components.drops_marks(),
-            ], x_scale=2),
+            ], x_scale=2.5),
             #steps.plot_flows(),
             steps.branch_runif([
                 ('simula', lambda testenv: hostname() == 'ford', 'PHY'),
-                ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', '-SM'),
+                ('simula-desktop', lambda testenv: hostname() == 'DARASK-SM', 'SM'),
                 ('x250', lambda testenv: hostname() == 'DARASK-X250', 'X250'),
-                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'VM-0'),
-                ('uio-vm-1', lambda testenv: hostname() == 'henrste-20170405-1', 'VM-1'),
+                ('dqa', lambda testenv: hostname() == 'dual-queue-aqm', 'VM0'),
+                ('uio-vm-1', lambda testenv: hostname() == 'henrste-20170405-1', 'VM1'),
             ]),
             steps.branch_sched([
                 # tag, title, name, params
@@ -70,7 +71,7 @@ def test(result_folder):
                 2,
                 10,
                 100,
-            ], title='%d ms'),
+            ], title='%d', titlelabel='RTT [ms]'),
             steps.branch_bitrate([
                 100,
                 250,
@@ -81,7 +82,7 @@ def test(result_folder):
                 50,
                 300,
             ], title='%g'),
-            steps.plot_flows(),
+            #steps.plot_flows(),
             steps.branch_repeat(4),
             my_test,
         ),
