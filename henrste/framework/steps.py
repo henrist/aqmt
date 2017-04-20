@@ -16,7 +16,10 @@ A step is required to yield (minimum one time) in two different ways:
 
 import os.path
 
-from .plot import plot_folder_flows, plot_folder_compare
+from .plot import generate_hierarchy_data_from_folder, \
+                  plot_folder_flows, plot_folder_compare, \
+                  reorder_levels
+from .testcollection import build_html_index
 
 MBIT = 1000*1000
 
@@ -140,4 +143,20 @@ def plot_flows(**plot_args):
         yield
         if not testdef.dry_run and os.path.isdir(testdef.collection.folder):
             plot_folder_flows(testdef.collection.folder, **plot_args)
+    return step
+
+def html_index(level_order=None):
+    def step(testdef):
+        yield
+
+        tree = reorder_levels(
+            generate_hierarchy_data_from_folder(testdef.collection.folder),
+            level_order=level_order,
+        )
+
+        out = build_html_index(tree, testdef.collection.folder)
+
+        with open(testdef.collection.folder + '/index.html', 'w') as f:
+            f.write(out)
+
     return step
