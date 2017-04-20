@@ -74,6 +74,13 @@ RUN chmod 600 /root/.ssh/* \
     # SSH login fix. Otherwise user is kicked off after login
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     \
+    # optimize ssh connection by persisting connection
+    && echo "Host *" >>/etc/ssh/ssh_config \
+    && echo "    ControlMaster auto" >>/etc/ssh/ssh_config \
+    && echo "    ControlPersist yes" >>/etc/ssh/ssh_config \
+    && echo "    ControlPath ~/.ssh/socket-%r@%h:%p" >>/etc/ssh/ssh_config \
+    && echo "    AddressFamily inet" >>/etc/ssh/ssh_config \
+    \
     && echo ". /tmp/testbed-vars.sh" >>/etc/bash.bashrc \
     && echo "cd /opt/testbed" >>/etc/bash.bashrc \
     && echo ". /tmp/testbed-vars.sh" >>/etc/profile.d/testbed.sh
