@@ -12,13 +12,13 @@ from . import logger
 from .terminal import get_log_cmd
 
 
-def get_common_script_path():
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/common.sh'
+def get_testbed_script_path():
+    return "aqmt-testbed.sh"
 
 
 def require_on_aqm_node():
-    common = get_common_script_path()
-    bash['-c', 'set -e; source %s; require_on_aqm_node' % common] & FG
+    testbed_script = get_testbed_script_path()
+    bash['-c', 'set -e; source %s; require_on_aqm_node' % testbed_script] & FG
 
 
 class Testbed:
@@ -94,7 +94,7 @@ class Testbed:
         cmd = bash['-c', """
             # configuring testbed
             set -e
-            source """ + get_common_script_path() + """
+            source """ + get_testbed_script_path() + """
 
             set_offloading off
 
@@ -122,7 +122,7 @@ class Testbed:
         cmd = bash['-c', """
             # resetting testbed
             set -e
-            source """ + get_common_script_path() + """
+            source """ + get_testbed_script_path() + """
 
             kill_all_traffic
             reset_aqm_client_edge
@@ -147,8 +147,8 @@ class Testbed:
 
     @staticmethod
     def get_aqm_options(name):
-        common = get_common_script_path()
-        res = bash['-c', 'set -e; source %s; get_aqm_options %s' % (common, name)]()
+        testbed_script = get_testbed_script_path()
+        res = bash['-c', 'set -e; source %s; get_aqm_options %s' % (testbed_script, name)]()
         return res.strip()
 
     def get_setup(self):
@@ -175,8 +175,8 @@ class Testbed:
             ip = 'IP_%s_MGMT' % node
 
             out += '  %s: ' % node.lower()
-            common = get_common_script_path()
-            out += (bash['-c', 'set -e; source %s; get_host_cc "$%s"' % (common, ip)] | local['tr']['\n', ' '])().strip()
+            testbed_script = get_testbed_script_path()
+            out += (bash['-c', 'set -e; source %s; get_host_cc "$%s"' % (testbed_script, ip)] | local['tr']['\n', ' '])().strip()
             out += '\n'
 
         return out.strip()

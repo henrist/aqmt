@@ -8,7 +8,7 @@
 # it handles both setup in the docker environment as well as on a real testbed
 # as the variables for the testbed is stored seperately
 
-. "$(dirname $(readlink -f $BASH_SOURCE))/vars.sh"
+. "$(dirname $(readlink -f $BASH_SOURCE))/aqmt-vars.sh"
 
 # run all tc and ip commands through sudo if needed
 tc() {

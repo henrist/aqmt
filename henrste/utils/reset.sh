@@ -2,8 +2,8 @@
 
 # this scripts resets all nodes and edges to base configuration
 
-cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../common.sh
+set -e
+source aqmt-testbed.sh
 
 reset_aqm_client_edge
 reset_aqm_server_edge

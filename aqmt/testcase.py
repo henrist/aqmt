@@ -47,11 +47,13 @@ def analyze_test(testfolder, samples_to_skip):
     if not os.path.exists(testfolder + '/aggregated'):
         os.makedirs(testfolder + '/aggregated')
 
-    cmd = local['./framework/calc_queue_packets_drops'][testfolder, str(samples_to_skip)]
+    program = os.path.join(os.path.dirname(__file__), 'calc_queue_packets_drops')
+    cmd = local[program][testfolder, str(samples_to_skip)]
     logger.debug(get_log_cmd(cmd))
     cmd()
 
-    cmd = local['./framework/calc_basic'][testfolder, str(bitrate), str(rtt_l4s), str(rtt_classic), str(samples_to_skip)]
+    program = os.path.join(os.path.dirname(__file__), 'calc_basic')
+    cmd = local[program][testfolder, str(bitrate), str(rtt_l4s), str(rtt_classic), str(samples_to_skip)]
     logger.debug(get_log_cmd(cmd))
     cmd()
 
@@ -142,11 +144,12 @@ class TestCase:
             """
             # running analyzer
             set -e
-            . vars.sh
+            source aqmt-vars.sh
             mkdir -p '%s/ta'
-            sudo ./framework/ta/analyzer $IFACE_CLIENTS '%s' '%s/ta' %d %d
+            sudo %s $IFACE_CLIENTS '%s' '%s/ta' %d %d
             """ % (
                 self.test_folder,
+                os.path.join(os.path.dirname(__file__), 'ta/analyzer'),
                 pcapfilter,
                 self.test_folder,
                 self.testenv.testbed.ta_delay,

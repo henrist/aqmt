@@ -5,8 +5,8 @@
 
 import argparse
 
-from framework.plot import generate_hierarchy_data_from_folder, reorder_levels
-from framework.testcollection import build_html_index
+from aqmt.plot import generate_hierarchy_data_from_folder, reorder_levels
+from aqmt.testcollection import build_html_index
 
 
 def command_parse(args):

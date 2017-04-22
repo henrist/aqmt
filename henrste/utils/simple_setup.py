@@ -3,12 +3,7 @@
 # This script configures the network so that you can run manual
 # traffic on it.
 
-# add path to library root
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-from framework import Testbed, logger
+from aqmt import Testbed, logger
 
 if __name__ == '__main__':
     testbed = Testbed()

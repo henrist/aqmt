@@ -3,8 +3,8 @@
 # this script shows the current tc/ip setup on the local computer
 # (it is piped through less to make it easier to use)
 
-cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../vars.sh
+set -e
+source aqmt-vars.sh
 
 links=$(ip link show up | grep -v "^ " | sed 's/.*: \([^:@]\+\)[:@].*/\1/')
 verbose=

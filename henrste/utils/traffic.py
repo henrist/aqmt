@@ -3,13 +3,8 @@
 # This script allows to run a traffic generator outside
 # the testcase. E.g. on a manual setup!
 
-# add path to library root
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-from framework import MBIT, Testbed, TestEnv, processes, traffic
-from framework.traffic import greedy, udp
+from aqmt import MBIT, Testbed, TestEnv, processes, traffic
+from aqmt.traffic import greedy, udp
 
 def run_test(test_fn):
 

@@ -7,9 +7,7 @@
 #
 
 set -ex
-
-cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../vars.sh
+source aqmt-vars.sh
 
 mac_clienta=$(ssh $IP_CLIENTA_MGMT "ip l show $IFACE_ON_CLIENTA | grep ether | awk '{ print \$2 }'")
 mac_clientb=$(ssh $IP_CLIENTB_MGMT "ip l show $IFACE_ON_CLIENTB | grep ether | awk '{ print \$2 }'")

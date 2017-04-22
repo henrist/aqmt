@@ -5,8 +5,9 @@
 #
 # Run from the AQM machine.
 
-cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../vars.sh
+set -e
+
+source aqmt-vars.sh
 
 if [ -n "$IFACE_AQM" ]; then
     echo "This script must be run on the AQM machine"

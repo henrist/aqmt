@@ -2,8 +2,10 @@
 # run this on the different clients/servers
 # it will monitor various parameters for you
 
+set -e
+source aqmt-vars.sh
+
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. ../vars.sh
 
 if [ -z "$IFACE_AQM" ]; then
     echo "Could not find IFACE_AQM variable."

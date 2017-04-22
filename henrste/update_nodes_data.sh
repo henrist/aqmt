@@ -3,10 +3,10 @@
 # This scripts upload needed scripts and programs
 # to the clients and servers
 
-cd "$(dirname $(readlink -f $BASH_SOURCE))"
-. vars.sh
-
 set -e
+source aqmt-vars.sh
+
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
 
 if ! [ -f ../greedy_generator/greedy ]; then
     echo "You have to build the utils before you can run this script"
@@ -19,7 +19,7 @@ if [ -f /testbed-is-docker ]; then
     exit 1
 fi
 
-f=/opt/testbed/henrste/vars.sh
+f=/tmp/aqmt-vars.sh
 
 for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; do
     ssh root@$ip '
@@ -39,7 +39,10 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
         echo "export IP_SERVERA_MGMT='$IP_SERVERA_MGMT'" >>'$f'
         echo "export IP_SERVERA='$IP_SERVERA'" >>'$f'
         echo "export IP_SERVERB_MGMT='$IP_SERVERB_MGMT'" >>'$f'
-        echo "export IP_SERVERB='$IP_SERVERB'" >>'$f
+        echo "export IP_SERVERB='$IP_SERVERB'" >>'$f'
+        ln -s '$f' /usr/local/bin/aqmt-vars.sh
+        '
+
     scp -p ../greedy_generator/greedy root@$ip:/opt/testbed/greedy_generator/greedy
     scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/testbed/henrste/utils/
     scp -p views/* root@$ip:/opt/testbed/henrste/views/

@@ -5,17 +5,12 @@ This module provides a CLI that can be used to plot collections
 manually.
 """
 
-# add path to library root
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-
 import argparse
 import os.path
 
-from framework.plot.common import PlotAxis
-from framework.plot import collection_components
-from framework.plot import plot_folder_compare, plot_folder_flows, plot_tests
+from aqmt.plot.common import PlotAxis
+from aqmt.plot import collection_components
+from aqmt.plot import plot_folder_compare, plot_folder_flows, plot_tests
 
 
 def command_comparison(args):
