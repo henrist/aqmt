@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # This file lists the interfaces on the docker host that the containers
-# are using. This is usefull if you want to monitor the traffic through
+# are using. This is useful if you want to monitor the traffic through
 # e.g. wireshark
 #
 
