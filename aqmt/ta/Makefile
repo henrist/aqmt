@@ -7,10 +7,3 @@ analyzer: analyzer.cpp
 
 clean:
 	rm -rf analyzer
-
-#libta:
-#
-
-#analyzer: analyzer.cpp
-
-
