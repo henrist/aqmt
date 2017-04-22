@@ -16,7 +16,7 @@ fi
 
 # -- get from localhost (aqm)
 
-if [ -f /testbed-is-docker ]; then
+if [ -f /.dockerenv ]; then
     echo
     echo "WARN: You are inside Docker and we cannot show you sysctl values"
     echo "      Please use get_sysctl.sh outside Docker to inspect it"
@@ -59,7 +59,7 @@ for i in ${!ifaces[@]}; do
         echo \"\$ethres\" | grep tcp-segmentation-offload
         echo \"txqueuelen: \$(ip l show ${ifaces[$i]} | grep qlen | sed 's/.*qlen\s\+\([0-9]\+\).*/\1/')\"
 
-        if ! [ -f /testbed-is-docker ]; then
+        if ! [ -f /.dockerenv ]; then
             sysctl net.ipv4.tcp_rmem
             sysctl net.ipv4.tcp_wmem
             sysctl net.core.netdev_max_backlog

@@ -16,7 +16,7 @@
 # - wmem=4194304: maximum tcp window of 965 (4194304 / 1448 / 3)
 # - rmem=6921456: maximum tcp window of 4780 (6921456 / 1448)
 
-if [ -f /testbed-is-docker ]; then
+if [ -f /.dockerenv ]; then
     echo "Don't run this inside Docker"
     exit 1
 fi

@@ -8,18 +8,18 @@ source aqmt-vars.sh
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 
-if [ -f /testbed-is-docker ]; then
+if [ -f /.dockerenv ]; then
     echo "You can't run this inside Docker - and there is no need to!"
     exit 1
 fi
 
-f=/tmp/aqmt-vars.sh
+f=/opt/aqmt/bin/aqmt-vars.sh
 
 for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; do
     ssh root@$ip '
-        mkdir -p /opt/testbed/henrste/utils
-        rm -Rf /opt/testbed/henrste/views
-        mkdir -p /opt/testbed/henrste/views
+        mkdir -p /opt/aqmt/henrste/utils
+        rm -Rf /opt/aqmt/henrste/views
+        mkdir -p /opt/aqmt/henrste/views
 
         echo "export IP_AQM_MGMT='$IP_AQM_MGMT'" >'$f'
         echo "export IP_AQM_C='$IP_AQM_C'" >>'$f'

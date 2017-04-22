@@ -29,7 +29,7 @@ setup_client() {
 
     disable_so $iface
 
-    echo "export IFACE_AQM=$iface" >/tmp/testbed-vars-local.sh
+    echo "export IFACE_AQM=$iface" >/aqmt-vars-local.sh
 }
 
 setup_server() {
@@ -44,7 +44,7 @@ setup_server() {
 
     (set -x && arp -i $iface -s ${1}.2 02:42:0a:19:0${1/*.}:02)
 
-    echo "export IFACE_AQM=$iface" >/tmp/testbed-vars-local.sh
+    echo "export IFACE_AQM=$iface" >/aqmt-vars-local.sh
 
     #echo "Adding route to other servers through aqm-machine"
     #if [ "$(ip route show to 10.25.2.0/24)" == "" ]; then
@@ -58,10 +58,10 @@ setup_aqm() {
     echo "Setting up AQM-variables"
 
     local iface=$(ip route show to 10.25.0.0/24 | awk '{print $3}')
-    echo "export IFACE_MGMT=$iface" >/tmp/testbed-vars-local.sh
+    echo "export IFACE_MGMT=$iface" >/aqmt-vars-local.sh
 
     local iface=$(ip route show to 10.25.1.0/24 | awk '{print $3}')
-    echo "export IFACE_CLIENTS=$iface" >>/tmp/testbed-vars-local.sh
+    echo "export IFACE_CLIENTS=$iface" >>/aqmt-vars-local.sh
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.1.11 02:42:0a:19:01:0b)
@@ -70,7 +70,7 @@ setup_aqm() {
     disable_so $iface
 
     local iface=$(ip route show to 10.25.2.0/24 | awk '{print $3}')
-    echo "export IFACE_SERVERA=$iface" >>/tmp/testbed-vars-local.sh
+    echo "export IFACE_SERVERA=$iface" >>/aqmt-vars-local.sh
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.2.21 02:42:0a:19:02:15)
@@ -78,7 +78,7 @@ setup_aqm() {
     disable_so $iface
 
     local iface=$(ip route show to 10.25.3.0/24 | awk '{print $3}')
-    echo "export IFACE_SERVERB=$iface" >>/tmp/testbed-vars-local.sh
+    echo "export IFACE_SERVERB=$iface" >>/aqmt-vars-local.sh
     (set -x && tc qdisc add dev $iface root handle 1: pfifo_fast)
     (set -x && ip link set $iface txqueuelen 1000)
     (set -x && arp -i $iface -s 10.25.2.31 02:42:0a:19:03:1f)
@@ -92,11 +92,11 @@ setup_aqm() {
     nets=(10.25.1.0/24 10.25.1.0/24 10.25.2.0/24 10.25.3.0/24)
     for i in ${!names[@]}; do
         (
-            . /tmp/testbed-vars.sh
+            . /aqmt-vars.sh
             local ip_name="IP_${names[$i]}"
             local iface
             iface=$(ssh ${!ip_name} "ip route show to ${nets[$i]} | awk '{print \$3}'")
-            echo "export IFACE_ON_${names[$i]}=$iface" >>/tmp/testbed-vars-local.sh
+            echo "export IFACE_ON_${names[$i]}=$iface" >>/aqmt-vars-local.sh
         )
     done
 }

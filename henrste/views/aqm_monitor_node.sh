@@ -28,4 +28,4 @@ else
     exit 1
 fi
 
-ssh -t $host bash -ic /opt/testbed/henrste/views/node_monitor.sh
+ssh -t $host bash -ic /opt/aqmt/henrste/views/node_monitor.sh

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ -f /testbed-is-docker ]; then
+if [ -f /.dockerenv ]; then
     echo "Don't run this inside Docker"
     exit 1
 fi

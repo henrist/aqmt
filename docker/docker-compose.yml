@@ -20,11 +20,12 @@ services:
         ipv4_address: 10.25.3.2
     volumes:
       - /etc/hostname:/tmp/dockerhost-hostname # to get real hostname inside docker
-      - ../:/opt/testbed/
-      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ../:/opt/aqmt/
+      - ./.vars.sh:/aqmt-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
       - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
       - ./container/id_rsa.pub:/ssh-template/authorized_keys
+      - $TEST_PATH:/opt/testbed
 
   clienta:
     build: .
@@ -39,11 +40,12 @@ services:
       clients:
         ipv4_address: 10.25.1.11
     volumes:
-      - ../:/opt/testbed/
-      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ../:/opt/aqmt/
+      - ./.vars.sh:/aqmt-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
       - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
       - ./container/id_rsa.pub:/ssh-template/authorized_keys
+      - $TEST_PATH:/opt/testbed
 
   clientb:
     build: .
@@ -58,11 +60,12 @@ services:
       clients:
         ipv4_address: 10.25.1.12
     volumes:
-      - ../:/opt/testbed/
-      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ../:/opt/aqmt/
+      - ./.vars.sh:/aqmt-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
       - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
       - ./container/id_rsa.pub:/ssh-template/authorized_keys
+      - $TEST_PATH:/opt/testbed
 
   servera:
     build: .
@@ -77,11 +80,12 @@ services:
       servera:
         ipv4_address: 10.25.2.21
     volumes:
-      - ../:/opt/testbed/
-      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ../:/opt/aqmt/
+      - ./.vars.sh:/aqmt-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
       - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
       - ./container/id_rsa.pub:/ssh-template/authorized_keys
+      - $TEST_PATH:/opt/testbed
 
   serverb:
     build: .
@@ -96,19 +100,20 @@ services:
       serverb:
         ipv4_address: 10.25.3.31
     volumes:
-      - ../:/opt/testbed/
-      - ./.vars.sh:/tmp/testbed-vars.sh
+      - ../:/opt/aqmt/
+      - ./.vars.sh:/aqmt-vars.sh
       - ./container/id_rsa:/ssh-template/id_rsa
       - ./container/id_rsa.pub:/ssh-template/id_rsa.pub
       - ./container/id_rsa.pub:/ssh-template/authorized_keys
+      - $TEST_PATH:/opt/testbed
 
   fix_permissions:
     build: .
     image: testbed
     volumes:
-      - ../:/opt/testbed/
+      - ../:/opt/aqmt/
     network_mode: none
-    entrypoint: /opt/testbed/docker/fix_permissions.sh
+    entrypoint: /opt/aqmt/docker/fix-permissions.sh
 
 networks:
   management:

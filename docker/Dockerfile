@@ -52,9 +52,11 @@ RUN apt-get update \
     && echo "    ControlPath ~/.ssh/socket-%r@%h:%p" >>/etc/ssh/ssh_config \
     && echo "    AddressFamily inet" >>/etc/ssh/ssh_config \
     \
-    && echo ". /tmp/testbed-vars.sh" >>/etc/bash.bashrc \
+    && echo ". /aqmt-vars.sh" >>/etc/bash.bashrc \
     && echo "cd /opt/testbed" >>/etc/bash.bashrc \
-    && echo ". /tmp/testbed-vars.sh" >>/etc/profile.d/testbed.sh
+    && echo ". /aqmt-vars.sh" >>/etc/profile.d/aqmt.sh \
+    && echo 'PATH="/opt/aqmt/bin:$PATH"' >>/etc/bash.bashrc \
+    && echo 'export PYTHONPATH="/opt/aqmt:$PYTHONPATH"' >>/etc/bash.bashrc
 
 COPY container/iproute2-patches /opt/iproute2-patches
 RUN apt-get update \
@@ -87,7 +89,7 @@ RUN apt-get update \
     && apt-get autoremove -y
 
 # create a file that can be used to identify we are in Docker
-RUN touch /testbed-is-docker
+RUN touch /.dockerenv
 
 ADD container/entrypoint.sh /entrypoint.sh
 

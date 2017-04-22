@@ -1,3 +1,6 @@
+# This file is mounted in to the clients and servers
+# (but not the AQM machine)
+
 export IP_AQM_MGMT=10.25.0.2
 export IP_AQM_C=10.25.1.2
 export IP_AQM_SA=10.25.2.2
@@ -15,7 +18,7 @@ export IP_SERVERA=10.25.2.21
 export IP_SERVERB_MGMT=10.25.0.31
 export IP_SERVERB=10.25.3.31
 
-# entrypoint.sh generates testbed-vars-local.sh
-if [ -f /tmp/testbed-vars-local.sh ]; then
-    . /tmp/testbed-vars-local.sh
+# entrypoint.sh generates aqmt-vars-local.sh
+if [ -f /aqmt-vars-local.sh ]; then
+    . /aqmt-vars-local.sh
 fi

@@ -46,7 +46,7 @@ configure_host_cc() {(set -e
             sysctl -q -w net.ipv4.tcp_congestion_control='$tcp_congestion_control'
         else
             # we are on docker
-            . /tmp/testbed-vars-local.sh
+            . /aqmt-vars-local.sh
             if ip a show $IFACE_AQM | grep -q 10.25.1.; then
                 # on client
                 ip route replace 10.25.2.0/24 via 10.25.1.2 dev $IFACE_AQM congctl '$tcp_congestion_control$feature_ecn'
@@ -277,7 +277,7 @@ get_host_cc() {(set -e
             sysctl -n net.ipv4.tcp_ecn
         else
             # we are on docker
-            . /tmp/testbed-vars-local.sh
+            . /aqmt-vars-local.sh
             if ip a show $IFACE_AQM | grep -q 10.25.1.; then
                 # on client
                 route=10.25.2.0/24
