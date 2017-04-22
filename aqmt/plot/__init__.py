@@ -52,7 +52,7 @@ def plot_folder_flows(folder, level_order=None, components=None, **kwargs):
         ]
 
     tree = reorder_levels(
-        generate_hierarchy_data_from_folder(folder, level_order),
+        generate_hierarchy_data_from_folder(folder),
         level_order,
     )
     folders = collectionutil.get_all_testcases_folders(tree)
