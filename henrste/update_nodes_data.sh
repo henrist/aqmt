@@ -8,12 +8,6 @@ source aqmt-vars.sh
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 
-if ! [ -f ../greedy_generator/greedy ]; then
-    echo "You have to build the utils before you can run this script"
-    echo "(Missing binary of greedy_generator)"
-    exit 1
-fi
-
 if [ -f /testbed-is-docker ]; then
     echo "You can't run this inside Docker - and there is no need to!"
     exit 1
@@ -23,7 +17,6 @@ f=/tmp/aqmt-vars.sh
 
 for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; do
     ssh root@$ip '
-        mkdir -p /opt/testbed/greedy_generator
         mkdir -p /opt/testbed/henrste/utils
         rm -Rf /opt/testbed/henrste/views
         mkdir -p /opt/testbed/henrste/views
@@ -43,9 +36,8 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
         ln -s '$f' /usr/local/bin/aqmt-vars.sh
         '
 
-    scp -p ../greedy_generator/greedy root@$ip:/opt/testbed/greedy_generator/greedy
-    scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/testbed/henrste/utils/
-    scp -p views/* root@$ip:/opt/testbed/henrste/views/
+    scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/aqmt/henrste/utils/
+    scp -p views/* root@$ip:/opt/aqmt/henrste/views/
 done
 
 ssh root@$IP_CLIENTA_MGMT 'echo "export IFACE_AQM='$IFACE_ON_CLIENTA'" >>'$f

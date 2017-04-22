@@ -117,6 +117,9 @@ def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
     Run greedy TCP traffic
 
+    Requires https://github.com/henrist/greedy on the machines
+    (Available in the Docker version by default)
+
     Greedy = always data to send, full frames
 
     node: a or b (a is normally classic traffic, b is normally l4s)
@@ -132,8 +135,8 @@ def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
 
     hint_fn('traffic=tcp type=greedy node=%s%s server=%s tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
 
-    cmd1 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], '/opt/testbed/greedy_generator/greedy -vv -s %d' % server_port]
-    cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; /opt/testbed/greedy_generator/greedy -vv %s %d' % (os.environ['IP_SERVER%s' % node], server_port)]
+    cmd1 = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node], 'greedy -vv -s %d' % server_port]
+    cmd2 = ssh['-tt', os.environ['IP_CLIENT%s_MGMT' % node], 'sleep 0.2; greedy -vv %s %d' % (os.environ['IP_SERVER%s' % node], server_port)]
 
     logger.debug(get_log_cmd(cmd1))
     logger.debug(get_log_cmd(cmd2))
