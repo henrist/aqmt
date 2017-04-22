@@ -18,13 +18,12 @@ if __name__ == '__main__':
     testbed.netem_servera_params = ""
     testbed.netem_serverb_params = ""
 
-    #testbed.aqm('pie', 'ecn')
-    testbed.aqm('pi2', 'dc_dualq dc_ecn')
-    #testbed.aqm('pfifo_qsize')
+    testbed.aqm('pie', 'ecn')
+    testbed.aqm('fq_codel', 'ecn')
+    #testbed.aqm('pfifo_aqmt')
 
     testbed.cc('a', 'cubic', Testbed.ECN_ALLOW)
-    #testbed.cc('b', 'cubic', Testbed.ECN_INITIATE)
-    testbed.cc('b', 'dctcp-drop', Testbed.ECN_INITIATE)
+    testbed.cc('b', 'cubic', Testbed.ECN_INITIATE)
 
     testbed.reset(log_level=logger.INFO)
     testbed.setup(log_level=logger.INFO)
