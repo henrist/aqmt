@@ -46,14 +46,6 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
     scp -p ../greedy_generator/greedy root@$ip:/opt/testbed/greedy_generator/greedy
     scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/testbed/henrste/utils/
     scp -p views/* root@$ip:/opt/testbed/henrste/views/
-    scp -rp ../tcp_dctcp root@$ip:/opt/testbed/tcp_dctcp
-
-    ssh root@$ip '
-        cd /opt/testbed/tcp_dctcp
-        make
-        make unload || :
-        make load
-        '
 done
 
 ssh root@$IP_CLIENTA_MGMT 'echo "export IFACE_AQM='$IFACE_ON_CLIENTA'" >>'$f
