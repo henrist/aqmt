@@ -42,7 +42,7 @@ class Testbed:
         self.netem_servera_params = ""
         self.netem_serverb_params = ""
 
-        self.aqm_name = 'pfifo_qsize'  # we need a default aqm to get queue delay
+        self.aqm_name = 'pfifo_aqmt'  # we need a default aqm to get queue delay
         self.aqm_params = ''
 
         self.cc_a = 'cubic'
@@ -58,7 +58,7 @@ class Testbed:
 
     def aqm(self, name='', params=''):
         if name == 'pfifo':
-            name = 'pfifo_qsize'  # use our custom version with qsize
+            name = 'pfifo_aqmt'  # use our custom version with aqmt
 
         self.aqm_name = name
         self.aqm_params = params
