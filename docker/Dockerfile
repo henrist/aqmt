@@ -56,13 +56,7 @@ RUN apt-get update \
     && echo "cd /opt/testbed" >>/etc/bash.bashrc \
     && echo ". /tmp/testbed-vars.sh" >>/etc/profile.d/testbed.sh
 
-# set up custom iproute2
-# (patch is originally written for branch v3.16.0 of iproute2,
-#  using v4.6.0 for support of 'ip route congctl'
-#  using v4.8.0 because of kernel changes
-#  using v4.10.0 because of targeting this kernel)
-ADD container/iproute2.patch /opt/
-WORKDIR /opt
+COPY container/iproute2-patches /opt/iproute2-patches
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
          bison \
@@ -74,12 +68,17 @@ RUN apt-get update \
          patch \
          pkg-config \
     && rm -rf /var/lib/apt/lists/* \
+    \
+    # set up custom iproute2 (we need at least v4.6.0 for 'ip route congctl' support
+    && cd /opt \
     && git clone --depth=1 --branch=v4.10.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
     && cd iproute2 \
-    && patch -p1 <../iproute2.patch \
+    && find /opt/iproute2-patches -name "*.patch" -print0 | xargs --no-run-if-empty -0 patch -p1 -i \
     && make \
     && make install \
+    && cd /opt \
     && rm -rf /opt/iproute2 \
+    \
     && apt-get remove -y bison build-essential flex git iptables-dev libdb5.3-dev patch pkg-config \
     && apt-get autoremove -y
 
