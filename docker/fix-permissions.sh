@@ -7,7 +7,7 @@ fi
 
 cd "$(dirname $(readlink -f $BASH_SOURCE))"
 
-d="../henrste"
+d="/opt/testbed"
 
 chown -R $(stat -c '%u' "$d"):$(stat -c '%g' "$d") "$d"
 

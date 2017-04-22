@@ -112,6 +112,7 @@ services:
     image: testbed
     volumes:
       - ../:/opt/aqmt/
+      - $TEST_PATH:/opt/testbed
     network_mode: none
     entrypoint: /opt/aqmt/docker/fix-permissions.sh
 
