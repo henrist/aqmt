@@ -14,6 +14,7 @@ disable_so() {
     iface=$1
     # disable segmentation offload
     # see http://rtodto.net/generic_segmentation_offload_and_wireshark/
+    (set -x && ethtool -K $iface gro off)
     (set -x && ethtool -K $iface gso off)
     (set -x && ethtool -K $iface tso off)
 }
