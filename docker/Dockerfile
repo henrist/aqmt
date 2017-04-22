@@ -79,6 +79,10 @@ RUN apt-get update \
     && cd /opt \
     && rm -rf /opt/iproute2 \
     \
+    # set up greedy
+    && wget -O /usr/bin/greedy https://github.com/henrist/greedy/releases/download/v0.1/greedy \
+    && chmod +x /usr/bin/greedy \
+    \
     && apt-get remove -y bison build-essential flex git iptables-dev libdb5.3-dev patch pkg-config \
     && apt-get autoremove -y
 
