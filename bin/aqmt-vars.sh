@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# use tc from iproute2-l4s in parent directory
-tc="$(dirname "$(dirname "$(readlink -f "$BASH_SOURCE")")")/iproute2-l4s/tc/tc"
-
 # load variables if running on simula testbed
 if [ "$(hostname)" == "ford" ]; then
     . "$(dirname $(readlink -f $BASH_SOURCE))/simula_testbed.env"
 fi
 
+# TODO: Resolve how this should work in the new directory structure
+tc=tc
 if ! [[ "$PATH" = *iproute2-l4s* ]] && [ -f "$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc/tc" ]; then
     export PATH="$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc:$PATH"
+    tc="$(dirname "$(dirname "$(readlink -f "$BASH_SOURCE")")")/iproute2-l4s/tc/tc"
 fi
 
 ADDITIONAL_VARS=""
