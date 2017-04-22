@@ -38,7 +38,7 @@ print_level = get_level_from_name(
     INFO
 )
 file_level = TRACE
-logfile = os.environ['LOG_FILE'] if 'LOG_FILE' in os.environ else 'test_framework.log'
+logfile = os.environ['LOG_FILE'] if 'LOG_FILE' in os.environ else 'aqmt.log'
 
 
 def get_level_name(level):
