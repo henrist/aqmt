@@ -17,10 +17,12 @@ f=/opt/aqmt/bin/aqmt-vars.sh
 
 for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; do
     ssh root@$ip '
-        mkdir -p /opt/aqmt/henrste/utils
-        rm -Rf /opt/aqmt/henrste/views
-        mkdir -p /opt/aqmt/henrste/views
+        mkdir -p /opt/aqmt/bin
+        '
 
+    scp -p ../bin/* root@$ip:/opt/aqmt/bin/
+
+    ssh root@$ip '
         echo "export IP_AQM_MGMT='$IP_AQM_MGMT'" >'$f'
         echo "export IP_AQM_C='$IP_AQM_C'" >>'$f'
         echo "export IP_AQM_SA='$IP_AQM_SA'" >>'$f'
@@ -36,8 +38,6 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
         ln -s '$f' /usr/local/bin/aqmt-vars.sh
         '
 
-    scp -p utils/set_sysctl_tcp_mem.sh root@$ip:/opt/aqmt/henrste/utils/
-    scp -p views/* root@$ip:/opt/aqmt/henrste/views/
 done
 
 ssh root@$IP_CLIENTA_MGMT 'echo "export IFACE_AQM='$IFACE_ON_CLIENTA'" >>'$f

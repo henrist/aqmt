@@ -9,8 +9,8 @@ if [ -n "$IFACE_AQM" ]; then
 fi
 
 if [ -z "$1" ]; then
-    echo "Syntax: ./aqm_monitor_node.sh <node>"
-    echo "Example: ./aqm_monitor_node.sh clienta"
+    echo "Syntax: $0 <node>"
+    echo "Example: $0 clienta"
     exit 1
 fi
 
@@ -28,4 +28,4 @@ else
     exit 1
 fi
 
-ssh -t $host bash -ic /opt/aqmt/henrste/views/node_monitor.sh
+ssh -t $host bash -ic /opt/aqmt/bin/aqmt-monitor-node

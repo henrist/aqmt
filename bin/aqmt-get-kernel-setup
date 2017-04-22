@@ -19,7 +19,7 @@ fi
 if [ -f /.dockerenv ]; then
     echo
     echo "WARN: You are inside Docker and we cannot show you sysctl values"
-    echo "      Please use get_sysctl.sh outside Docker to inspect it"
+    echo "      Please use aqmt-get-sysctl outside Docker to inspect it"
     echo
 else
     echo

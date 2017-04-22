@@ -1,5 +1,5 @@
 #!/bin/sh
-# syntax: ./set_sysctl_tcp_mem.sh [maximum_window_size]
+# syntax: ./aqmt-set-sysctl-tcp-mem [maximum_window_size]
 
 # default values on Henrik's Simula-machine:
 # net.ipv4.tcp_rmem = 4096        87380   6291456

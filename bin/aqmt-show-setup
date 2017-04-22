@@ -16,7 +16,7 @@ show_filter=0
 while getopts "fhilrv" opt; do
     case $opt in
         h)
-            echo "Usage: ./show_setup.sh [-hilrv] [interface ...]"
+            echo "Usage: $0 [-hilrv] [interface ...]"
             echo "  -h  show help"
             echo "  -f  show ip filter details"
             echo "  -i  show ip addr details"

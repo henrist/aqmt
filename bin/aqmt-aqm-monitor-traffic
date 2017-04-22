@@ -6,7 +6,7 @@
 # showing their current bandwidth
 
 # example:
-# ./aqm_monitor_traffic.sh 0.05 <number-mbit>
+# ./aqmt-aqm-monitor-traffic 0.05 <number-mbit>
 
 set -e
 source aqmt-vars.sh

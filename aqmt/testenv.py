@@ -129,7 +129,7 @@ class TestEnv:
             processes.add_known_pid(pid)
 
     def run_monitor_setup(self):
-        cmd = local['watch']['-n', '.2', './views/show_setup.sh', '-v', '%s' % os.environ['IFACE_CLIENTS']]
+        cmd = local['watch']['-n', '.2', 'aqmt-show-setup', '-v', '%s' % os.environ['IFACE_CLIENTS']]
 
         logger.info(get_log_cmd(cmd))
         if not self.dry_run:

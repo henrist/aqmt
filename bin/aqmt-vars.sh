@@ -5,6 +5,16 @@ if [ "$(hostname)" == "ford" ]; then
     . "$(dirname $(readlink -f $BASH_SOURCE))/simula_testbed.env"
 fi
 
+# add our bin folder to PATH if needed
+if ! [[ "$PATH" == *"aqmt"* ]]; then
+    PATH="$(dirname $(readlink -f $BASH_SOURCE)):$PATH"
+fi
+
+# add python library to PYTHONPATH if needed
+if ! [[ "$PYTONPATH" == *"aqmt"* ]]; then
+    export PYTHONPATH="$(dirname $(readlink -f $BASH_SOURCE)):$PYTHONPATH"
+fi
+
 # TODO: Resolve how this should work in the new directory structure
 tc=tc
 if ! [[ "$PATH" = *iproute2-l4s* ]] && [ -f "$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc/tc" ]; then

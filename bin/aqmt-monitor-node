@@ -15,13 +15,13 @@ fi
 
 # force this inside tmux
 if [ -z "$TMUX" ]; then
-    tmux new-session "./node_monitor.sh"
+    tmux new-session "$0"
     exit 0
 fi
 
 cmds=()
-cmds[0]="watch -n .2 ./show_setup.sh -vi $IFACE_AQM"
-cmds[1]="./monitor_iface_status.sh"
+cmds[0]="watch -n .2 aqmt-show-setup -vi $IFACE_AQM"
+cmds[1]="aqmt-monitor-iface-status"
 
 sn="node-monitor-$(date +%s)"
 
