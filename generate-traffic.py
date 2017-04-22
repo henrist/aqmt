@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-
+#
 # This script allows to run a traffic generator outside
 # the testcase. E.g. on a manual setup!
+#
 
 from aqmt import MBIT, Testbed, TestEnv, processes, traffic
 from aqmt.traffic import greedy, udp

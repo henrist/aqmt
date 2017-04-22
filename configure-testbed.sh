@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 #
 # This script configures the network so that you can run manual
-# traffic on it.
+# traffic on it. Change it as you like.
+#
+# You normally don't need to run this script as the framework takes
+# care of setting up the tested for you.
+#
 
 from aqmt import Testbed, logger
 
