@@ -1,13 +1,15 @@
 #!/bin/bash
 #
-# This script sets static arp routes on the Simula testbed
+# This script sets static arp routes on the testbed
 # so that tests are not interrupted with arp requests.
 #
 # Run this from the aqm-machine.
-
-. simula_testbed.env
+#
 
 set -ex
+
+cd "$(dirname $(readlink -f $BASH_SOURCE))"
+. ../vars.sh
 
 mac_clienta=$(ssh $IP_CLIENTA_MGMT "ip l show $IFACE_ON_CLIENTA | grep ether | awk '{ print \$2 }'")
 mac_clientb=$(ssh $IP_CLIENTB_MGMT "ip l show $IFACE_ON_CLIENTB | grep ether | awk '{ print \$2 }'")
