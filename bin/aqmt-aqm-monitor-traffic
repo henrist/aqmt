@@ -1,12 +1,12 @@
 #!/bin/bash
-
-# run this on the aqm-machine
-
-# this script opens three panes and monitor the three interfaces
+#
+# Run this on the aqm-machine
+#
+# This script opens three panes and monitor the three interfaces
 # showing their current bandwidth
-
-# example:
-# ./aqmt-aqm-monitor-traffic 0.05 <number-mbit>
+#
+# Run the script for usage
+#
 
 set -e
 source aqmt-vars.sh
@@ -16,9 +16,6 @@ if [ -n "$IFACE_AQM" ]; then
     exit 1
 fi
 
-delay=0.05
-max=$((1000*1000*12/8))
-
 ifaces=($IFACE_CLIENTS $IFACE_SERVERA $IFACE_SERVERB)
 
 if [ ${#ifaces[@]} -eq 0 ]; then
@@ -26,17 +23,18 @@ if [ ${#ifaces[@]} -eq 0 ]; then
     exit 1
 fi
 
-if [ -z $TMUX ]; then
-    echo "Run this inside tmux!"
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Usage:   $0 <delay in seconds> <Mbps max>"
+    echo "Example: $0 0.1 100"
     exit 1
 fi
 
-if ! [ -z $1 ]; then
-    delay=$1
-fi
+delay=$1
+max=$((1024*1024*$2/8))
 
-if ! [ -z $2 ]; then
-    max=$((1024*1024*$2/8))
+if [ -z $TMUX ]; then
+    echo "Run this inside tmux!"
+    exit 1
 fi
 
 sn="monitor-$(date +%s)"
