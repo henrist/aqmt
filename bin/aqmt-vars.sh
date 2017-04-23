@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Path to iproute2's tc command - can be overriden in environment file
+# By default we use the one we find in PATH
+tc=tc
+
 # User provided environment should be placed in /etc/aqmt.env
 # See aqmt.env.template for example.
 if [ -f /etc/aqmt.env ]; then
@@ -14,13 +18,6 @@ fi
 # add python library to PYTHONPATH if needed
 if ! [[ "$PYTONPATH" == *"aqmt"* ]]; then
     export PYTHONPATH="$(dirname $(readlink -f $BASH_SOURCE)):$PYTHONPATH"
-fi
-
-# TODO: Resolve how this should work in the new directory structure
-tc=tc
-if ! [[ "$PATH" = *iproute2-l4s* ]] && [ -f "$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc/tc" ]; then
-    export PATH="$(dirname $(readlink -f $BASH_SOURCE))/../iproute2-l4s/tc:$PATH"
-    tc="$(dirname "$(dirname "$(readlink -f "$BASH_SOURCE")")")/iproute2-l4s/tc/tc"
 fi
 
 ADDITIONAL_VARS=""
