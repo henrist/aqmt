@@ -8,7 +8,7 @@ p="$(dirname $(readlink -f $BASH_SOURCE))"
 
 if [[ $PATH == *"$p"* ]]; then
     echo "You have already added the path!"
-    exit
+    return 1
 fi
 
 export PATH="$p/bin:$PATH"
