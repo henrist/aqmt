@@ -149,14 +149,15 @@ def html_index(level_order=None):
     def step(testdef):
         yield
 
-        tree = reorder_levels(
-            generate_hierarchy_data_from_folder(testdef.collection.folder),
-            level_order=level_order,
-        )
+        if not testdef.dry_run and os.path.isdir(testdef.collection.folder):
+            tree = reorder_levels(
+                generate_hierarchy_data_from_folder(testdef.collection.folder),
+                level_order=level_order,
+            )
 
-        out = build_html_index(tree, testdef.collection.folder)
+            out = build_html_index(tree, testdef.collection.folder)
 
-        with open(testdef.collection.folder + '/index.html', 'w') as f:
-            f.write(out)
+            with open(testdef.collection.folder + '/index.html', 'w') as f:
+                f.write(out)
 
     return step
