@@ -182,14 +182,8 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
         break;
     }
 
-    uint32_t idport;
-    if (dport == 22 || (dport > 5000 && dport <= 5050))
-        idport = dport;
-    else
-        idport = sport;
-
     std::pair<std::map<SrcDst,FlowData>::iterator,bool> ret;
-    ret = fmap->insert(std::pair<SrcDst,FlowData>(sd, FlowData((uint64_t)iplen, (uint32_t)drops, mark, idport)));
+    ret = fmap->insert(std::pair<SrcDst,FlowData>(sd, FlowData((uint64_t)iplen, (uint32_t)drops, mark)));
     if (ret.second == false)
         fmap->at(sd).update(iplen, drops, mark);
 
