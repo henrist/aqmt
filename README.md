@@ -40,9 +40,103 @@ minutes if you already have Docker.
 See [docker](./docker/README.md) subfolder for more details how
 you can use it with Docker.
 
+See below for details for how to use this without Docker, e.g.
+on a physical testbed infrastructure.
+
 ## Using the framework to write tests and analyze results
 
 See [aqmt](./aqmt/README.md) subfolder.
+
+## Using schedulers (qdiscs) in tests
+
+We have a special requirements for all schedulers we will be testing.
+We need to modify them so they will give us precise statistics about
+delay and drops.
+
+We are using the IPv4 ID field in the packets to signal queueing delay
+and drop information. See [RFC6864](https://tools.ietf.org/html/rfc6864)
+for more details about the ID field.
+
+We have provided three implementations you can look at:
+
+- https://github.com/henrist/aqmt-fq-codel-scheduler
+- https://github.com/henrist/aqmt-pfifo-scheduler
+- https://github.com/henrist/aqmt-pie-scheduler
+
+## Provided tools
+
+A number of tools are provided to ease monitoring.
+
+To be run on the AQM machine:
+
+- `aqmt-aqm-monitor-node`: Runs `aqmt-monitor-node` on a given node. E.g.
+  `aqmt-aqm-monitor-node clienta`.
+- `aqmt-aqm-monitor-setup`: Runs `aqmt-show-setup` periodically for the AQM
+  interface.
+- `aqmt-aqm-monitor-traffic`: Runs `speedometer` for the three interfaces
+  on the AQM machine. Will visualize the traffic that is running.
+- `aqmt-get-kernel-setup`: Will show you various ethernet and memory
+  settings that is currently in effect.
+- `aqmt-ss-stats`: Runs `ss` on clients/servers filtering test traffic.
+  Can be used to investigate window sizes, memory configuration etc.
+
+To be run on any machine:
+
+- `aqmt-get-sysctl`: Show you the current rmem and wmem limits.
+- `aqmt-kill-ssh-control-ports`: Removes the SSH control socket, can
+  be used if the SSH connections become stale (you don't normally need this).
+- `aqmt-monitor-iface-status`: Monitors the number of packets sent/received
+  as well as number of drops on the interface level. If you have drops on the
+  interface level, other limits (such as netem limit) drops packets!
+- `aqmt-show-setup`: Dumps information from `tc` and `ip`.
+  Run `aqmt-show-setup -h` for usage. Use it with `watch` to monitor
+  interfaces, e.g.: `watch -n 0.5 aqmt-show-setup -v $IFACE_AQM` on
+  a client/server.
+
+Other utilities:
+
+- `aqmt-reset-testbed`: Resets the testbed (removes the qdiscs, delay etc.)
+  from the AQM machine.
+- `aqmt-set-sysctl-tcp-mem`: See seperate section explaining.
+- `aqmt-update-nodes-vars`: See seperate section explaining.
+
+## Configuring the testbed outside a test
+
+You can use the provided `configure-testbed.py` to set up the testbed
+similar to what is done inside a test.
+
+Use this if you want to experiment without having to run the test
+framework.
+
+When done, you can use `aqmt-reset-testbed` to remove the setup.
+You will need to reset the testbed if you want to reload any
+kernel modules. The framework resets before/after every test.
+
+## Increasing the rmem and wmem tcp sizes
+
+You normally don't need to do this.
+
+On our test machine the default rmem and wmem values equals a maximum
+TCP window size of approx 965 packets of 1500b MTU. (It's limited of the wmem,
+allthough rmem defaults to approx 4780 packets.) On a 1 gigabit link, latency
+above 11,6 ms will cause the utilization to drop.
+
+To increase rmem and wmem to allow a TCP window up to approx. 5000 packets:
+
+```bash
+# from the AQM-machine
+aqmt-set-sysctl-tcp-mem 5000
+```
+
+It will apply the change to all the machines.
+
+## Vagrant and Ansible
+
+This is work in progress where we want to use Vagrant to provision
+a test environment (with Docker inside), so we have full control of the
+host kernel.
+
+https://www.vagrantup.com/docs/provisioning/ansible_local.html
 
 ## Running on a real testbed
 
@@ -133,7 +227,7 @@ analyze the captures):
 make
 ```
 
-## Adding ARP table entries
+### Adding ARP table entries
 
 If you want to test for stability, you don't want the tests to be interrupted
 with the network stack doing ARP requests.
@@ -144,78 +238,3 @@ aqmt-add-arp-entries
 ```
 
 See the script for details.
-
-## Increasing the rmem and wmem tcp sizes
-
-You normally don't need to do this.
-
-On our test machine the default rmem and wmem values equals a maximum
-TCP window size of approx 965 packets of 1500b MTU. (It's limited of the wmem,
-allthough rmem defaults to approx 4780 packets.) On a 1 gigabit link, latency
-above 11,6 ms will cause the utilization to drop.
-
-To increase rmem and wmem to allow a TCP window up to approx. 5000 packets:
-
-```bash
-# from the AQM-machine
-aqmt-set-sysctl-tcp-mem 5000
-```
-
-It will apply the change to all the machines.
-
-## Provided tools
-
-A number of tools are provided to ease monitoring.
-
-To be run on the AQM machine:
-
-- `aqmt-aqm-monitor-node`: Runs `aqmt-monitor-node` on a given node. E.g.
-  `aqmt-aqm-monitor-node clienta`.
-- `aqmt-aqm-monitor-setup`: Runs `aqmt-show-setup` periodically for the AQM
-  interface.
-- `aqmt-aqm-monitor-traffic`: Runs `speedometer` for the three interfaces
-  on the AQM machine. Will visualize the traffic that is running.
-- `aqmt-get-kernel-setup`: Will show you various ethernet and memory
-  settings that is currently in effect.
-- `aqmt-ss-stats`: Runs `ss` on clients/servers filtering test traffic.
-  Can be used to investigate window sizes, memory configuration etc.
-
-To be run on any machine:
-
-- `aqmt-get-sysctl`: Show you the current rmem and wmem limits.
-- `aqmt-kill-ssh-control-ports`: Removes the SSH control socket, can
-  be used if the SSH connections become stale (you don't normally need this).
-- `aqmt-monitor-iface-status`: Monitors the number of packets sent/received
-  as well as number of drops on the interface level. If you have drops on the
-  interface level, other limits (such as netem limit) drops packets!
-- `aqmt-show-setup`: Dumps information from `tc` and `ip`.
-  Run `aqmt-show-setup -h` for usage. Use it with `watch` to monitor
-  interfaces, e.g.: `watch -n 0.5 aqmt-show-setup -v $IFACE_AQM` on
-  a client/server.
-
-Other utilities:
-
-- `aqmt-reset-testbed`: Resets the testbed (removes the qdiscs, delay etc.)
-  from the AQM machine.
-- `aqmt-set-sysctl-tcp-mem`: See seperate section explaining.
-- `aqmt-update-nodes-vars`: See seperate section explaining.
-
-## Configuring the testbed outside a test
-
-You can use the provided `configure-testbed.py` to set up the testbed
-similar to what is done inside a test.
-
-Use this if you want to experiment without having to run the test
-framework.
-
-When done, you can use `aqmt-reset-testbed` to remove the setup.
-You will need to reset the testbed if you want to reload any
-kernel modules. The framework resets before/after every test.
-
-## Vagrant and Ansible
-
-This is work in progress where we want to use Vagrant to provision
-a test environment (with Docker inside), so we have full control of the
-host kernel.
-
-https://www.vagrantup.com/docs/provisioning/ansible_local.html
