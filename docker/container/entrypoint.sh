@@ -115,4 +115,6 @@ else
     setup_aqm
 fi
 
+echo "Initialization finished"
+
 exec "$@"
