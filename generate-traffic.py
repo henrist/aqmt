@@ -4,6 +4,8 @@
 # the testcase. E.g. on a manual setup!
 #
 
+import sys
+
 from aqmt import MBIT, Testbed, TestEnv, processes, traffic
 from aqmt.traffic import greedy, udp
 
