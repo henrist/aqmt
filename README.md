@@ -102,6 +102,8 @@ Other utilities:
   from the AQM machine.
 - `aqmt-set-sysctl-tcp-mem`: See seperate section explaining.
 - `aqmt-update-nodes-vars`: See seperate section explaining.
+- `aqmt-build-html-index`: Builds an HTML file with links to all individual
+  test flow plots for a specified result folder.
 
 ## Configuring the testbed outside a test
 
