@@ -1,5 +1,5 @@
 #!/bin/sh
-# syntax: ./aqmt-set-sysctl-tcp-mem [maximum_window_size]
+# syntax: aqmt-set-sysctl-tcp-mem [maximum_window_size]
 
 # default values on Henrik's Simula-machine:
 # net.ipv4.tcp_rmem = 4096        87380   6291456
@@ -25,6 +25,9 @@ if [ $(id -u) -ne 0 ]; then
     echo "Run this with sudo or as root"
     exit 1
 fi
+
+set -e
+source aqmt-vars.sh
 
 if [ -n "$1" ]; then
     max_window=$1
