@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# load variables if running on simula testbed
-if [ "$(hostname)" == "ford" ]; then
-    . "$(dirname $(readlink -f $BASH_SOURCE))/simula_testbed.env"
+# User provided environment should be placed in /etc/aqmt.env
+# See aqmt.env.template for example.
+if [ -f /etc/aqmt.env ]; then
+    source /etc/aqmt.env
 fi
 
 # add our bin folder to PATH if needed
