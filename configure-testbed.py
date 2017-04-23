@@ -12,7 +12,7 @@ from aqmt import Testbed, logger
 if __name__ == '__main__':
     testbed = Testbed()
 
-    testbed.bitrate = 10*1000*10000
+    testbed.bitrate = 100*1000*1000
 
     testbed.rtt_clients = 0  # in ms
     testbed.rtt_servera = 15  # in ms
@@ -22,9 +22,9 @@ if __name__ == '__main__':
     testbed.netem_servera_params = ""
     testbed.netem_serverb_params = ""
 
-    testbed.aqm('pie', 'ecn')
-    testbed.aqm('fq_codel', 'ecn')
-    #testbed.aqm('pfifo_aqmt')
+    #testbed.aqm('pie', 'ecn')
+    #testbed.aqm('fq_codel', 'ecn')
+    testbed.aqm('pfifo_aqmt')
 
     testbed.cc('a', 'cubic', Testbed.ECN_ALLOW)
     testbed.cc('b', 'cubic', Testbed.ECN_INITIATE)
