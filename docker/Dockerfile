@@ -75,7 +75,8 @@ RUN apt-get update \
     && cd /opt \
     && git clone --depth=1 --branch=v4.10.0 git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git iproute2 \
     && cd iproute2 \
-    && find /opt/iproute2-patches -name "*.patch" -print0 | xargs --no-run-if-empty -0 patch -p1 -i \
+    && find /opt/iproute2-patches -name "*.patch" -print0 | sort -z | \
+         xargs --no-run-if-empty -0 -l patch -p1 -f --fuzz=3 -i \
     && make \
     && make install \
     && cd /opt \
