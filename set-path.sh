@@ -4,10 +4,12 @@
 # correctly without having to make symlinks.
 #
 
-if [[ $PATH == *"$(pwd)"* ]]; then
+p="$(dirname $(readlink -f $BASH_SOURCE))"
+
+if [[ $PATH == *"$p"* ]]; then
     echo "You have already added the path!"
     exit
 fi
 
-export PATH="$(pwd)/bin:$PATH"
-export PYTHONPATH="$(pwd):$PYTHONPATH"
+export PATH="$p/bin:$PATH"
+export PYTHONPATH="$p:$PYTHONPATH"
