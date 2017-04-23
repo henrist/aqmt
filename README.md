@@ -10,6 +10,9 @@ Your only requirement is a computer running Linux 4.10 or newer
 (or actually, you should be able to use this for 3.16 and newer,
 see below), and that you have Docker installed.
 
+We currently recommend using Ubuntu 17.04, as it includes the
+4.10 kernel.
+
 Docker is no hard requirement, but you need a physical testbed
 of 5 machines with networking unless you use it.
 
