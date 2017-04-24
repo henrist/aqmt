@@ -7,6 +7,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
          bc \
          ca-certificates \
+         dstat \
          ethtool \
          git \
          gnuplot \
