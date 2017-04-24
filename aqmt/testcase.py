@@ -173,11 +173,14 @@ class TestCase:
         return max(self.testenv.testbed.rtt_clients, self.testenv.testbed.rtt_servera, self.testenv.testbed.rtt_serverb) / 1000 * 5 + 2
 
     def calc_estimated_run_time(self):
-        # add one second for various delay
+        """
+        Add one second for various delay.
+        Note the time excludes any time used in pre/post hooks as it is unknown.
+        """
         samples = self.testenv.testbed.ta_samples + self.testenv.testbed.get_ta_samples_to_skip()
         return samples * self.testenv.testbed.ta_delay / 1000 + self.calc_post_wait_time() + 1
 
-    def run(self, test_fn):
+    def run(self, test_fn, pre_hook=None, post_hook=None):
         if self.directory_error:
             raise Exception('Cannot run a test with an unrecognized directory')
         if self.data_collected:
@@ -200,6 +203,9 @@ class TestCase:
         if not self.testenv.dry_run:
             logger.info(self.testenv.testbed.get_setup())
 
+        if pre_hook is not None and not self.testenv.dry_run:
+            pre_hook(self)
+
         logger.info('%.2f s: Testbed initialized, starting test. Estimated time to finish: %d s' % (time.time()-start, self.calc_estimated_run_time()))
 
         self.save_hint('ta_idle %s' % self.testenv.testbed.ta_idle)
@@ -221,11 +227,14 @@ class TestCase:
 
         if not self.testenv.dry_run:
             processes.waitpid(get_pid_ta())  # wait until 'ta' quits
-
         set_pid_ta(None)
-        processes.kill_known_pids()
 
         logger.info('%.2f s: Data collection finished' % (time.time()-start))
+
+        if post_hook is not None and not self.testenv.dry_run:
+            post_hook(self)
+
+        processes.kill_known_pids()
 
         if processes.is_exiting:
             print("You have aborted an active test")

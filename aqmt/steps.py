@@ -130,6 +130,26 @@ def skipif(fn):
     return step
 
 
+def pre_hook(fn):
+    """
+    Add a pre hook to the testcase. Passed to TestCase's run method.
+    """
+    def step(testdef):
+        testdef.pre_hook = fn
+        yield
+    return step
+
+
+def post_hook(fn):
+    """
+    Add a post hook to the testcase. Passed to TestCase's run method.
+    """
+    def step(testdef):
+        testdef.post_hook = fn
+        yield
+    return step
+
+
 def plot_compare(**plot_args):
     def step(testdef):
         yield

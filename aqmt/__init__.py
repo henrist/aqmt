@@ -34,12 +34,15 @@ class Testdef:
     def __init__(self, testenv):
         self.collection = None  # set by run_test
         self.dry_run = False  # if dry run no side effects should be caused
-        self.testenv = testenv
+        self.post_hook = None
+        self.pre_hook = None
         self.testbed = testenv.testbed  # shortcut to above
+        self.testenv = testenv
         self.level = 0
 
 
-def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, ask_confirmation=None):
+def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None,
+        ask_confirmation=None):
     """
     Run a complete test using list of steps.
 
@@ -73,7 +76,9 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None, a
             else:
                 parent.run_test(
                     test_fn=steps[0],
-                    testenv=testenv
+                    testenv=testenv,
+                    pre_hook=testdef.pre_hook,
+                    post_hook=testdef.post_hook,
                 )
 
         else:

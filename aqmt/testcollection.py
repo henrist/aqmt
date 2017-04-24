@@ -140,11 +140,14 @@ class TestCollection:
             self.parent.collections.append(self)
             self.parent.add_child(os.path.basename(self.folder))
 
-    def run_test(self, test_fn, testenv):
+    def run_test(self, test_fn, testenv, pre_hook=None, post_hook=None):
         """
         Run a single test (the smallest possible test)
 
         test_fn: Method that generates test data
+        testenv: Testenv instance
+        pre_hook: Hook passed to TestCase called just before starting test
+        post_hook: Hook passed to TestCase called just after the test
         """
 
         if self.test:
@@ -160,7 +163,7 @@ class TestCollection:
         if not self.test.should_skip():
             self.test.log_header()
             logged_header = True
-            self.test.run(test_fn)
+            self.test.run(test_fn, pre_hook=pre_hook, post_hook=post_hook)
 
         if (self.test.data_collected or self.test.already_exists) and not testenv.dry_run:
             if not logged_header:
