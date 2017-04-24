@@ -264,6 +264,18 @@ class TestCase:
     def has_valid_data(self):
         return self.already_exists or (not self.testenv.dry_run and self.data_collected)
 
+    def already_analyzed(self):
+        if not os.path.isfile(self.test_folder + '/details'):
+            return False
+
+        with open(self.test_folder + '/details') as f:
+            for line in f:
+                if line.strip() == 'data_analyzed':
+                    return True
+
+        return False
+
+
     def analyze(self):
         samples_to_skip = self.testenv.testbed.get_ta_samples_to_skip()
 

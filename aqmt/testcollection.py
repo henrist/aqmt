@@ -170,7 +170,7 @@ class TestCollection:
                 self.test.log_header()
                 logged_header = True
 
-            if testenv.reanalyze or not self.test.already_exists:
+            if testenv.reanalyze or not self.test.already_analyzed():
                 start = time.time()
                 self.test.analyze()
                 logger.info('Analyzed test (%.2f s)' % (time.time()-start))
