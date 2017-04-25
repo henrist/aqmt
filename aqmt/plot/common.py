@@ -58,13 +58,13 @@ def plot_header():
 
         # palette
         set palette maxcolors 8
-        set palette defined ( 0 '#1B9E77',\
-                              1 '#D95F02',\
-                              2 '#7570B3',\
-                              3 '#E7298A',\
-                              4 '#66A61E',\
-                              5 '#E6AB02',\
-                              6 '#A6761D',\
+        set palette defined ( 0 '#1B9E77',\\
+                              1 '#D95F02',\\
+                              2 '#7570B3',\\
+                              3 '#E7298A',\\
+                              4 '#66A61E',\\
+                              5 '#E6AB02',\\
+                              6 '#A6761D',\\
                               7 '#666666' )
 
         """
