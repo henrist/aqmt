@@ -217,17 +217,11 @@ void printStreamInfo(SrcDst sd)
 
 int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::string &pcapfilter, uint32_t nrs)
 {
-    int i;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *descr;
-    const u_char *packet;
-    struct pcap_pkthdr hdr;     // pcap.h
-    struct ether_header *eptr;  // net/ethernet.h
     struct bpf_program fp;      // The compiled filter expression
     bpf_u_int32 mask;       // The netmask of our sniffing device
     bpf_u_int32 net;        // The IP of our sniffing device
-    u_char *ptr; // printing out hardware header info
-    char *srcnet;
 
     if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
         fprintf(stderr, "Can't get netmask for device %s\n", dev);
@@ -300,10 +294,8 @@ int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::strin
 void *pcapLoop(void *)
 {
     // Put the device in sniff loop
-    //fprintf(stderr, "starting capture\n");
     pcap_loop(tp->m_descr, -1, processPacket, NULL);
     pcap_close(tp->m_descr);
-    //fprintf(stderr, "pcap_loop returned\n");
     return 0;
 }
 
@@ -677,7 +669,7 @@ void *printInfo(void *)
 
 void usage(int argc, char* argv[])
 {
-    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> (optional:) <nrsamples>\n", argv[0]);
+    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> [nrsamples]\n", argv[0]);
     printf("pcap filter: what to capture. ex.: \"ip and src net 10.187.255.0/24\"\n");
     printf("If nrsamples is not specified, the samples will be recorded until interrupted\n");
     exit(1);
@@ -710,6 +702,5 @@ int main(int argc, char **argv)
 
     start_analysis(dev, folder, sinterval, pcapfilter, nrs);
 
-    //fprintf(stderr,"main exiting..\n");
     return 0;
 }
