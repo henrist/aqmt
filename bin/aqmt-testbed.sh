@@ -290,6 +290,17 @@ get_host_cc() {(set -e
         fi'
 )}
 
+check_port_in_use() {(set -e
+    # output to stdout: 0 if free, or else the number of open sockets
+    local host=$1
+    local port=$2
+
+    ssh root@$host "
+        set -e
+        ss -an src :$port | tail -n +2 | wc -l
+        "
+)}
+
 get_aqm_options() {(set -e
     local aqm_name=$1
 

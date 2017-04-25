@@ -140,9 +140,29 @@ class Testbed:
 
         return True
 
-    def get_next_traffic_port(self):
-        tmp = self.traffic_port
-        self.traffic_port += 1
+    def get_next_traffic_port(self, node_to_check=None):
+        while True:
+            tmp = self.traffic_port
+            self.traffic_port += 1
+
+            if node_to_check is not None:
+                if 'CLIENT' not in node_to_check and 'SERVER' not in node_to_check:
+                    raise Exception('Expecting node name like CLIENTA. Got: %s' % node_to_check)
+                host = '$IP_%s_MGMT' % node_to_check
+                import time
+                start = time.time()
+                res = bash['-c', """
+                    set -e
+                    source """ + get_testbed_script_path() + """
+                    check_port_in_use """ + host + """ """ + str(tmp) + """ 2>/dev/null
+                    """]()
+                if int(res) > 0:
+                    # port in use, try next
+                    logger.warn('Port %d on node %s was in use - will try next port' % (tmp, node_to_check))
+                    continue
+
+            break
+
         return tmp
 
     @staticmethod

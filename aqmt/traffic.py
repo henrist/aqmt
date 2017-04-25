@@ -14,9 +14,8 @@ def tcp_netcat(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
     Run TCP traffic with netcat (nc)
     """
-    server_port = testbed.get_next_traffic_port()
-
     node = 'A' if node == 'a' else 'B'
+    server_port = testbed.get_next_traffic_port('SERVER%s' % node)
 
     hint_fn('traffic=tcp type=netcat node=%s%s server=%d tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
 
@@ -47,9 +46,8 @@ def tcp_iperf(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
     Run TCP traffic with iperf2
     """
-    server_port = testbed.get_next_traffic_port()
-
     node = 'A' if node == 'a' else 'B'
+    server_port = testbed.get_next_traffic_port('CLIENT%s' % node)
 
     hint_fn('traffic=tcp type=iperf2 node=%s%s client=%d tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
 
@@ -129,9 +127,8 @@ def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
 
     Returns a lambda to stop the traffic
     """
-    server_port = testbed.get_next_traffic_port()
-
     node = 'A' if node == 'a' else 'B'
+    server_port = testbed.get_next_traffic_port('SERVER%s' % node)
 
     hint_fn('traffic=tcp type=greedy node=%s%s server=%s tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
 
@@ -177,9 +174,8 @@ def udp(dry_run, testbed, hint_fn, run_fn, bitrate, node='a', ect="nonect", tag=
     else:
         ect = 'nonect'
 
-    server_port = testbed.get_next_traffic_port()
-
     node = 'A' if node == 'a' else 'B'
+    server_port = testbed.get_next_traffic_port('CLIENT%s' % node)
 
     hint_fn('traffic=udp node=%s%s client=%s rate=%d ect=%s tag=%s' % (node, node, server_port, bitrate, ect, 'No-tag' if tag is None else tag))
 
