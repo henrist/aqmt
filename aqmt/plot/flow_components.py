@@ -44,7 +44,9 @@ def utilization_queues():
             unset logscale y
             """
 
-        return gpi
+        return {
+            'gpi': gpi,
+        }
 
     return plot
 
@@ -85,7 +87,9 @@ def rate_per_flow(y_logarithmic=False):
             unset logscale y
             """
 
-        return gpi
+        return {
+            'gpi': gpi,
+        }
 
     return plot
 
@@ -120,7 +124,9 @@ def queueing_delay(y_logarithmic=False):
             unset logscale y
             """
 
-        return gpi
+        return {
+            'gpi': gpi,
+        }
 
     return plot
 
@@ -152,7 +158,9 @@ def drops_marks(y_logarithmic=False):
             unset logscale y
             """
 
-        return gpi
+        return {
+            'gpi': gpi,
+        }
 
     return plot
 
@@ -181,6 +189,8 @@ def window(y_logarithmic=False):
             unset logscale y
             """
 
-        return gpi
+        return {
+            'gpi': gpi,
+        }
 
     return plot

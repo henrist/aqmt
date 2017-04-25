@@ -25,45 +25,72 @@ def get_number_samples(testfolder):
     return n
 
 
-def build_plot(testfolder, components, x_scale=1, y_scale=1):
+def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
     """
     Generate a plot for a single test case
     """
 
     aggregated_samples_to_skip = get_aggregated_samples_to_skip(testfolder)
 
-    gpi = plot_header()
-    gpi += """
-        set multiplot layout """ + str(len(components)) + """,1 columnsfirst title '""" + testfolder + """'
-        set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
-        set lmargin 13
-        set xrange [1:""" + str(get_number_samples(testfolder)) + """]
+    def plot_container(result):
+        plot_title = ''
+        if title == 'DEFAULT':
+            plot_title = "title '" + testfolder + "'"
+        elif title is not None:
+            plot_title = "title '" + title + "'"
 
-        # draw line where the statistics for aggregated data is collected from
-        set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
-        set arrow from first """ + str(aggregated_samples_to_skip - .5) + """, graph 0 to first """ + str(aggregated_samples_to_skip - .5) + """, graph 1 nohead ls 100 back
-        """
+        result['gpi'] = plot_header() + """
+            set multiplot layout """ + str(len(components)) + """,1 columnsfirst """ + plot_title + """
+            set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
+            set lmargin 13
+            set xrange [1:""" + str(get_number_samples(testfolder)) + """]
+            """ + result['gpi'] + """
+            unset multiplot
+            reset
+            """
+        result['width'] = '%fcm' % (x_scale * 21)
+        result['height'] = '%fcm' % (y_scale * 7.5 * len(components))
+        return result
 
-    i = 0
-    for component in components:
-        # show xlabel at bottom of the multiplot, so do it only for latest component
-        if i + 1 == len(components):
-            gpi += """
-                set xlabel 'Sample #'
-                """
+    def add_sample_line(result):
+        result['gpi'] = """
+            # draw line where the statistics for aggregated data is collected from
+            set style line 100 lt 1 lc rgb 'red' lw .5 dt 7
+            set arrow 111 \\
+                from first """ + str(aggregated_samples_to_skip - .5) + """, graph 0 \\
+                to first """ + str(aggregated_samples_to_skip - .5) + """, graph 1 \\
+                nohead ls 100 back
 
-        gpi += component(testfolder)
-        i += 1
+            """ + result['gpi'] + """
 
-    gpi += """
-        unset multiplot
-        reset"""
+            unset arrow 111
+            """
+        return result
 
-    return {
-        'gpi': gpi,
-        'width': '%fcm' % (x_scale * 21),
-        'height': '%fcm' % (y_scale * 7.5 * len(components)),
-    }
+    def component_container(result):
+        if 'skip_sample_line' not in result or not result['skip_sample_line']:
+            result = add_sample_line(result)
+        return result
+
+    def merge_components():
+        result = {'gpi': ''}
+
+        i = 0
+        for component in components:
+            # show xlabel at bottom of the multiplot, so do it only for latest component
+            if i + 1 == len(components):
+                result['gpi'] += """
+                    set xlabel 'Sample #'
+                    """
+
+            comp_result = component_container(
+                component(testfolder)
+            )
+            result['gpi'] += comp_result['gpi']
+            i += 1
+        return result
+
+    return plot_container(merge_components())
 
 
 def build_multiple_plot(testfolders, components, **kwargs):
