@@ -276,12 +276,12 @@ class TestCase:
         return False
 
 
-    def analyze(self):
+    def analyze(self, analyze_fn):
         samples_to_skip = self.testenv.testbed.get_ta_samples_to_skip()
 
         remove_hint(self.test_folder, ['data_analyzed', 'analyzed_aggregated_samples_skipped'])
 
-        analyze_test(self.test_folder, samples_to_skip)
+        analyze_fn(self, samples_to_skip)
 
         self.save_hint('data_analyzed')
         self.save_hint('analyzed_aggregated_samples_skipped %d' % samples_to_skip)

@@ -23,9 +23,11 @@ import socket
 from . import traffic
 from . import steps
 from . import logger
+from .plot import plot_test
 from .testcollection import TestCollection
 from .testbed import Testbed, require_on_aqm_node
 from .testenv import TestEnv
+from .testcase import analyze_test
 
 MBIT = 1000 * 1000
 
@@ -39,6 +41,16 @@ class Testdef:
         self.testbed = testenv.testbed  # shortcut to above
         self.testenv = testenv
         self.level = 0
+        self.test_plots = {
+            'analysis': {}, # the value represents **plot_args
+        }
+
+    def testcase_analyze(self, testcase, samples_to_skip):
+        analyze_test(testcase.test_folder, samples_to_skip)
+
+    def testcase_plot(self, testcase):
+        for name, plot_args in self.test_plots.items():
+            plot_test(testcase.test_folder, name=name, **plot_args)
 
 
 def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None,
@@ -77,6 +89,8 @@ def run_test(folder=None, testenv=None, title=None, subtitle=None, steps=None,
                 parent.run_test(
                     test_fn=steps[0],
                     testenv=testenv,
+                    analyze_fn=testdef.testcase_analyze,
+                    plot_fn=testdef.testcase_plot,
                     pre_hook=testdef.pre_hook,
                     post_hook=testdef.post_hook,
                 )

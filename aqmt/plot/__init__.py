@@ -66,7 +66,7 @@ def plot_folder_flows(folder, level_order=None, components=None, **kwargs):
         print('Plotted merge of %s' % folder)
 
 
-def plot_test(folder, components=None, **kwargs):
+def plot_test(folder, name='analysis', components=None, **kwargs):
     if components is None:
         components = [
             flow_components.utilization_queues(),
@@ -81,11 +81,11 @@ def plot_test(folder, components=None, **kwargs):
         ]
 
     export(
-        folder + '/analysis',
+        folder + '/' + name,
         flow.build_plot(folder, components, **kwargs),
     )
 
-    print('Plotted %s' % folder)
+    print('Plotted %s' % (folder + '/' + name))
 
 
 def plot_tests(folder):

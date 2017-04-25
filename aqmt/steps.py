@@ -165,6 +165,19 @@ def plot_flows(**plot_args):
             plot_folder_flows(testdef.collection.folder, **plot_args)
     return step
 
+
+def plot_test(name='analysis', **plot_args):
+    """
+    Define a named plot on the test.
+
+    plot_args is sent to plot_test()
+    """
+    def step(testdef):
+        yield
+        testdef.test_plots[name] = plot_args
+    return step
+
+
 def html_index(level_order=None):
     def step(testdef):
         yield

@@ -140,12 +140,16 @@ class TestCollection:
             self.parent.collections.append(self)
             self.parent.add_child(os.path.basename(self.folder))
 
-    def run_test(self, test_fn, testenv, pre_hook=None, post_hook=None):
+    def run_test(self, test_fn, testenv, analyze_fn, plot_fn,
+            pre_hook=None, post_hook=None):
         """
         Run a single test (the smallest possible test)
 
         test_fn: Method that generates test data
         testenv: Testenv instance
+        analyze_fn: Function that will analyze the test, will be passed the
+            testcase and the number of samples that should be skipped
+        plot_fn: Function that will plot the test
         pre_hook: Hook passed to TestCase called just before starting test
         post_hook: Hook passed to TestCase called just after the test
         """
@@ -172,12 +176,12 @@ class TestCollection:
 
             if testenv.reanalyze or not self.test.already_analyzed():
                 start = time.time()
-                self.test.analyze()
+                self.test.analyze(analyze_fn)
                 logger.info('Analyzed test (%.2f s)' % (time.time()-start))
 
             if testenv.reanalyze or testenv.replot or not self.test.already_exists:
                 start = time.time()
-                plot_test(self.test.test_folder)
+                plot_fn(self.test)
                 logger.info('Plotted test (%.2f s)' % (time.time()-start))
 
             self.add_child(test_folder)
