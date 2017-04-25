@@ -8,47 +8,59 @@ import time
 import sys
 
 from . import logger
-from .plot import plot_test
 from . import processes
 from .testcase import TestCase
 from .testenv import remove_hint, save_hint_to_folder
 
 
 def build_html_index(tree, root_folder):
-    def get_test_pdf(leaf_collection):
+    def get_test_details(leaf_collection):
         folder = leaf_collection['children'][0]['testcase']
         innerfolder = folder
         if folder[0:len(root_folder)] == root_folder:
             innerfolder = folder[len(root_folder):].strip('/')
 
-        pdf = folder + '/analysis.pdf'
-        innerpdf = innerfolder + '/analysis.pdf'
-        if os.path.isfile(pdf):
-            return innerfolder, innerpdf
-        else:
-            return innerfolder, None
+        pdfs = []
+        if os.path.isdir(folder):
+            for f in os.listdir(folder):
+                if f[-4:] == '.pdf':
+                    pdfs.append({
+                        'name': f[:-4],
+                        'path': os.path.join(innerfolder, f),
+                    })
 
-    out = ''
+        return {
+            'path': innerfolder,
+            'pdfs': pdfs,
+        }
 
     def walk(collection, depth=0):
         nonlocal out
 
         if 'testcase' in collection['children'][0]:
-            folder, pdf = get_test_pdf(collection)
             titlelabel = '%s: ' % collection['titlelabel'] if collection['titlelabel'] != '' else ''
             out += '<li>' + html.escape(titlelabel) + '<b>' + html.escape(collection['title']) + '</b>: '
 
-            if pdf is None:
+            test_details = get_test_details(collection)
+
+            out += test_details['path'] + ': '
+
+            if len(test_details['pdfs']) == 0:
                 out += '(no pdf)'
             else:
-                out += '<a href="' + html.escape(pdf) + '">' + html.escape(folder) + '</a>'
+                out += ', '.join([
+                    '<a href="' + html.escape(x['path']) + '">' + html.escape(x['name']) + '</a>'
+                    for x in test_details['pdfs']
+                ]) + ','
 
-            out += ' <a href="' + html.escape(folder + '/details') + '">setup</a>'
+            out += ' <a href="' + html.escape(test_details['path'] + '/details') + '">details</a>'
             out += '</li>\n'
 
         else:
             titlelabel = '%s: ' % collection['titlelabel'] if collection['titlelabel'] != '' else ''
             out += '<li>' + html.escape(titlelabel) + '<b>' + html.escape(collection['title']) + '</b><ul>\n'
+
+
 
             for subcollection in collection['children']:
                 walk(subcollection, depth + 1)
