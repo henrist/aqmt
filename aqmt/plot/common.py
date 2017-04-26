@@ -29,15 +29,8 @@ def add_scale(y_logarithmic, range_from='0', range_from_log='1', range_to='1<*',
 
 def plot_header():
     return """
-        #set key above
-        #set key box linestyle 99
         set key spacing 1.3
-        set grid xtics ytics ztics lw 0.2 lc rgb 'gray'
-        #set boxwidth 0.2 absolute
-
-        #set xtic rotate by -65 offset 1
-        #set style fill solid 1.0 border
-        #set boxwidth 0.4
+        set grid xtics ytics ztics lw 1 lc rgb 'black'
 
         # from https://github.com/aschn/gnuplot-colorbrewer
         # line styles for ColorBrewer Dark2

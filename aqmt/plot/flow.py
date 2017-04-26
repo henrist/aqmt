@@ -31,6 +31,7 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
     """
 
     aggregated_samples_to_skip = get_aggregated_samples_to_skip(testfolder)
+    n_samples = get_number_samples(testfolder)
 
     def plot_container(result):
         plot_title = ''
@@ -43,7 +44,8 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
             set multiplot layout """ + str(len(components)) + """,1 columnsfirst """ + plot_title + """
             set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
             set lmargin 13
-            set xrange [1:""" + str(get_number_samples(testfolder)) + """]
+            set xtic font ',11'
+
             """ + result['gpi'] + """
             unset multiplot
             reset
@@ -75,19 +77,14 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
     def merge_components():
         result = {'gpi': ''}
 
-        i = 0
         for component in components:
-            # show xlabel at bottom of the multiplot, so do it only for latest component
-            if i + 1 == len(components):
-                result['gpi'] += """
-                    set xlabel 'Sample #'
-                    """
-
             comp_result = component_container(
                 component(testfolder)
             )
-            result['gpi'] += comp_result['gpi']
-            i += 1
+            result['gpi'] += """
+                set xrange [1:""" + str(n_samples) + """]
+                """ + comp_result['gpi']
+
         return result
 
     return plot_container(merge_components())
