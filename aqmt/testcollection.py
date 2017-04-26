@@ -14,11 +14,14 @@ from .testenv import remove_hint, save_hint_to_folder
 
 
 def build_html_index(tree, root_folder):
+    def get_innerfolder(subfolder):
+        if subfolder[0:len(root_folder)] == root_folder:
+            return subfolder[len(root_folder):].strip('/')
+        return subfolder
+
     def get_test_details(leaf_collection):
         folder = leaf_collection['children'][0]['testcase']
-        innerfolder = folder
-        if folder[0:len(root_folder)] == root_folder:
-            innerfolder = folder[len(root_folder):].strip('/')
+        innerfolder = get_innerfolder(folder)
 
         pdfs = []
         if os.path.isdir(folder):
@@ -60,12 +63,26 @@ def build_html_index(tree, root_folder):
             titlelabel = '%s: ' % collection['titlelabel'] if collection['titlelabel'] != '' else ''
             out += '<li>' + html.escape(titlelabel) + '<b>' + html.escape(collection['title']) + '</b><ul>\n'
 
-
-
             for subcollection in collection['children']:
                 walk(subcollection, depth + 1)
 
             out += '</ul></li>\n'
+
+    def get_aggregated_pdfs():
+        pdfs = []
+
+        for root, dirs, files in os.walk(root_folder):
+            if 'test' in dirs:
+                dirs.remove('test')
+
+            for f in files:
+                if f[-4:] == '.pdf':
+                    pdfs.append({
+                        'name': f[:-4],
+                        'path': os.path.join(get_innerfolder(root), f),
+                    })
+
+        return pdfs
 
     out = ''
     out += '<!doctype html>\n'
@@ -75,6 +92,14 @@ def build_html_index(tree, root_folder):
     out += '<ul>\n'
 
     walk(tree)
+
+    pdfs = get_aggregated_pdfs()
+    if len(pdfs) > 0:
+        out += '<li><b>Aggregated</b><ul>\n'
+        for pdf in pdfs:
+            out += '<li><a href="' + html.escape(pdf['path']) + '">' + html.escape(pdf['path']) + '</a></li>\n'
+
+        out += '</ul></li>'
 
     out += '</ul>\n'
     out += '</body>\n'
