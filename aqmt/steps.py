@@ -130,23 +130,35 @@ def skipif(fn):
     return step
 
 
-def pre_hook(fn):
+def add_pre_hook(fn):
     """
     Add a pre hook to the testcase. Passed to TestCase's run method.
     """
     def step(testdef):
-        testdef.pre_hook = fn
+        old_hook = testdef.pre_hook
+        def new_hook(*args, **kwargs):
+            if callable(old_hook):
+                old_hook(*args, **kwargs)
+            fn(*args, **kwargs)
+        testdef.pre_hook = new_hook
         yield
+        testdef.pre_hook = old_hook
     return step
 
 
-def post_hook(fn):
+def add_post_hook(fn):
     """
     Add a post hook to the testcase. Passed to TestCase's run method.
     """
     def step(testdef):
-        testdef.post_hook = fn
+        old_hook = testdef.post_hook
+        def new_hook(*args, **kwargs):
+            if callable(old_hook):
+                old_hook(*args, **kwargs)
+            fn(*args, **kwargs)
+        testdef.post_hook = new_hook
         yield
+        testdef.post_hook = old_hook
     return step
 
 
