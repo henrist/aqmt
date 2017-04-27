@@ -69,7 +69,7 @@ def utilization_queues(y_logarithmic=False):
             plot_gpi += "''                            using " + x1 + ":3                    with lines      lc rgb 'gray'         title '', \\\n"
 
             # nonecn
-            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:5  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:6  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
            #plot_gpi += "''                               using " + x2 + ":7       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                               using " + x2 + ":9       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                               using " + x2 + ":3       with lines      lc rgb 'gray'         title '', \\\n"
