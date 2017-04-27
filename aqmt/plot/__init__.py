@@ -16,7 +16,11 @@ import pprint
 import sys
 
 def plot_folder_compare(folder, level_order=None, skip_levels=0,
-        components=None, **kwargs):
+        components=None, title=None, subtitle=None, **kwargs):
+    """
+    - If title and/or subtitle is given they will override the value
+      in the tree. If set to False, no title will be given on the plot.
+    """
 
     if components is None:
         components = [
@@ -33,6 +37,12 @@ def plot_folder_compare(folder, level_order=None, skip_levels=0,
         ),
         skip_levels,
     )
+
+    if title is not None:
+        tree['title'] = None if title == False else title
+
+    if subtitle is not None:
+        tree['subtitle'] = None if subtitle == False else subtitle
 
     export(
         folder + '/comparison',

@@ -13,10 +13,7 @@ from . import treeutil
 
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    tmargin_base = .5 * n_depth + 2.8
-    if 'subtitle' in tree and tree['subtitle']:
-        tmargin_base += .8
-    return tmargin_base
+    return .65 * n_depth + 2.8
 
 
 def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
@@ -86,12 +83,17 @@ def common_header(tree):
 
 
 def plot_title(tree, n_components):
-    title = tree['title']
+    title = []
+    if tree['title']:
+        title.append(tree['title'])
     if 'subtitle' in tree and tree['subtitle']:
-        title += '\\n' + tree['subtitle']
+        title.append(tree['subtitle'])
+    if len(title) > 0:
+        title = 'title "%s\\n"' % ('\\n'.join(title))
+    else: title = ''
 
     return """
-        set multiplot layout """ + str(n_components) + """,1 title \"""" + title + """\\n\" scale 1,1"""
+        set multiplot layout """ + str(n_components) + """,1 %s scale 1,1""" % title
 
 
 def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offset=None, x_scale=1, y_scale=1):
