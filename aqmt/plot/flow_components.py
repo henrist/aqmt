@@ -107,7 +107,7 @@ def queueing_delay(y_logarithmic=False):
             unset bars
             set key above
             set xtics out nomirror
-            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='10<*') + """
+            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*') + """
             set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
