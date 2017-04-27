@@ -3,6 +3,7 @@
 - name: Add packages for AQM machine
   apt:
     name:
+      - dstat
       - flex # to compile iproute2-l4s
       - libbison-dev # to compile iproute2-l4s
       - pkg-config # to compile iproute2-l4s
