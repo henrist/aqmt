@@ -35,7 +35,7 @@ def pre_hook(testcase):
             ssh -tt """ + os.environ['IP_SERVER%s_MGMT' % node] + """ '
                 getdata() {
                     ss -ni "( src %s or dst %s or src %s or dst %s )" | \\
-                        grep -B1 rtt | \\
+                        grep -B1 " rtt:" | \\
                         awk "!(NR%%2){print $1\\" \\"p\\" XX \\"\\$0}{p=\\$5\\" \\"\\$6}" | \\
                         sed "s/XX.* rtt:\\([^\\/]\\+\\).*/\\1/"
                 }
