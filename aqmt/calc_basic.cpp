@@ -491,7 +491,7 @@ void loadParameters(int argc, char **argv) {
     }
 
     params->folder = argv[1];
-    params->link = atoi(argv[2]);
+    params->link = atof(argv[2]);
     params->rtt_d = (double) atoi(argv[3]);
     params->rtt_r = (double) atoi(argv[4]);
     params->samples_to_skip = atoi(argv[5]);
