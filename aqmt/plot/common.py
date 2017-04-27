@@ -11,7 +11,7 @@ def add_plot(gpi):
     Remove trailing comma from plot command because gnuplot complains about it
     (We use the trailing comma to easier build plot commands)
     """
-    return re.sub(r',(\s*\\?\s*)$', '\g<1>', gpi)
+    return re.sub(r',(\s*\\?\s*\\?\s*)$', '\g<1>', gpi)
 
 
 def add_scale(y_logarithmic, range_from='0', range_from_log='1', range_to='1<*', range_to_log=None):
