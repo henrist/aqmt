@@ -213,14 +213,25 @@ def get_leaf_tests_stats(leaf, statsname):
     res = []
     for title, testcase_folder in get_testcases(leaf):
         added = False
-        with open(testcase_folder + '/' + statsname, 'r') as f:
-            for line in f:
+
+        if callable(statsname):
+            for line in statsname(testcase_folder).splitlines():
                 if line.startswith('#'):
                     continue
 
-                res.append((title, '"%s" %s' % (title, line)))
+                res.append((title, '"%s" %s\n' % (title, line)))
                 added = True
                 break  # only allow one line from each sample
+
+        else:
+            with open(testcase_folder + '/' + statsname, 'r') as f:
+                for line in f:
+                    if line.startswith('#'):
+                        continue
+
+                    res.append((title, '"%s" %s' % (title, line)))
+                    added = True
+                    break  # only allow one line from each sample
 
         if not added:
             res.append((title, '"%s"' % title))
@@ -229,6 +240,10 @@ def get_leaf_tests_stats(leaf, statsname):
 
 
 def merge_testcase_data(leaf, statsname, x_axis):
+    """
+    statsname might be a function. It will be given the folder path
+      of the test case and should return one line.
+    """
     res = get_leaf_tests_stats(leaf, statsname)
     return merge_testcase_data_set_x(res, x_axis)
 
