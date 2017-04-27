@@ -191,7 +191,7 @@ def queueing_delay(y_logarithmic=False):
             # queueing delay
             set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             #set xtic offset first .1
-            """ + add_scale(y_logarithmic, range_to='5<*')
+            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*')
 
         if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
