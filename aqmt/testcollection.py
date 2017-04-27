@@ -46,8 +46,6 @@ def build_html_index(tree, root_folder):
 
             test_details = get_test_details(collection)
 
-            out += test_details['path'] + ': '
-
             if len(test_details['pdfs']) == 0:
                 out += '(no pdf)'
             else:
@@ -97,7 +95,7 @@ def build_html_index(tree, root_folder):
     if len(pdfs) > 0:
         out += '<li><b>Aggregated</b><ul>\n'
         for pdf in pdfs:
-            out += '<li><a href="' + html.escape(pdf['path']) + '">' + html.escape(pdf['path']) + '</a></li>\n'
+            out += '<li><a href="' + html.escape(pdf['path']) + '">' + html.escape(pdf['path'][:-4]) + '</a></li>\n'
 
         out += '</ul></li>'
 
