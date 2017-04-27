@@ -206,6 +206,11 @@ def walk_tree(tree, fn, include_leaf_collection=False):
                     x += 1
                     continue
 
+            # If input to walk_tree was a leaf branch, we can't look
+            # if we have  leaf branch inside
+            elif 'children' not in subcollection['children'][0]:
+                continue
+
             else:
                 is_leaf_branch = 'testcase' in subcollection['children'][0]['children'][0]
                 if is_leaf_branch:
