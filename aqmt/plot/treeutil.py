@@ -356,3 +356,15 @@ def reorder_levels(tree, level_order=None):
         tree = swap_levels(tree, level)
 
     return tree
+
+
+def skip_levels(tree, number_of_levels):
+    """
+    Select the left node number_of_levels deep and
+    return the new tree
+    """
+    while number_of_levels > 0:
+        tree = tree['children'][0]
+        number_of_levels -= 1
+
+    return tree

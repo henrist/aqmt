@@ -10,12 +10,14 @@ from . import collection
 from . import flow
 from . import flow_components
 from .common import PlotAxis, generate_hierarchy_data_from_folder, export
-from .treeutil import reorder_levels
+from .treeutil import reorder_levels, skip_levels as tree_skip_levels
 
 import pprint
 import sys
 
-def plot_folder_compare(folder, level_order=None, components=None, **kwargs):
+def plot_folder_compare(folder, level_order=None, skip_levels=0,
+        components=None, **kwargs):
+
     if components is None:
         components = [
             collection_components.utilization_queues(),
@@ -24,13 +26,18 @@ def plot_folder_compare(folder, level_order=None, components=None, **kwargs):
             collection_components.drops_marks(),
         ]
 
+    tree = tree_skip_levels(
+        reorder_levels(
+            generate_hierarchy_data_from_folder(folder),
+            level_order,
+        ),
+        skip_levels,
+    )
+
     export(
         folder + '/comparison',
         collection.build_plot(
-            reorder_levels(
-                generate_hierarchy_data_from_folder(folder),
-                level_order,
-            ),
+            tree,
             components=components,
             **kwargs,
         )
