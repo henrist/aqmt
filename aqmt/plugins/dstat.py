@@ -87,7 +87,7 @@ def plot_comparison_cpu():
         if PlotAxis.is_custom_xtics(x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
-                set xtics ()s
+                set xtics ()
                 """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
