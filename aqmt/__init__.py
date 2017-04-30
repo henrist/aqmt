@@ -16,6 +16,7 @@ Environment variables:
 __title__ = 'AQM test framework'
 __author__ = 'Henrik Steen'
 
+from datetime import datetime, timezone
 import os
 import sys
 import socket
@@ -178,3 +179,28 @@ def hostname():
         hostname = socket.gethostname()
 
     return hostname
+
+
+def archive_test(file, target_folder):
+    """
+    Arhive a test script into the result folder, so it
+    can be rerun later after the source test file has
+    been changed. Also a good verification to how a test
+    was actually run.
+
+    Use like this:
+      archive_test(__file__, result_folder)
+    """
+    target = os.path.join(
+        target_folder,
+        'test-%s.py' % datetime.now(timezone.utc).isoformat()
+    )
+
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+
+    with open(file, 'r') as f:
+        with open(target, 'w') as t:
+            t.write(f.read())
+
+    print("Test script backed up to %s" % target)
