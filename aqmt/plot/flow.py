@@ -43,7 +43,7 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
         result['gpi'] = plot_header() + """
             set multiplot layout """ + str(len(components)) + """,1 columnsfirst """ + plot_title + """
             set offset graph 0.02, graph 0.02, graph 0.02, graph 0.02
-            set lmargin 13
+            set lmargin 14
             set xtic font ',11'
 
             """ + result['gpi'] + """
