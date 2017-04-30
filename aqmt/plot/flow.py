@@ -25,7 +25,8 @@ def get_number_samples(testfolder):
     return n
 
 
-def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
+def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT',
+        skip_sample_line=False):
     """
     Generate a plot for a single test case
     """
@@ -70,7 +71,9 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT'):
         return result
 
     def component_container(result):
-        if 'skip_sample_line' not in result or not result['skip_sample_line']:
+        if not skip_sample_line and \
+                ('skip_sample_line' not in result or \
+                    not result['skip_sample_line']):
             result = add_sample_line(result)
         return result
 
