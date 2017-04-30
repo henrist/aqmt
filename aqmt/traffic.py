@@ -111,6 +111,43 @@ def scp(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     return stop_test
 
 
+def sshstream(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
+    """
+    Run TCP traffic with SSH (streaming directly without scp)
+
+    See scp method for concerns about high BDP and that
+    this might not be precise.
+
+    All traffic goes over port 22 as of now. Tagging is
+    not really possible because of this.
+    """
+    server_port = -1
+
+    node = 'A' if node == 'a' else 'B'
+
+    hint_fn('traffic=tcp type=ssh node=%s%s server=%s tag=%s' % (node, node, server_port, 'No-tag' if tag is None else tag))
+
+    cmd = ssh['-tt', os.environ['IP_SERVER%s_MGMT' % node],
+        """
+        dd if=/dev/zero | ssh %s 'cat - >/dev/null'
+        """ % (os.environ['IP_CLIENT%s' % node])
+    ]
+
+    logger.debug(get_log_cmd(cmd))
+    if dry_run:
+        def stop_test():
+            pass
+
+    else:
+        pid_server = run_fn(cmd)
+        processes.add_known_pid(pid_server)
+
+        def stop_test():
+            processes.kill_pid(pid_server)
+
+    return stop_test
+
+
 def greedy(dry_run, testbed, hint_fn, run_fn, node='a', tag=None):
     """
     Run greedy TCP traffic
