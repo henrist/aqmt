@@ -13,8 +13,8 @@
 # - tcp_wmem has to be tripple of the maximum packets in flight * mss
 #
 # The default values gives:
-# - wmem=4194304: maximum tcp window of 965 (4194304 / 1448 / 3)
-# - rmem=6921456: maximum tcp window of 4780 (6921456 / 1448)
+# - wmem=4194304: maximum tcp window of 965 floor(4194304 / 1448 / 3)
+# - rmem=6921456: maximum tcp window of 2172 floor(6291456 / 1448 / 2)
 
 if [ -f /.dockerenv ]; then
     echo "Don't run this inside Docker"
