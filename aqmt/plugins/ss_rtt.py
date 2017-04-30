@@ -110,7 +110,12 @@ def _parse_rtt_of_test(testfolder, node):
     return ret
 
 
-def plot_flow_rtt():
+def plot_flow_rtt(initial_delay=0):
+    """
+    Initial delay is number of seconds the recording started
+    before the actual test started.
+    """
+
     def get_list(testfolder, node):
         ret = ''
         for i, rtt in _parse_rtt_of_test(testfolder, node):
@@ -119,14 +124,15 @@ def plot_flow_rtt():
 
 
     def plot(testfolder):
+        xpos = "($1/1000-" + str(initial_delay) + ")"
+
         gpi = """
             set format y "%g"
             set format x "%g s"
-            set ylabel 'RTT reported at sender'
+            set ylabel 'RTT reported at sender [ms]'
             set style fill transparent solid 0.5 noborder
             set key above
-            set yrange [*:*]
-            set xrange [-2:*]
+            set yrange [0<*:*]
 
             set label "Time:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
 
@@ -137,12 +143,17 @@ def plot_flow_rtt():
             """ + get_list(testfolder, 'B') + """
             EOD
 
+            stats $data_node_a using ($1/1000) nooutput
+            set xrange [-""" + str(initial_delay) + """:STATS_max]
+
+            print STATS_max
+
             plot \\
                 1 lc rgb '#FFFF0000' notitle, \\
-                $data_node_a using ($1/1000-2):2               with lines   lc 1 lw 1.5 title 'Avg. RTT node A', \\
-                $data_node_a using ($1/1000-2):2 smooth bezier with lines   lc 1 lw 3 notitle, \\
-                $data_node_b using ($1/1000-2):2               with lines   lc 2 lw 1.5 title 'Avg. RTT node B', \\
-                $data_node_b using ($1/1000-2):2 smooth bezier with lines   lc 2 lw 3 notitle
+                $data_node_a using """ + xpos + """:2               with lines   lc 1 lw 1.5 title 'Avg. RTT node A', \\
+                $data_node_a using """ + xpos + """:2 smooth bezier with lines   lc 1 lw 3 notitle, \\
+                $data_node_b using """ + xpos + """:2               with lines   lc 2 lw 1.5 title 'Avg. RTT node B', \\
+                $data_node_b using """ + xpos + """:2 smooth bezier with lines   lc 2 lw 3 notitle
 
             set format y "%h"
             unset label
