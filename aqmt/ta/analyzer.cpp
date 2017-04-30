@@ -25,7 +25,8 @@
 #include <sys/types.h>
 
 typedef u_int32_t u32; // we use "kernel-style" u32 variables in numbers.h
-#include "../../common/numbers.h"
+#define TESTBED_ANALYZER 1
+#include "numbers.h"
 
 #define NSEC_PER_SEC 1000000000UL
 #define NSEC_PER_MS 1000000UL
@@ -106,11 +107,7 @@ std::string IPtoString(in_addr_t ip) {
 
 // Queuing delay is returned in ns
 int decodeQdelay(u32 value) {
-    // Input value is originally time in ns right shifted 15 times
-    // to get division by 1000 and units of 32 us. The right shifting
-    // by 10 to do division by 1000 actually causes a rounding
-    // we correct by doing (x * (1024/1000)) here.
-    return fl2int(value, QDELAY_M, QDELAY_E) * 32 * 1.024;
+    return qdelay_decode(value);
 }
 
 int decodeDrops(u32 value) {

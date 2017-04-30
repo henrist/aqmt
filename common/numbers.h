@@ -61,3 +61,23 @@ u32 int2fl(u32 val, u32 m_b, u32 e_b, u32 *r)
 
 	return ((exponent + 1) << m_b) | mantissa;
 }
+
+#ifdef TESTBED_ANALYZER /* don't include in kernel compilation due to SSE */
+/* Decode queueing delay
+ *
+ * The code is left here so that this file is used as an API for
+ * analyzer and can be swapped with other implementation during
+ * compilation.
+ *
+ * Return value is in us
+ */
+u32 qdelay_decode(u32 value)
+{
+	/* Input value is originally time in ns right shifted 15 times
+	 * to get division by 1000 and units of 32 us. The right shifting
+	 * by 10 to do division by 1000 actually causes a rounding
+	 * we correct by doing (x * (1024/1000)) here.
+	 */
+	return fl2int(value, QDELAY_M, QDELAY_E) * 32 * 1.024;
+}
+#endif

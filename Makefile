@@ -1,3 +1,7 @@
+# set CPATH if missing
+CPATH?=$(PWD)/common
+export CPATH
+
 all: aqmt
 	@echo "---"
 	@echo "If you want to use Docker as well, also do 'make aqmt_docker'"
@@ -10,5 +14,9 @@ aqmt_docker:
 aqmt:
 	cd aqmt && make
 	cd aqmt/ta && make
+
+clean:
+	cd aqmt && make clean
+	cd aqmt/ta && make clean
 
 .PHONY: aqmt
