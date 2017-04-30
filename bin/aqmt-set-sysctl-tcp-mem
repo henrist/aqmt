@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # syntax: aqmt-set-sysctl-tcp-mem [maximum_window_size]
 
 # default values on Henrik's Simula-machine:
@@ -27,7 +27,7 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 set -e
-source aqmt-vars.sh
+source aqmt-vars-load.sh
 
 if [ -n "$1" ]; then
     max_window=$1

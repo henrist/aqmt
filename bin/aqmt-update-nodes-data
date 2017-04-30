@@ -35,7 +35,8 @@ for ip in $IP_CLIENTA_MGMT $IP_CLIENTB_MGMT $IP_SERVERA_MGMT $IP_SERVERB_MGMT; d
         echo "export IP_SERVERA='$IP_SERVERA'" >>'$f'
         echo "export IP_SERVERB_MGMT='$IP_SERVERB_MGMT'" >>'$f'
         echo "export IP_SERVERB='$IP_SERVERB'" >>'$f'
-        ln -s '$f' /usr/local/bin/aqmt-vars.sh
+        ln -s '$f' /usr/local/bin/aqmt-vars.sh || :
+        ln -s '$f' /usr/local/bin/aqmt-vars-load.sh || :
         '
 
 done
