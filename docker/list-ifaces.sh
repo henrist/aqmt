@@ -10,7 +10,7 @@ show_iface() {
     cidr=$2
     comment=$3
 
-    ifnum=$(docker-compose exec $name ip a show to $cidr \
+    ifnum=$(TEST_PATH= docker-compose exec $name ip a show to $cidr \
           | head -1 | awk -F: '{print $1}')
 
     iface=$(ip l | grep "@if$ifnum" | sed 's/.*: \(veth.*\)@.*/\1/')
