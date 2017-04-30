@@ -5,6 +5,70 @@ from . import treeutil
 from . import colors
 
 
+def utilization_total_only(y_logarithmic=False):
+    """
+    Plot graph of total utilization only
+    """
+
+    def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
+        gpi = """
+            # utilization
+            set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
+            set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
+
+            set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
+            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
+
+        if PlotAxis.is_custom_xtics(x_axis):
+            gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
+
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
+
+        def leaf(subtree, is_first_set, x):
+            nonlocal plot_gpi, gpi
+            leaf_hook(subtree, is_first_set, x)
+
+            xtics = ":xtic(2)"
+            if PlotAxis.is_custom_xtics(x_axis):
+                xtics = ""
+                gpi += """
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    """
+
+            gpi += """
+                $data_util""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
+                EOD
+                """
+
+            xpos = "($1+" + str(x) + ")"
+
+            plot_gpi += "$data_util" + str(x) + "      using " + xpos + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "''                            using " + xpos + ":3          with lines      lc rgb 'gray'         title '', \\\n"
+
+        treeutil.walk_leaf(tree, leaf)
+        gpi += """
+            plot \\
+            """ + add_plot(plot_gpi) + """
+
+            unset arrow 100
+            unset logscale y
+            """
+
+        return {
+            'y_logarithmic': y_logarithmic,
+            'gpi': gpi,
+        }
+
+    return plot
+
+
 def utilization_queues(y_logarithmic=False):
     """
     Plot graph of utilization for total, ECN and non-ECN flows
