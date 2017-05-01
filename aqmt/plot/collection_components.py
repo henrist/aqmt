@@ -327,6 +327,82 @@ def queueing_delay(y_logarithmic=False, titles=True):
     return plot
 
 
+def window(y_logarithmic=False, titles=True):
+    """
+    Plot graph of estimated congestion window
+
+    Note that this currently is the sum for all flows
+    """
+
+    def plot(tree, x_axis, leaf_hook):
+        gap = collectionutil.get_gap(tree)
+
+        gpi = """
+            set ylabel "Est. window size {/Times:Italic=10 [1448 B]}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
+            """ + add_scale(y_logarithmic)
+
+        if PlotAxis.is_custom_xtics(x_axis):
+            gpi += """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
+
+        # add hidden line to force autoscaling if using logarithimic plot without any points
+        plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
+
+        def leaf(subtree, is_first_set, x):
+            nonlocal gpi, plot_gpi
+            leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
+
+            xtics = ":xtic(2)"
+            if PlotAxis.is_custom_xtics(x_axis):
+                xtics = ""
+                gpi += """
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    """
+
+            gpi += """
+                $data_window_ecn_stats""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_ecn_stats', x_axis) + """
+                EOD
+                $data_window_nonecn_stats""" + str(x) + """ << EOD
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_nonecn_stats', x_axis) + """
+                EOD"""
+
+            ls_l4s = "ls 1 lc rgb '" + colors.L4S + "'"
+            ls_classic = "ls 1 lc rgb '" + colors.CLASSIC + "'"
+
+            x0 = "($1+" + str(x) + ")"
+            x1 = "($1+" + str(x) + "+" + str(gap/2) + ")"
+
+            plot_gpi += "$data_window_ecn_stats" + str(x) + "    using " + x0 + ":($3/1448/8):($7/1448/8):($9/1448/8)              with yerrorbars " + ls_l4s + "     lw 1.5 pointtype 7 pointsize 0.4 title '" + ('ECN packets' if add_title else '') + "', \\\n"
+            plot_gpi += "''                                     using " + x0 + ":($6/1448/8)                                  with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "''                                     using " + x0 + ":($10/1448/8)                                 with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "$data_window_nonecn_stats" + str(x) + " using " + x1 + ":($3/1448/8):($7/1448/8):($9/1448/8)" + xtics + " with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4 title '" + ('Non-ECN packets' if add_title else '') + "', \\\n"
+            plot_gpi += "''                                     using " + x1 + ":($6/1448/8)                                  with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
+            plot_gpi += "''                                     using " + x1 + ":($10/1448/8)                                 with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
+
+            plot_gpi += "$data_window_ecn_stats" + str(x) + "    using " + x0 + ":($3/1448/8)                                  with lines lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_window_nonecn_stats" + str(x) + " using " + x1 + ":($3/1448/8)                                  with lines lc rgb 'gray'         title '', \\\n"
+
+        treeutil.walk_leaf(tree, leaf)
+        gpi += """
+            plot \\
+            """ + add_plot(plot_gpi) + """
+
+            unset logscale y
+            """
+
+        return {
+            'y_logarithmic': y_logarithmic,
+            'gpi': gpi,
+            'titles': titles,
+        }
+
+    return plot
+
+
 def drops_marks(y_logarithmic=False, titles=True):
     """
     Plot graph of drop and marks for ECN and non-ECN queues
