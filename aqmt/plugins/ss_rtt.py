@@ -165,7 +165,7 @@ def plot_flow_rtt(initial_delay=0):
     return plot
 
 
-def plot_comparison_rtt(y_logarithmic=False):
+def plot_comparison_rtt(y_logarithmic=False, titles=True):
     """
     Plot graph of interrupts and context switches
     """
@@ -189,6 +189,7 @@ def plot_comparison_rtt(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -226,9 +227,9 @@ def plot_comparison_rtt(y_logarithmic=False):
                 """) % (
                     "$data_rtt_a" + str(x),
                     xtics,
-                    "title 'Server A' " if is_first_set else 'notitle',
+                    "title 'Server A' " if add_title else 'notitle',
                     "$data_rtt_b" + str(x),
-                    "title 'Server B' " if is_first_set else 'notitle'
+                    "title 'Server B' " if add_title else 'notitle'
                 )
 
         treeutil.walk_leaf(tree, leaf)
@@ -242,6 +243,7 @@ def plot_comparison_rtt(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot

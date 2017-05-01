@@ -13,7 +13,7 @@ from . import treeutil
 
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    return .65 * n_depth + 2.8
+    return .65 * n_depth + 1
 
 
 def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
@@ -66,7 +66,7 @@ def plot_labels(tree, plot_width):
     return gpi
 
 
-def common_header(tree):
+def common_header(tree, title_height):
     _, _, _, n_nodes = collectionutil.get_tree_details(tree)
 
     gpi = """
@@ -75,7 +75,7 @@ def common_header(tree):
         set key above
         set xrange [-2:""" + str(n_nodes + 1) + """]
         set boxwidth 0.2
-        set tmargin """ + str(get_tmargin_base(tree)) + """
+        set tmargin """ + str(get_tmargin_base(tree) + title_height) + """
         set lmargin 13
         """
 
@@ -119,7 +119,8 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
 
     for component in components:
         res = component(tree, x_axis, leaf_hook)
-        gpi += common_header(tree)
+        title_height = 1.8 if 'titles' not in res or res['titles'] else 0
+        gpi += common_header(tree, title_height)
         gpi += res['gpi']
 
     gpi += """

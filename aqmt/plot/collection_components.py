@@ -5,7 +5,7 @@ from . import treeutil
 from . import colors
 
 
-def utilization_total_only(y_logarithmic=False):
+def utilization_total_only(y_logarithmic=False, titles=True):
     """
     Plot graph of total utilization only
     """
@@ -33,6 +33,7 @@ def utilization_total_only(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -49,8 +50,8 @@ def utilization_total_only(y_logarithmic=False):
 
             xpos = "($1+" + str(x) + ")"
 
-            plot_gpi += "$data_util" + str(x) + "      using " + xpos + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
-            plot_gpi += "''                            using " + xpos + ":3          with lines      lc rgb 'gray'         title '', \\\n"
+            plot_gpi += "$data_util" + str(x) + "      using " + xpos + ":3:10:6  with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
+            plot_gpi += "''                            using " + xpos + ":3" + xtics + "   with lines      lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -64,12 +65,13 @@ def utilization_total_only(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
 
 
-def utilization_queues(y_logarithmic=False):
+def utilization_queues(y_logarithmic=False, titles=True):
     """
     Plot graph of utilization for total, ECN and non-ECN flows
     """
@@ -97,6 +99,7 @@ def utilization_queues(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -121,19 +124,19 @@ def utilization_queues(y_logarithmic=False):
             x2 = "($1+" + str(x) + "+" + str(gap/2) + ")"
 
             # total
-            plot_gpi += "$data_util" + str(x) + "      using " + x0 + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_util" + str(x) + "      using " + x0 + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
            #plot_gpi += "''                            using " + x0 + ":7          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                            using " + x0 + ":9          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                            using " + x0 + ":3          with lines      lc rgb 'gray'         title '', \\\n"
 
             # ecn
-            plot_gpi += "$data_util_ecn" + str(x) + "  using " + x1 + ":3:10:6" + xtics + "  with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_util_ecn" + str(x) + "  using " + x1 + ":3:10:6" + xtics + "  with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if add_title else '') + "', \\\n"
            #plot_gpi += "''                            using " + x1 + ":7                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                            using " + x1 + ":9                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                            using " + x1 + ":3                    with lines      lc rgb 'gray'         title '', \\\n"
 
             # nonecn
-            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:6  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:6  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if add_title else '') + "', \\\n"
            #plot_gpi += "''                               using " + x2 + ":7       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                               using " + x2 + ":9       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                               using " + x2 + ":3       with lines      lc rgb 'gray'         title '', \\\n"
@@ -150,12 +153,13 @@ def utilization_queues(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
 
 
-def utilization_tags(y_logarithmic=False):
+def utilization_tags(y_logarithmic=False, titles=True):
     """
     Plot graph of utilization for classified (tagged) traffic
     """
@@ -186,6 +190,7 @@ def utilization_tags(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, plot_lines, gpi, titles_used
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -201,7 +206,7 @@ def utilization_tags(y_logarithmic=False):
 
             # total
             xpos = "($1+" + str(x) + ")"
-            plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtics + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if is_first_set else '') + "', \\\n"
+            plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtics + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
             plot_lines += "$dataUtil" + str(x) + "  using " + xpos + ":3                     with lines lc rgb 'gray'         title '', \\\n"
 
             tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', x_axis)
@@ -225,8 +230,10 @@ def utilization_tags(y_logarithmic=False):
 
         treeutil.walk_leaf(tree, leaf)
 
+        # TODO: move the logic of calculating tmargin to collection
+        # (which means we have to return the number of titles)
         gpi += """
-            set tmargin """ + str(get_tmargin_base(tree) + 1.3 * (len(titles_used)+1) / 4 - 1) + """
+            set tmargin """ + str(get_tmargin_base(tree) + 1.8 + 1.3 * (len(titles_used)+1) / 4 - 1) + """
 
             plot \\
             """ + add_plot(plot_gpi + plot_lines) + """
@@ -238,12 +245,13 @@ def utilization_tags(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
 
 
-def queueing_delay(y_logarithmic=False):
+def queueing_delay(y_logarithmic=False, titles=True):
     """
     Plot graph of queueing delay
     """
@@ -269,6 +277,7 @@ def queueing_delay(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -291,10 +300,10 @@ def queueing_delay(y_logarithmic=False):
             x0 = "($1+" + str(x) + ")"
             x1 = "($1+" + str(x) + "+" + str(gap/2) + ")"
 
-            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using " + x0 + ":($3/1000):($7/1000):($9/1000)              with yerrorbars " + ls_l4s + "     lw 1.5 pointtype 7 pointsize 0.4 title '" + ('ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_queue_ecn_stats" + str(x) + "    using " + x0 + ":($3/1000):($7/1000):($9/1000)              with yerrorbars " + ls_l4s + "     lw 1.5 pointtype 7 pointsize 0.4 title '" + ('ECN packets' if add_title else '') + "', \\\n"
             plot_gpi += "''                                     using " + x0 + ":($6/1000)                                  with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
             plot_gpi += "''                                     using " + x0 + ":($10/1000)                                 with points     " + ls_l4s + "            pointtype 1 pointsize 0.4 title '', \\\n"
-            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using " + x1 + ":($3/1000):($7/1000):($9/1000)" + xtics + " with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4 title '" + ('Non-ECN packets' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_queue_nonecn_stats" + str(x) + " using " + x1 + ":($3/1000):($7/1000):($9/1000)" + xtics + " with yerrorbars " + ls_classic + " lw 1.5 pointtype 7 pointsize 0.4 title '" + ('Non-ECN packets' if add_title else '') + "', \\\n"
             plot_gpi += "''                                     using " + x1 + ":($6/1000)                                  with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
             plot_gpi += "''                                     using " + x1 + ":($10/1000)                                 with points     " + ls_classic + "        pointtype 1 pointsize 0.4 title '', \\\n"
 
@@ -312,12 +321,13 @@ def queueing_delay(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
 
 
-def drops_marks(y_logarithmic=False):
+def drops_marks(y_logarithmic=False, titles=True):
     """
     Plot graph of drop and marks for ECN and non-ECN queues
     """
@@ -343,6 +353,7 @@ def drops_marks(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -366,13 +377,13 @@ def drops_marks(y_logarithmic=False):
             x1 = "($1+" + str(x) + ")"
             x2 = "($1+" + str(x) + "+" + str(gap/2) + ")"
 
-            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using " + x0 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_d_percent_ecn_stats" + str(x) + "     using " + x0 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (ECN)' if add_title else '') + "', \\\n"
             plot_gpi += "''                                          using " + x0 + ":6                  with points     lc rgb '" + colors.DROPS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                                          using " + x0 + ":10                 with points     lc rgb '" + colors.DROPS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using " + x1 + ":3:7:9" + xtics + " with yerrorbars lc rgb '" + colors.MARKS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_m_percent_ecn_stats" + str(x) + "     using " + x1 + ":3:7:9" + xtics + " with yerrorbars lc rgb '" + colors.MARKS_L4S + "'     pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Marks (ECN)' if add_title else '') + "', \\\n"
             plot_gpi += "''                                          using " + x1 + ":6                  with points     lc rgb '" + colors.MARKS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                                          using " + x1 + ":10                 with points     lc rgb '" + colors.MARKS_L4S + "'     pointtype 1 pointsize 0.4        title '', \\\n"
-            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using " + x2 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_d_percent_nonecn_stats" + str(x) + "  using " + x2 + ":3:7:9              with yerrorbars lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Drops (Non-ECN)' if add_title else '') + "', \\\n"
             plot_gpi += "''                                          using " + x2 + ":6                  with points     lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                                          using " + x2 + ":10                 with points     lc rgb '" + colors.DROPS_CLASSIC + "' pointtype 1 pointsize 0.4        title '', \\\n"
 
@@ -392,12 +403,13 @@ def drops_marks(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
 
 
-def window_rate_ratio(y_logarithmic=False):
+def window_rate_ratio(y_logarithmic=False, titles=True):
     """
     Plot graph of window and rate ratio between ECN and non-ECN queues
     """
@@ -427,6 +439,7 @@ def window_rate_ratio(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -447,8 +460,8 @@ def window_rate_ratio(y_logarithmic=False):
             x0 = "($1+" + str(x) + ")"
             x1 = "($1+" + str(x) + "+" + str(gap/2) + ")"
 
-            plot_gpi += "$data_window_ratio" + str(x) + "  using " + x0 + ":3" + xtics + " with points lc rgb '" + colors.BLACK + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Window ratio' if is_first_set else '') + "', \\\n"
-            plot_gpi += "$data_rate_ratio" + str(x) + "    using " + x1 + ":3              with points lc rgb '" + colors.GREEN + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Rate ratio' if is_first_set else '') + "', \\\n"
+            plot_gpi += "$data_window_ratio" + str(x) + "  using " + x0 + ":3" + xtics + " with points lc rgb '" + colors.BLACK + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Window ratio' if add_title else '') + "', \\\n"
+            plot_gpi += "$data_rate_ratio" + str(x) + "    using " + x1 + ":3              with points lc rgb '" + colors.GREEN + "' pointtype 7 pointsize 0.4 lw 1.5  title '" + ('Rate ratio' if add_title else '') + "', \\\n"
 
             # gray lines between average values
             plot_gpi += "$data_window_ratio" + str(x) + "  using " + x0 + ":3     with lines lc rgb 'gray'         title '', \\\n"
@@ -466,6 +479,7 @@ def window_rate_ratio(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot

@@ -70,7 +70,7 @@ def plot_flow_cpu():
 
 
 
-def plot_comparison_cpu():
+def plot_comparison_cpu(titles=True):
     """
     Plot graph of cpu usage
     """
@@ -96,6 +96,7 @@ def plot_comparison_cpu():
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -137,12 +138,12 @@ def plot_comparison_cpu():
 
             xpos = '($1+%s)' % str(x)
             plot_gpi += ("""\\
-                %s   using """ + xpos + """:($5+$3+$4+$7+$8+$6) :(.8)%s  with boxes fc 1 lw 1.5 """ + ("title 'idle'    " if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:($3+$4+$7+$8+$6)    :(.8)    with boxes fc 2 lw 1.5 """ + ("title 'user'    " if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:($4+$7+$8+$7)       :(.8)    with boxes fc 3 lw 1.5 """ + ("title 'system'  " if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:($7+$8+$7)          :(.8)    with boxes fc 4 lw 1.5 """ + ("title 'hiq'     " if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:($8+$6)             :(.8)    with boxes fc 5 lw 1.5 """ + ("title 'softirqs'" if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:($6)                :(.8)    with boxes fc 6 lw 1.5 """ + ("title 'iowait'  " if is_first_set else 'notitle') + """, \\
+                %s   using """ + xpos + """:($5+$3+$4+$7+$8+$6) :(.8)%s  with boxes fc 1 lw 1.5 """ + ("title 'idle'    " if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:($3+$4+$7+$8+$6)    :(.8)    with boxes fc 2 lw 1.5 """ + ("title 'user'    " if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:($4+$7+$8+$7)       :(.8)    with boxes fc 3 lw 1.5 """ + ("title 'system'  " if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:($7+$8+$7)          :(.8)    with boxes fc 4 lw 1.5 """ + ("title 'hiq'     " if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:($8+$6)             :(.8)    with boxes fc 5 lw 1.5 """ + ("title 'softirqs'" if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:($6)                :(.8)    with boxes fc 6 lw 1.5 """ + ("title 'iowait'  " if add_title else 'notitle') + """, \\
                 """) % ("$data_cpu_idl" + str(x), xtics)
 
         treeutil.walk_leaf(tree, leaf)
@@ -156,6 +157,7 @@ def plot_comparison_cpu():
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
@@ -193,7 +195,7 @@ def plot_flow_int_csw():
     return plot
 
 
-def plot_comparison_int_csw(y_logarithmic=False):
+def plot_comparison_int_csw(y_logarithmic=False, titles=True):
     """
     Plot graph of interrupts and context switches
     """
@@ -217,6 +219,7 @@ def plot_comparison_int_csw(y_logarithmic=False):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
+            add_title = titles and is_first_set
 
             xtics = ":xtic(2)"
             if PlotAxis.is_custom_xtics(x_axis):
@@ -254,8 +257,8 @@ def plot_comparison_int_csw(y_logarithmic=False):
 
             xpos = '($1+%s)' % str(x)
             plot_gpi += ("""\\
-                %s   using """ + xpos + """:3%s  with linespoints lc 1 pt 7 ps 0.4 lw 1.5 """ + ("title 'interrupts'       " if is_first_set else 'notitle') + """, \\
-                ''   using """ + xpos + """:4    with linespoints lc 2 pt 7 ps 0.4 lw 1.5 """ + ("title 'context switches' " if is_first_set else 'notitle') + """, \\
+                %s   using """ + xpos + """:3%s  with linespoints lc 1 pt 7 ps 0.4 lw 1.5 """ + ("title 'interrupts'       " if add_title else 'notitle') + """, \\
+                ''   using """ + xpos + """:4    with linespoints lc 2 pt 7 ps 0.4 lw 1.5 """ + ("title 'context switches' " if add_title else 'notitle') + """, \\
                 """) % ("$data_int_csw" + str(x), xtics)
 
         treeutil.walk_leaf(tree, leaf)
@@ -269,6 +272,7 @@ def plot_comparison_int_csw(y_logarithmic=False):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
+            'titles': titles,
         }
 
     return plot
