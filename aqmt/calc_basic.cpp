@@ -518,8 +518,8 @@ int main(int argc, char **argv) {
     writeStatistics("aggregated/queue_nonecn_stats", res->queue_nonecn);
     //writeStatistics("aggregated/rate_ecn_stats", res->rate_ecn);
     //writeStatistics("aggregated/rate_nonecn_stats", res->rate_nonecn);
-    //writeStatistics("aggregated/win_ecn_stats", res->win_ecn);
-    //writeStatistics("aggregated/win_nonecn_stats", res->win_nonecn);
+    writeStatistics("aggregated/window_ecn_stats", res->win_ecn);
+    writeStatistics("aggregated/window_nonecn_stats", res->win_nonecn);
     writeStatistics("aggregated/drops_percent_ecn_stats", res->drops_ecn);
     writeStatistics("aggregated/drops_percent_nonecn_stats", res->drops_nonecn);
     writeStatistics("aggregated/marks_percent_ecn_stats", res->marks_ecn);
