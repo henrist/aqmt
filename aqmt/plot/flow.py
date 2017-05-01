@@ -82,7 +82,7 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT',
 
         for component in components:
             comp_result = component_container(
-                component(testfolder)
+                component(testfolder, y_scale=y_scale)
             )
             result['gpi'] += """
                 set xrange [1:""" + str(n_samples) + """]

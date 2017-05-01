@@ -34,7 +34,8 @@ def pre_hook(testcase):
 
 
 def plot_flow_cpu():
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
             set format x "%g s"
@@ -44,7 +45,7 @@ def plot_flow_cpu():
             set yrange [0:100]
             set xrange [-2:*]
 
-            set label "Time:" at graph -0.02, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Time:" at graph -0.02, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             # skip 7 first lines
             set datafile separator ","
@@ -165,7 +166,8 @@ def plot_comparison_cpu(titles=True):
 
 
 def plot_flow_int_csw():
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
             set format x "%g s"
@@ -174,7 +176,7 @@ def plot_flow_int_csw():
             set yrange [0:*]
             set xrange [-2:*]
 
-            set label "Time:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Time:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             # skip 7 first lines
             set datafile separator ","

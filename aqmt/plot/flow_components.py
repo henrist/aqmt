@@ -12,7 +12,8 @@ def utilization_queues():
     command in gnuplot that don't support it.
     """
 
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
             set ylabel 'Utilization per queue [%]'
@@ -23,7 +24,7 @@ def utilization_queues():
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
             """
@@ -55,7 +56,8 @@ def utilization_queues():
 
 
 def rate_per_flow(y_logarithmic=False):
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         flows = OrderedDict({
             'ecn': [],
             'nonecn': []
@@ -71,7 +73,7 @@ def rate_per_flow(y_logarithmic=False):
             set ylabel 'Rate per flow [b/s]'
             set key right center inside
             """ + add_scale(y_logarithmic, range_from_log='1000', range_to='10000<*') + """
-            set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -101,14 +103,15 @@ def rate_per_flow(y_logarithmic=False):
 
 
 def queueing_delay(y_logarithmic=False):
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
-            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
+            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             unset bars
             set key above
             set xtics out nomirror
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*') + """
-            set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -141,7 +144,8 @@ def queueing_delay(y_logarithmic=False):
 
 
 def drops_marks(y_logarithmic=False):
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
             set ylabel "Packets per sample\\n{/Times:Italic=10 Dotted lines are max packets in the queue}"
@@ -149,7 +153,7 @@ def drops_marks(y_logarithmic=False):
             set xtics in mirror
             set key above
             """ + add_scale(y_logarithmic, range_to='10<*') + """
-            set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -178,7 +182,8 @@ def drops_marks(y_logarithmic=False):
 
 
 def window(y_logarithmic=False):
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
             set ylabel "Estimated window size\\n{/Times:Italic=10 [1500 B]}"
@@ -186,15 +191,15 @@ def window(y_logarithmic=False):
             set xtics in mirror
             set key above
             """ + add_scale(y_logarithmic, range_to='10<*') + """
-            set label "Sample #:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
         # line format: sample_id window_ecn_in_bits window_nonecn_in_bits
-        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($2/1500/8) with linespoints      pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'ECN', \\\n"
-        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($3/1500/8) with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5              title 'Non-ECN', \\\n"
+        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($2/1448/8) with linespoints      pointtype 7 ps 0.2 lw 1.5 lc rgb 'red' title 'ECN', \\\n"
+        plot_gpi += "'" + testfolder + "/derived/window'   using ($0+1):($3/1448/8) with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5              title 'Non-ECN', \\\n"
 
         gpi += """
             plot \\

@@ -123,7 +123,8 @@ def plot_flow_rtt(initial_delay=0):
         return ret
 
 
-    def plot(testfolder):
+    def plot(testfolder, y_scale, **kwargs):
+        label_y_pos = -0.06 * (1/y_scale)
         xpos = "($1/1000-" + str(initial_delay) + ")"
 
         gpi = """
@@ -134,7 +135,7 @@ def plot_flow_rtt(initial_delay=0):
             set key above
             set yrange [0<*:*]
 
-            set label "Time:" at graph -0.01, graph -.05 font 'Times-Roman,11pt' tc rgb 'black' right
+            set label "Time:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             $data_node_a << EOD
             """ + get_list(testfolder, 'A') + """
