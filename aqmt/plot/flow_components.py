@@ -189,7 +189,7 @@ def window(y_logarithmic=False):
         label_y_pos = -0.06 * (1/y_scale)
         gpi = """
             set format y "%g"
-            set ylabel "Estimated window size\\n{/Times:Italic=10 [1500 B]}"
+            set ylabel "Estimated window size\\n{/Times:Italic=10 [1448 B]}"
             set bars
             set xtics in mirror
             set key above
