@@ -66,12 +66,13 @@ def plot_labels(tree, plot_width):
     return gpi
 
 
-def common_header(tree, title_height):
+def common_header(tree, rotate_xtic, title_height):
     _, _, _, n_nodes = collectionutil.get_tree_details(tree)
 
+    r = ("rotate by %s" % rotate_xtic) if rotate_xtic else ""
     gpi = """
         unset bars
-        set xtic rotate by -65 font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
+        set xtic """ + r + """ font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
         set key above
         set xrange [-2:""" + str(n_nodes + 1) + """]
         set boxwidth 0.2
@@ -96,7 +97,8 @@ def plot_title(tree, n_components):
         set multiplot layout """ + str(n_components) + """,1 %s scale 1,1""" % title
 
 
-def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offset=None, x_scale=1, y_scale=1):
+def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
+        lines_at_x_offset=None, x_scale=1, y_scale=1, rotate_xtic=-65):
     """
     Plot the collection tree provided using the provided components
     """
@@ -120,7 +122,7 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None, lines_at_x_offse
     for component in components:
         res = component(tree, x_axis, leaf_hook)
         title_height = 1.8 if 'titles' not in res or res['titles'] else 0
-        gpi += common_header(tree, title_height)
+        gpi += common_header(tree, rotate_xtic, title_height)
         gpi += res['gpi']
 
     gpi += """
