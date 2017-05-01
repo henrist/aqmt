@@ -261,7 +261,7 @@ def queueing_delay(y_logarithmic=False, titles=True):
 
         gpi = """
             # queueing delay
-            set ylabel "Queueing delay per queue [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
+            set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             #set xtic offset first .1
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*')
 
