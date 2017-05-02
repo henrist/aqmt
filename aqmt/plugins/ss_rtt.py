@@ -16,7 +16,7 @@ import operator
 import os
 
 from aqmt import processes
-from aqmt.plot import PlotAxis, collectionutil, treeutil
+from aqmt.plot import collectionutil, treeutil
 from aqmt.plot.common import add_plot, add_scale
 
 
@@ -176,12 +176,6 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
             set ylabel "RTT reported at sender\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic)
 
-        if PlotAxis.is_custom_xtics(plotdef.x_axis):
-            gpi += """
-                # add xtics below, the empty list resets the tics
-                set xtics ()
-                """
-
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
@@ -189,13 +183,6 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
             add_title = keys and is_first_set
-
-            xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(plotdef.x_axis):
-                xtics = ""
-                gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
-                    """
 
             def parse_rtt(node, testcase_folder):
                 rtts = _parse_rtt_of_test(testcase_folder, node)
@@ -218,6 +205,8 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
                 """
 
             xpos = '($1+%s)' % str(x)
+            xtic = "" if plotdef.custom_xtics else ":xtic(2)"
+
             plot_gpi += ("""\\
                 %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 1 %s, \\
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
@@ -225,7 +214,7 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
                 """) % (
                     "$data_rtt_a" + str(x),
-                    xtics,
+                    xtic,
                     "title 'Server A' " if add_title else 'notitle',
                     "$data_rtt_b" + str(x),
                     "title 'Server B' " if add_title else 'notitle'

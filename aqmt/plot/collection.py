@@ -118,6 +118,7 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
     plotdef.y_scale = y_scale
     plotdef.rotate_xtics = rotate_xtics
     plotdef.width = plotdef.x_scale * 21
+    plotdef.custom_xtics = PlotAxis.is_custom_xtics(plotdef.x_axis)
 
     gpi = plot_header()
     gpi += plot_title(tree, len(components))
@@ -128,8 +129,28 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
         for xoffset in lines_at_x_offset:
             gpi += line_at_x_offset(x, xoffset, subtree, plotdef.x_axis)
 
+    def component_container(result):
+        if plotdef.custom_xtics:
+            xtics_gpi = """
+                # add xtics below, the empty list resets the tics
+                set xtics ()
+                """
+
+            def leaf(subtree, is_first_set, x):
+                nonlocal xtics_gpi
+                xtics_gpi += """
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
+                    """
+
+            treeutil.walk_leaf(tree, leaf)
+            result['gpi'] = xtics_gpi + result['gpi']
+
+        return result
+
     for component in components:
-        res = component(tree, plotdef, leaf_hook)
+        res = component_container(
+            component(tree, plotdef, leaf_hook)
+        )
         gpi += common_header(tree, plotdef, res)
         gpi += res['gpi']
 

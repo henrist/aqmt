@@ -10,7 +10,7 @@ from plumbum.cmd import dstat, bash
 import os
 
 from aqmt import processes
-from aqmt.plot import PlotAxis, collectionutil, treeutil
+from aqmt.plot import collectionutil, treeutil
 from aqmt.plot.common import add_plot, add_scale
 
 
@@ -85,12 +85,6 @@ def plot_comparison_cpu(keys=True):
             set style fill transparent solid 1 noborder
             """ + add_scale(y_logarithmic, range_to='100')
 
-        if PlotAxis.is_custom_xtics(plotdef.x_axis):
-            gpi += """
-                # add xtics below, the empty list resets the tics
-                set xtics ()
-                """
-
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
@@ -98,13 +92,6 @@ def plot_comparison_cpu(keys=True):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
             add_title = keys and is_first_set
-
-            xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(plotdef.x_axis):
-                xtics = ""
-                gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
-                    """
 
             def parse_cpu(testcase_folder):
                 skip = 7
@@ -138,6 +125,7 @@ def plot_comparison_cpu(keys=True):
                 """
 
             xpos = '($1+%s)' % str(x)
+            xtic = "" if plotdef.custom_xtics else ":xtic(2)"
             plot_gpi += ("""\\
                 %s   using """ + xpos + """:($5+$3+$4+$7+$8+$6) :(.8)%s  with boxes fc 1 lw 1.5 """ + ("title 'idle'    " if add_title else 'notitle') + """, \\
                 ''   using """ + xpos + """:($3+$4+$7+$8+$6)    :(.8)    with boxes fc 2 lw 1.5 """ + ("title 'user'    " if add_title else 'notitle') + """, \\
@@ -145,7 +133,7 @@ def plot_comparison_cpu(keys=True):
                 ''   using """ + xpos + """:($7+$8+$7)          :(.8)    with boxes fc 4 lw 1.5 """ + ("title 'hiq'     " if add_title else 'notitle') + """, \\
                 ''   using """ + xpos + """:($8+$6)             :(.8)    with boxes fc 5 lw 1.5 """ + ("title 'softirqs'" if add_title else 'notitle') + """, \\
                 ''   using """ + xpos + """:($6)                :(.8)    with boxes fc 6 lw 1.5 """ + ("title 'iowait'  " if add_title else 'notitle') + """, \\
-                """) % ("$data_cpu_idl" + str(x), xtics)
+                """) % ("$data_cpu_idl" + str(x), xtic)
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
@@ -209,12 +197,6 @@ def plot_comparison_int_csw(y_logarithmic=False, keys=True):
             set ylabel "System stats\\n{/Times:Italic=10 Average values}"
             """ + add_scale(y_logarithmic)
 
-        if PlotAxis.is_custom_xtics(plotdef.x_axis):
-            gpi += """
-                # add xtics below, the empty list resets the tics
-                set xtics ()
-                """
-
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
@@ -222,13 +204,6 @@ def plot_comparison_int_csw(y_logarithmic=False, keys=True):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
             add_title = keys and is_first_set
-
-            xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(plotdef.x_axis):
-                xtics = ""
-                gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
-                    """
 
             def parse_int_csw(testcase_folder):
                 skip = 7
@@ -258,10 +233,11 @@ def plot_comparison_int_csw(y_logarithmic=False, keys=True):
                 """
 
             xpos = '($1+%s)' % str(x)
+            xtic = "" if plotdef.custom_xtics else ":xtic(2)"
             plot_gpi += ("""\\
                 %s   using """ + xpos + """:3%s  with linespoints lc 1 pt 7 ps 0.4 lw 1.5 """ + ("title 'interrupts'       " if add_title else 'notitle') + """, \\
                 ''   using """ + xpos + """:4    with linespoints lc 2 pt 7 ps 0.4 lw 1.5 """ + ("title 'context switches' " if add_title else 'notitle') + """, \\
-                """) % ("$data_int_csw" + str(x), xtics)
+                """) % ("$data_int_csw" + str(x), xtic)
 
         treeutil.walk_leaf(tree, leaf)
         gpi += """
