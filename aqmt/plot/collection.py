@@ -13,7 +13,7 @@ from . import treeutil
 
 def get_tmargin_base(tree):
     _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    return .65 * n_depth + 1
+    return .7 * n_depth + 1
 
 
 def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
@@ -42,22 +42,38 @@ def plot_labels(tree, plotdef):
         nonlocal first_titlelabel, gpi
         fontsize = fontsize = max(6, min(10, 11 - depth_sizes[depth] / 10))
 
+        ypos = 1.06 / pow(min(1.1, plotdef.y_scale), .2)
+        ypos += 0.06 * (n_depth - depth - 1) * pow(1/min(1.3, plotdef.y_scale), 2)
+
         if treenode['titlelabel'] != '' and depth not in first_titlelabel:
             first_titlelabel[depth] = False
             gpi += """
-                set label \"""" + treenode['titlelabel'] + """:\" at graph """ + str(xpos) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' right
+                set label \"""" + treenode['titlelabel'] + """:\" at \\
+                    graph """ + str(xpos) + """, \\
+                    graph """ + str(ypos) + """ \\
+                    font 'Times-Roman,""" + str(fontsize) + """pt' \\
+                    tc rgb 'black' right
                 """
 
         gpi += """
-            set label \"""" + treenode['title'] + """\" at first """ + str(x) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
+            set label \"""" + treenode['title'] + """\" at \\
+                first """ + str(x) + """, \\
+                graph """ + str(ypos) + """ \\
+                font 'Times-Roman,""" + str(fontsize) + """pt' \\
+                tc rgb 'black' left
             """
 
     treeutil.walk_tree_reverse(tree, branch)
 
     xlabel = collectionutil.get_xlabel(tree)
     if xlabel is not None:
+        ypos = -.07 / pow(plotdef.y_scale, 2)
         gpi += """
-            set label \"""" + xlabel + """:\" at graph """ + str(xpos) + """, graph -.07 font 'Times-Roman,10pt' tc rgb 'black' right
+            set label \"""" + xlabel + """:\" at \\
+                graph """ + str(xpos) + """, \\
+                graph """ + str(ypos) + """ \\
+                font 'Times-Roman,10pt' \\
+                tc rgb 'black' right
             """
 
     return gpi

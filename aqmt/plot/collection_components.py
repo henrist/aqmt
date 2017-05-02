@@ -208,7 +208,7 @@ def utilization_tags(y_logarithmic=False, keys=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'key_rows': math.ceil(len(titles_used)+1) / 4,
+            'key_rows': math.ceil((len(titles_used) + 1) / 4),
         }
 
     return plot
