@@ -44,7 +44,6 @@ def plot_labels(tree, plotdef, component, tmargin):
     def branch(treenode, x, depth, width):
         nonlocal first_titlelabel, gpi
         fontsize = max(6, min(10, 11 - depth_sizes[depth] / (pow(plotdef.x_scale, 4) * 12)))
-        print(fontsize)
 
         ypos = 1 + (0.04 + 0.04 * (n_depth - depth - 1)) * scale
 
