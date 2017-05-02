@@ -6,7 +6,7 @@ from . import treeutil
 from . import colors
 
 
-def utilization_total_only(y_logarithmic=False, keys=True):
+def utilization_total_only(y_logarithmic=False):
     """
     Plot graph of total utilization only
     """
@@ -19,7 +19,7 @@ def utilization_total_only(y_logarithmic=False, keys=True):
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
+            set ylabel "Total utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -28,7 +28,6 @@ def utilization_total_only(y_logarithmic=False, keys=True):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = keys and is_first_set
 
             gpi += """
                 $data_util""" + str(x) + """ << EOD
@@ -39,7 +38,7 @@ def utilization_total_only(y_logarithmic=False, keys=True):
             xpos = "($1+" + str(x) + ")"
             xtic = "" if plotdef.custom_xtics else ":xtic(2)"
 
-            plot_gpi += "$data_util" + str(x) + "      using " + xpos + ":3:10:6  with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
+            plot_gpi += "$data_util" + str(x) + "      using " + xpos + ":3:10:6  with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 notitle, \\\n"
             plot_gpi += "''                            using " + xpos + ":3" + xtic + "   with lines      lc rgb 'gray'         title '', \\\n"
 
         treeutil.walk_leaf(tree, leaf)
@@ -54,7 +53,7 @@ def utilization_total_only(y_logarithmic=False, keys=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'key_rows': 1 if keys else 0,
+            'key_rows': 0,
         }
 
     return plot
@@ -73,7 +72,7 @@ def utilization_queues(y_logarithmic=False, keys=True):
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
+            set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -102,19 +101,19 @@ def utilization_queues(y_logarithmic=False, keys=True):
             xtic = "" if plotdef.custom_xtics else ":xtic(2)"
 
             # total
-            plot_gpi += "$data_util" + str(x) + "      using " + x0 + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
+            plot_gpi += "$data_util" + str(x) + "      using " + x0 + ":3:10:6     with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('All flows' if add_title else '') + "', \\\n"
            #plot_gpi += "''                            using " + x0 + ":7          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                            using " + x0 + ":9          with points     ls 1 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                            using " + x0 + ":3          with lines      lc rgb 'gray'         title '', \\\n"
 
             # ecn
-            plot_gpi += "$data_util_ecn" + str(x) + "  using " + x1 + ":3:10:6" + xtic + "  with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN utilization' if add_title else '') + "', \\\n"
+            plot_gpi += "$data_util_ecn" + str(x) + "  using " + x1 + ":3:10:6" + xtic + "  with yerrorbars ls 2 pointtype 7 pointsize 0.4 lc rgb '" + colors.L4S + "' lw 1.5 title '" + ('ECN' if add_title else '') + "', \\\n"
            #plot_gpi += "''                            using " + x1 + ":7                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                            using " + x1 + ":9                    with points     ls 2 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                            using " + x1 + ":3                    with lines      lc rgb 'gray'         title '', \\\n"
 
             # nonecn
-            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:6  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN utilization' if add_title else '') + "', \\\n"
+            plot_gpi += "$data_util_nonecn" + str(x) + "  using " + x2 + ":3:10:6  with yerrorbars ls 3 pointtype 7 pointsize 0.4 lc rgb '" + colors.CLASSIC + "' lw 1.5 title '" + ('Non-ECN' if add_title else '') + "', \\\n"
            #plot_gpi += "''                               using " + x2 + ":7       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
            #plot_gpi += "''                               using " + x2 + ":9       with points     ls 3 pointtype 1 pointsize 0.4        title '', \\\n"
             plot_gpi += "''                               using " + x2 + ":3       with lines      lc rgb 'gray'         title '', \\\n"
@@ -150,7 +149,7 @@ def utilization_tags(y_logarithmic=False, keys=True):
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
+            set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -172,7 +171,7 @@ def utilization_tags(y_logarithmic=False, keys=True):
             # total
             xpos = "($1+" + str(x) + ")"
             xtic = "" if plotdef.custom_xtics else ":xtic(2)"
-            plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtic + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
+            plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtic + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('All flows' if add_title else '') + "', \\\n"
             plot_lines += "$dataUtil" + str(x) + "  using " + xpos + ":3                     with lines lc rgb 'gray'         title '', \\\n"
 
             tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', plotdef.x_axis)
@@ -204,10 +203,11 @@ def utilization_tags(y_logarithmic=False, keys=True):
             unset logscale y
             """
 
+        col_size = round(4 * pow(plotdef.x_scale, 1.2))
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'key_rows': math.ceil((len(titles_used) + 1) / 4),
+            'key_rows': math.ceil((len(titles_used) + 1) / col_size),
         }
 
     return plot
@@ -421,7 +421,7 @@ def window_rate_ratio(y_logarithmic=False, keys=True):
 
         gpi = """
             # window and rate ratio
-            set ylabel "Window and rate ratio\\n{/Times:Italic=10 Above 1 is advantage to ECN-flow}"
+            set ylabel "Window and rate ratio\\n{/Times:Italic=10 ECN over non-ECN}"
             set xtic offset first 0
 
             # line at y 1 (the perfect balance)
