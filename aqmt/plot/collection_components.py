@@ -1,3 +1,5 @@
+import math
+
 from .collection import get_tmargin_base
 from .common import PlotAxis, add_plot, add_scale
 from . import collectionutil
@@ -5,12 +7,12 @@ from . import treeutil
 from . import colors
 
 
-def utilization_total_only(y_logarithmic=False, titles=True):
+def utilization_total_only(y_logarithmic=False, keys=True):
     """
     Plot graph of total utilization only
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -21,7 +23,7 @@ def utilization_total_only(y_logarithmic=False, titles=True):
             set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -33,18 +35,18 @@ def utilization_total_only(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_util""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', plotdef.x_axis) + """
                 EOD
                 """
 
@@ -65,18 +67,18 @@ def utilization_total_only(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
 
 
-def utilization_queues(y_logarithmic=False, titles=True):
+def utilization_queues(y_logarithmic=False, keys=True):
     """
     Plot graph of utilization for total, ECN and non-ECN flows
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -87,7 +89,7 @@ def utilization_queues(y_logarithmic=False, titles=True):
             set ylabel "Utilization per queue [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -99,24 +101,24 @@ def utilization_queues(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_util""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', plotdef.x_axis) + """
                 EOD
                 $data_util_ecn""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_ecn_stats', plotdef.x_axis) + """
                 EOD
                 $data_util_nonecn""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_nonecn_stats', plotdef.x_axis) + """
                 EOD"""
 
             x0 = "($1+" + str(x) + "-" + str(gap/2) + ")"
@@ -153,18 +155,18 @@ def utilization_queues(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
 
 
-def utilization_tags(y_logarithmic=False, titles=True):
+def utilization_tags(y_logarithmic=False, keys=True):
     """
     Plot graph of utilization for classified (tagged) traffic
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -175,7 +177,7 @@ def utilization_tags(y_logarithmic=False, titles=True):
             set ylabel "Utilization of classified traffic [%]\\n{/Times:Italic=10 (p_{25}, mean, p_{75})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -190,18 +192,18 @@ def utilization_tags(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal plot_gpi, plot_lines, gpi, titles_used
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $dataUtil""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/util_stats', plotdef.x_axis) + """
                 EOD"""
 
             # total
@@ -209,7 +211,7 @@ def utilization_tags(y_logarithmic=False, titles=True):
             plot_gpi   += "$dataUtil" + str(x) + "  using " + xpos + ":3:9:7" + xtics + "    with yerrorbars ls 1 pointtype 7 pointsize 0.4 lc rgb '" + colors.AGGR + "' lw 1.5 title '" + ('Total utilization' if add_title else '') + "', \\\n"
             plot_lines += "$dataUtil" + str(x) + "  using " + xpos + ":3                     with lines lc rgb 'gray'         title '', \\\n"
 
-            tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', x_axis)
+            tagged_flows = collectionutil.merge_testcase_data_group(subtree, 'aggregated/util_tagged_stats', plotdef.x_axis)
             x_distance = gap / (len(tagged_flows) + 1)
 
             for i, (tagname, data) in enumerate(tagged_flows.items()):
@@ -230,11 +232,7 @@ def utilization_tags(y_logarithmic=False, titles=True):
 
         treeutil.walk_leaf(tree, leaf)
 
-        # TODO: move the logic of calculating tmargin to collection
-        # (which means we have to return the number of titles)
         gpi += """
-            set tmargin """ + str(get_tmargin_base(tree) + 1.8 + 1.3 * (len(titles_used)+1) / 4 - 1) + """
-
             plot \\
             """ + add_plot(plot_gpi + plot_lines) + """
 
@@ -245,18 +243,18 @@ def utilization_tags(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': math.ceil(len(titles_used)+1) / 4,
         }
 
     return plot
 
 
-def queueing_delay(y_logarithmic=False, titles=True):
+def queueing_delay(y_logarithmic=False, keys=True):
     """
     Plot graph of queueing delay
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -265,7 +263,7 @@ def queueing_delay(y_logarithmic=False, titles=True):
             #set xtic offset first .1
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -277,21 +275,21 @@ def queueing_delay(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_queue_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_ecn_stats', plotdef.x_axis) + """
                 EOD
                 $data_queue_nonecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/queue_nonecn_stats', plotdef.x_axis) + """
                 EOD"""
 
             ls_l4s = "ls 1 lc rgb '" + colors.L4S + "'"
@@ -321,27 +319,27 @@ def queueing_delay(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
 
 
-def window(y_logarithmic=False, titles=True):
+def window(y_logarithmic=False, keys=True):
     """
     Plot graph of estimated congestion window
 
     Note that this currently is the sum for all flows
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
             set ylabel "Est. window size {/Times:Italic=10 [1448 B]}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             """ + add_scale(y_logarithmic)
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -353,21 +351,21 @@ def window(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_window_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_ecn_stats', plotdef.x_axis) + """
                 EOD
                 $data_window_nonecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/window_nonecn_stats', plotdef.x_axis) + """
                 EOD"""
 
             ls_l4s = "ls 1 lc rgb '" + colors.L4S + "'"
@@ -397,18 +395,18 @@ def window(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
 
 
-def drops_marks(y_logarithmic=False, titles=True):
+def drops_marks(y_logarithmic=False, keys=True):
     """
     Plot graph of drop and marks for ECN and non-ECN queues
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -417,7 +415,7 @@ def drops_marks(y_logarithmic=False, titles=True):
             set xtic offset first 0
             """ + add_scale(y_logarithmic, range_from_log='.1', range_to='1<*')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -429,24 +427,24 @@ def drops_marks(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_d_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_ecn_stats', plotdef.x_axis) + """
                 EOD
                 $data_m_percent_ecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/marks_percent_ecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/marks_percent_ecn_stats', plotdef.x_axis) + """
                 EOD
                 $data_d_percent_nonecn_stats""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_nonecn_stats', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/drops_percent_nonecn_stats', plotdef.x_axis) + """
                 EOD"""
 
             x0 = "($1+" + str(x) + "-" + str(gap/2) + ")"
@@ -479,18 +477,18 @@ def drops_marks(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
 
 
-def window_rate_ratio(y_logarithmic=False, titles=True):
+def window_rate_ratio(y_logarithmic=False, keys=True):
     """
     Plot graph of window and rate ratio between ECN and non-ECN queues
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -503,7 +501,7 @@ def window_rate_ratio(y_logarithmic=False, titles=True):
             set arrow 100 from graph 0, first 1 to graph 1, first 1 nohead ls 100 back
             """ + add_scale(y_logarithmic, range_from='*<.5', range_from_log='.5', range_to='2<*')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -515,21 +513,21 @@ def window_rate_ratio(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             gpi += """
                 $data_window_ratio""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_window_ratio', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_window_ratio', plotdef.x_axis) + """
                 EOD
                 $data_rate_ratio""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_rate_ratio', x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, 'aggregated/ecn_over_nonecn_rate_ratio', plotdef.x_axis) + """
                 EOD
                 """
 
@@ -555,7 +553,7 @@ def window_rate_ratio(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot

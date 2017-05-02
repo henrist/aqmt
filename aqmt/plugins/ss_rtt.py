@@ -123,8 +123,8 @@ def plot_flow_rtt(initial_delay=0):
         return ret
 
 
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         xpos = "($1/1000-" + str(initial_delay) + ")"
 
         gpi = """
@@ -147,8 +147,6 @@ def plot_flow_rtt(initial_delay=0):
             stats $data_node_a using ($1/1000) nooutput
             set xrange [-""" + str(initial_delay) + """:STATS_max]
 
-            print STATS_max
-
             plot \\
                 1 lc rgb '#FFFF0000' notitle, \\
                 $data_node_a using """ + xpos + """:2               with lines   lc 1 lw 1.5 title 'Avg. RTT node A', \\
@@ -166,19 +164,19 @@ def plot_flow_rtt(initial_delay=0):
     return plot
 
 
-def plot_comparison_rtt(y_logarithmic=False, titles=True):
+def plot_comparison_rtt(y_logarithmic=False, keys=True):
     """
     Plot graph of interrupts and context switches
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
             set ylabel "RTT reported at sender\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic)
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -190,13 +188,13 @@ def plot_comparison_rtt(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             def parse_rtt(node, testcase_folder):
@@ -212,10 +210,10 @@ def plot_comparison_rtt(y_logarithmic=False, titles=True):
 
             gpi += """
                 $data_rtt_a""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, partial(parse_rtt, 'A'), x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, partial(parse_rtt, 'A'), plotdef.x_axis) + """
                 EOD
                 $data_rtt_b""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, partial(parse_rtt, 'B'), x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, partial(parse_rtt, 'B'), plotdef.x_axis) + """
                 EOD
                 """
 
@@ -244,7 +242,7 @@ def plot_comparison_rtt(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot

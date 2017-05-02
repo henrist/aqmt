@@ -31,6 +31,13 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT',
     Generate a plot for a single test case
     """
 
+    class Plotdef:
+        pass
+
+    plotdef = Plotdef()
+    plotdef.x_scale = x_scale
+    plotdef.y_scale = y_scale
+
     aggregated_samples_to_skip = get_aggregated_samples_to_skip(testfolder)
     n_samples = get_number_samples(testfolder)
 
@@ -82,7 +89,7 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT',
 
         for component in components:
             comp_result = component_container(
-                component(testfolder, y_scale=y_scale)
+                component(testfolder, plotdef)
             )
             result['gpi'] += """
                 set xrange [1:""" + str(n_samples) + """]

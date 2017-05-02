@@ -34,8 +34,8 @@ def pre_hook(testcase):
 
 
 def plot_flow_cpu():
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
             set format x "%g s"
@@ -71,13 +71,13 @@ def plot_flow_cpu():
 
 
 
-def plot_comparison_cpu(titles=True):
+def plot_comparison_cpu(keys=True):
     """
     Plot graph of cpu usage
     """
     y_logarithmic = False
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
@@ -85,7 +85,7 @@ def plot_comparison_cpu(titles=True):
             set style fill transparent solid 1 noborder
             """ + add_scale(y_logarithmic, range_to='100')
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -97,13 +97,13 @@ def plot_comparison_cpu(titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             def parse_cpu(testcase_folder):
@@ -133,7 +133,7 @@ def plot_comparison_cpu(titles=True):
 
             gpi += """
                 $data_cpu_idl""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, parse_cpu, x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, parse_cpu, plotdef.x_axis) + """
                 EOD
                 """
 
@@ -158,7 +158,7 @@ def plot_comparison_cpu(titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot
@@ -166,8 +166,8 @@ def plot_comparison_cpu(titles=True):
 
 
 def plot_flow_int_csw():
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
             set format x "%g s"
@@ -197,19 +197,19 @@ def plot_flow_int_csw():
     return plot
 
 
-def plot_comparison_int_csw(y_logarithmic=False, titles=True):
+def plot_comparison_int_csw(y_logarithmic=False, keys=True):
     """
     Plot graph of interrupts and context switches
     """
 
-    def plot(tree, x_axis, leaf_hook):
+    def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
             set ylabel "System stats\\n{/Times:Italic=10 Average values}"
             """ + add_scale(y_logarithmic)
 
-        if PlotAxis.is_custom_xtics(x_axis):
+        if PlotAxis.is_custom_xtics(plotdef.x_axis):
             gpi += """
                 # add xtics below, the empty list resets the tics
                 set xtics ()
@@ -221,13 +221,13 @@ def plot_comparison_int_csw(y_logarithmic=False, titles=True):
         def leaf(subtree, is_first_set, x):
             nonlocal gpi, plot_gpi
             leaf_hook(subtree, is_first_set, x)
-            add_title = titles and is_first_set
+            add_title = keys and is_first_set
 
             xtics = ":xtic(2)"
-            if PlotAxis.is_custom_xtics(x_axis):
+            if PlotAxis.is_custom_xtics(plotdef.x_axis):
                 xtics = ""
                 gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, x_axis) + """)
+                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
                     """
 
             def parse_int_csw(testcase_folder):
@@ -253,7 +253,7 @@ def plot_comparison_int_csw(y_logarithmic=False, titles=True):
 
             gpi += """
                 $data_int_csw""" + str(x) + """ << EOD
-                """ + collectionutil.merge_testcase_data(subtree, parse_int_csw, x_axis) + """
+                """ + collectionutil.merge_testcase_data(subtree, parse_int_csw, plotdef.x_axis) + """
                 EOD
                 """
 
@@ -274,7 +274,7 @@ def plot_comparison_int_csw(y_logarithmic=False, titles=True):
         return {
             'y_logarithmic': y_logarithmic,
             'gpi': gpi,
-            'titles': titles,
+            'key_rows': 1 if keys else 0,
         }
 
     return plot

@@ -12,8 +12,8 @@ def utilization_queues():
     command in gnuplot that don't support it.
     """
 
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
             set ylabel 'Utilization per queue [%]'
@@ -56,8 +56,8 @@ def utilization_queues():
 
 
 def rate_per_flow(y_logarithmic=False):
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         flows = OrderedDict({
             'ecn': [],
             'nonecn': []
@@ -103,8 +103,8 @@ def rate_per_flow(y_logarithmic=False):
 
 
 def queueing_delay(y_logarithmic=False):
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             unset bars
@@ -144,8 +144,8 @@ def queueing_delay(y_logarithmic=False):
 
 
 def drops_marks(y_logarithmic=False, show_total=False):
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         title = "Packets per sample" if not show_total else \
                 "Packets per sample \\n{/Times:Italic=10 Dotted lines are max}\\n{/Times:Italic=10 packets in the queue}"
         gpi = """
@@ -185,8 +185,8 @@ def drops_marks(y_logarithmic=False, show_total=False):
 
 
 def window(y_logarithmic=False):
-    def plot(testfolder, y_scale, **kwargs):
-        label_y_pos = -0.06 * (1/y_scale)
+    def plot(testfolder, plotdef):
+        label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
             set ylabel "Estimated window size\\n{/Times:Italic=10 [1448 B]}"
