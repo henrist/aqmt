@@ -10,10 +10,7 @@ from .common import PlotAxis, plot_header
 from . import collectionutil
 from . import treeutil
 
-
-def get_tmargin_base(tree):
-    _, _, n_depth, _ = collectionutil.get_tree_details(tree)
-    return .7 * n_depth + 1
+COMPONENT_HEIGHT = 7  # cm
 
 
 def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
@@ -25,10 +22,16 @@ def line_at_x_offset(xoffset, value_at_x, testmeta, x_axis):
     """
 
 
-def plot_labels(tree, plotdef):
+def plot_labels(tree, plotdef, component, tmargin):
     """
     Plot labels located above the graphs
     """
+
+    # attempt to calculate the height of the plot window and
+    NORMAL_HEIGHT = 18  # approx in character heights, same as tmargin unit
+    h = NORMAL_HEIGHT * plotdef.y_scale - tmargin - 1  # subtract 1 for xtics
+    scale = h / NORMAL_HEIGHT
+    scale = 1 / scale
 
     # calculate the position where the label is right aligned in the plot
     xpos = -0.005 * 28 / plotdef.width
@@ -40,10 +43,10 @@ def plot_labels(tree, plotdef):
 
     def branch(treenode, x, depth, width):
         nonlocal first_titlelabel, gpi
-        fontsize = fontsize = max(6, min(10, 11 - depth_sizes[depth] / 10))
+        fontsize = max(6, min(10, 11 - depth_sizes[depth] / (pow(plotdef.x_scale, 4) * 12)))
+        print(fontsize)
 
-        ypos = 1.06 / pow(min(1.1, plotdef.y_scale), .2)
-        ypos += 0.06 * (n_depth - depth - 1) * pow(1/min(1.3, plotdef.y_scale), 2)
+        ypos = 1 + (0.04 + 0.04 * (n_depth - depth - 1)) * scale
 
         if treenode['titlelabel'] != '' and depth not in first_titlelabel:
             first_titlelabel[depth] = False
@@ -51,7 +54,7 @@ def plot_labels(tree, plotdef):
                 set label \"""" + treenode['titlelabel'] + """:\" at \\
                     graph """ + str(xpos) + """, \\
                     graph """ + str(ypos) + """ \\
-                    font 'Times-Roman,""" + str(fontsize) + """pt' \\
+                    font ',""" + str(fontsize) + """pt' \\
                     tc rgb 'black' right
                 """
 
@@ -59,7 +62,7 @@ def plot_labels(tree, plotdef):
             set label \"""" + treenode['title'] + """\" at \\
                 first """ + str(x) + """, \\
                 graph """ + str(ypos) + """ \\
-                font 'Times-Roman,""" + str(fontsize) + """pt' \\
+                font ',""" + str(fontsize) + """pt' \\
                 tc rgb 'black' left
             """
 
@@ -67,35 +70,14 @@ def plot_labels(tree, plotdef):
 
     xlabel = collectionutil.get_xlabel(tree)
     if xlabel is not None:
-        ypos = -.07 / pow(plotdef.y_scale, 2)
+        ypos = -.06 * scale
         gpi += """
             set label \"""" + xlabel + """:\" at \\
                 graph """ + str(xpos) + """, \\
                 graph """ + str(ypos) + """ \\
-                font 'Times-Roman,10pt' \\
+                font ',10pt' \\
                 tc rgb 'black' right
             """
-
-    return gpi
-
-
-def common_header(tree, plotdef, component):
-    _, _, _, n_nodes = collectionutil.get_tree_details(tree)
-
-    tmargin = get_tmargin_base(tree)
-    if 'key_rows' in component and component['key_rows'] > 0:
-        tmargin += 1.8 + 1.3 * (component['key_rows'] - 1)
-
-    r = ("rotate by %s" % plotdef.rotate_xtics) if plotdef.rotate_xtics else ""
-    gpi = """
-        unset bars
-        set xtic """ + r + """ font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
-        set key above
-        set xrange [-2:""" + str(n_nodes + 1) + """]
-        set boxwidth 0.2
-        set tmargin """ + str(tmargin) + """
-        set lmargin 13
-        """
 
     return gpi
 
@@ -112,6 +94,55 @@ def plot_title(tree, n_components):
 
     return """
         set multiplot layout """ + str(n_components) + """,1 %s scale 1,1""" % title
+
+
+def component_container(component, tree, plotdef):
+    _, _, n_depth, n_nodes = collectionutil.get_tree_details(tree)
+
+    show_labels = not 'hide_labels' in component or not component['hide_labels']
+
+    tmargin = 1
+    if show_labels:
+        tmargin += .7 * n_depth
+    if 'key_rows' in component and component['key_rows'] > 0:
+        tmargin += 1.8 + 1.3 * (component['key_rows'] - 1)
+
+    r = ("rotate by %s" % plotdef.rotate_xtics) if plotdef.rotate_xtics else ""
+    gpi = """
+        unset bars
+        set xtic """ + r + """ font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
+        set key above
+        set xrange [-2:""" + str(n_nodes + 1) + """]
+        set boxwidth 0.2
+        set tmargin """ + str(tmargin) + """
+        set lmargin 13
+        """
+
+    if plotdef.custom_xtics:
+        gpi += """
+            # add xtics below, the empty list resets the tics
+            set xtics ()
+            """
+
+        def leaf(subtree, is_first_set, x):
+            nonlocal gpi
+            gpi += """
+                set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
+                """
+
+        treeutil.walk_leaf(tree, leaf)
+
+    if show_labels:
+        gpi += plot_labels(tree, plotdef, component, tmargin)
+
+    gpi += component['gpi']
+
+    gpi += """
+        unset label
+        """
+
+    component['gpi'] = gpi
+    return component
 
 
 def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
@@ -138,36 +169,18 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
 
     gpi = plot_header()
     gpi += plot_title(tree, len(components))
-    gpi += plot_labels(tree, plotdef)
 
     def leaf_hook(subtree, is_first_set, x):
         nonlocal gpi
         for xoffset in lines_at_x_offset:
             gpi += line_at_x_offset(x, xoffset, subtree, plotdef.x_axis)
 
-    def component_container(result):
-        if plotdef.custom_xtics:
-            xtics_gpi = """
-                # add xtics below, the empty list resets the tics
-                set xtics ()
-                """
-
-            def leaf(subtree, is_first_set, x):
-                nonlocal xtics_gpi
-                xtics_gpi += """
-                    set xtics add (""" + collectionutil.make_xtics(subtree, x, plotdef.x_axis) + """)
-                    """
-
-            treeutil.walk_leaf(tree, leaf)
-            result['gpi'] = xtics_gpi + result['gpi']
-
-        return result
-
     for component in components:
         res = component_container(
-            component(tree, plotdef, leaf_hook)
+            component(tree, plotdef, leaf_hook),
+            tree,
+            plotdef,
         )
-        gpi += common_header(tree, plotdef, res)
         gpi += res['gpi']
 
     gpi += """
@@ -176,5 +189,5 @@ def build_plot(tree, x_axis=PlotAxis.CATEGORY, components=None,
     return {
         'gpi': gpi,
         'width': '%fcm' % plotdef.width,
-        'height': '%fcm' % (plotdef.y_scale * 7 * len(components)),
+        'height': '%fcm' % (plotdef.y_scale * COMPONENT_HEIGHT * len(components)),
     }

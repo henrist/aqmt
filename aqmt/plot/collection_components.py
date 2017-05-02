@@ -1,6 +1,5 @@
 import math
 
-from .collection import get_tmargin_base
 from .common import add_plot, add_scale
 from . import collectionutil
 from . import treeutil
