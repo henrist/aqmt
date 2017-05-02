@@ -42,9 +42,6 @@ def plot_labels(tree, plotdef):
         nonlocal first_titlelabel, gpi
         fontsize = fontsize = max(6, min(10, 11 - depth_sizes[depth] / 10))
 
-        centering = False
-        x_offset = x + (width - 2) / 2 if centering else x
-
         if treenode['titlelabel'] != '' and depth not in first_titlelabel:
             first_titlelabel[depth] = False
             gpi += """
@@ -52,7 +49,7 @@ def plot_labels(tree, plotdef):
                 """
 
         gpi += """
-            set label \"""" + treenode['title'] + """\" at first """ + str(x_offset) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
+            set label \"""" + treenode['title'] + """\" at first """ + str(x) + """, graph """ + str(1.06 + 0.06 * (n_depth - depth - 1)) + """ font 'Times-Roman,""" + str(fontsize) + """pt' tc rgb 'black' left
             """
 
     treeutil.walk_tree_reverse(tree, branch)
