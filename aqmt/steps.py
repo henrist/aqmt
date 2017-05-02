@@ -50,7 +50,7 @@ def branch_custom(list, fn_testdef, fn_tag, fn_title, titlelabel=''):
     return step
 
 
-def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s', titlelabel='UDP Rate [Mb/s]'):
+def branch_define_udp_rate(rate_list, title='%g', titlelabel='UDP Rate [Mb/s]'):
     """
     This method don't actually change the setup, it only sets a variable
     that can be used when running the actual test.
@@ -66,7 +66,7 @@ def branch_define_udp_rate(rate_list, title='UDP-rate: %g Mb/s', titlelabel='UDP
     return branch
 
 
-def branch_repeat(num, title='Test %d', titlelabel='Test #'):
+def branch_repeat(num, title='%d', titlelabel='Test #'):
     def step(testdef):
         for i in range(num):
             yield {
@@ -77,7 +77,7 @@ def branch_repeat(num, title='Test %d', titlelabel='Test #'):
     return step
 
 
-def branch_rtt(rtt_list, title='RTT: %d ms', titlelabel='RTT'):
+def branch_rtt(rtt_list, title='%d', titlelabel='RTT'):
     def step(testdef):
         for rtt in rtt_list:
             testdef.testenv.testbed.rtt_servera = rtt
@@ -90,7 +90,7 @@ def branch_rtt(rtt_list, title='RTT: %d ms', titlelabel='RTT'):
     return step
 
 
-def branch_bitrate(bitrate_list, title='%d Mb/s', titlelabel='Linkrate'):
+def branch_bitrate(bitrate_list, title='%d', titlelabel='Linkrate [Mb/s]'):
     def step(testdef):
         for bitrate in bitrate_list:
             testdef.testenv.testbed.bitrate = bitrate * MBIT
