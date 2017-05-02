@@ -202,7 +202,7 @@ def html_index(level_order=None):
 
             out = build_html_index(tree, testdef.collection.folder)
 
-            with open(testdef.collection.folder + '/index.html', 'w') as f:
+            with open(testdef.collection.folder + '/analysis.html', 'w') as f:
                 f.write(out)
 
     return step
