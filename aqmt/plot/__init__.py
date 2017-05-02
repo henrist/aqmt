@@ -110,3 +110,15 @@ def plot_tests(folder):
 
     for testcase_folder in collectionutil.get_all_testcases_folders(tree):
         plot_test(testcase_folder)
+
+
+def hide_labels(component):
+    """
+    Higher order component to disable labels
+    """
+    def plot(*args, **kwargs):
+        result = component(*args, **kwargs)
+        result['hide_labels'] = True
+        return result
+
+    return plot
