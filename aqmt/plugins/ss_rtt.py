@@ -18,6 +18,7 @@ import os
 from aqmt import processes
 from aqmt.plot import collectionutil, treeutil
 from aqmt.plot.common import add_plot, add_scale
+from ..testenv import read_metadata
 
 
 def pre_hook(testcase):
@@ -85,23 +86,28 @@ def _generate_stats(numbers):
     return ' '.join(res)
 
 
-def _parse_rtt_of_test(testfolder, node):
+def _parse_rtt_of_test(testfolder, node, subtract_base_rtt):
     # make tables with sums
     table_n = {}
     table_rtt = {}
+
+    subtract = 0
+    if subtract_base_rtt:
+        metadata_kv, metadata_lines = read_metadata(testfolder + '/details')
+        subtract = float(metadata_kv['testbed_rtt_clients'])
+        subtract += float(metadata_kv['testbed_rtt_server%s' % node.lower()])
 
     with open(testfolder + '/rtt-%s.log' %  node) as f:
         for line in f:
             i, src, dst, rtt = line.split()
             i = int(i)
-            rtt = float(rtt)
 
             if i not in table_n:
                 table_n[i] = 0
                 table_rtt[i] = 0
 
             table_n[i] += 1
-            table_rtt[i] += rtt
+            table_rtt[i] += float(rtt) - subtract
 
     # make average within each sample
     ret = []
@@ -110,7 +116,7 @@ def _parse_rtt_of_test(testfolder, node):
     return ret
 
 
-def plot_flow_rtt(initial_delay=0):
+def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
     """
     Initial delay is number of seconds the recording started
     before the actual test started.
@@ -118,7 +124,7 @@ def plot_flow_rtt(initial_delay=0):
 
     def get_list(testfolder, node):
         ret = ''
-        for i, rtt in _parse_rtt_of_test(testfolder, node):
+        for i, rtt in _parse_rtt_of_test(testfolder, node, subtract_base_rtt):
             ret += '%s %f\n' % (i, rtt)
         return ret
 
@@ -127,10 +133,14 @@ def plot_flow_rtt(initial_delay=0):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         xpos = "($1/1000-" + str(initial_delay) + ")"
 
+        ylabel_extra = ''
+        if subtract_base_rtt:
+            ylabel_extra = '\\n{/Times:Italic=10 Excluding base RTT}'
+
         gpi = """
             set format y "%g"
             set format x "%g s"
-            set ylabel 'RTT reported at sender [ms]'
+            set ylabel 'RTT reported at sender [ms]""" + ylabel_extra + """'
             set style fill transparent solid 0.5 noborder
             set key above
             set yrange [0<*:*]
@@ -164,7 +174,7 @@ def plot_flow_rtt(initial_delay=0):
     return plot
 
 
-def plot_comparison_rtt(y_logarithmic=False, keys=True):
+def plot_comparison_rtt(y_logarithmic=False, keys=True, subtract_base_rtt=False):
     """
     Plot graph of interrupts and context switches
     """
@@ -172,8 +182,12 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
     def plot(tree, plotdef, leaf_hook):
         gap = collectionutil.get_gap(tree)
 
+        ylabel_extra = ''
+        if subtract_base_rtt:
+            ylabel_extra = '\\n{/Times:Italic=10 Excluding base RTT}'
+
         gpi = """
-            set ylabel "RTT reported at sender\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
+            set ylabel "RTT reported at sender""" + ylabel_extra + """\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic)
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -185,7 +199,7 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True):
             add_title = keys and is_first_set
 
             def parse_rtt(node, testcase_folder):
-                rtts = _parse_rtt_of_test(testcase_folder, node)
+                rtts = _parse_rtt_of_test(testcase_folder, node, subtract_base_rtt)
 
                 # take last half, so it is stable
                 rtts = rtts[int(len(rtts)/2):]
