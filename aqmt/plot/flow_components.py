@@ -102,7 +102,7 @@ def rate_per_flow(y_logarithmic=False):
     return plot
 
 
-def queueing_delay(y_logarithmic=False):
+def queueing_delay(y_logarithmic=False, show_p75=True):
     def plot(testfolder, plotdef):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
@@ -117,16 +117,22 @@ def queueing_delay(y_logarithmic=False):
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
-        # 1=sample_id 2=min 3=p25 4=average 5=p99 6=max
-        #             4     6     2         9    10
-        plot_gpi += "'" + testfolder + "/derived/queue_ecn_samplestats' using ($0+0.95):($2/1000):($4/1000):($9/1000) with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
+        # time average stddev min p1 p25 p50 p75 p99 max
+        #   1     2       3    4   5  6   7   8   9   10
+        # yerrorbars: x:y:ylow:yhigh
+        plot_gpi += "'" + testfolder + "/derived/queue_ecn_samplestats' using ($0+0.95):($2/1000):($6/1000):($9/1000) with yerrorbars ls 2 pointtype 7 ps 0.3 lw 1.5 title 'ECN packets', \\\n"
         plot_gpi += "''                                          using ($0+0.95):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
         plot_gpi += "''                                          using ($0+0.95):($10/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        plot_gpi += "''                                          using ($0+0.95):($6/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        plot_gpi += "'" + testfolder + "/derived/queue_nonecn_samplestats' using ($0+1.05):($2/1000):($4/1000):($9/1000) with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
+        plot_gpi += "''                                          using ($0+0.95):($4/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        if show_p75:
+            plot_gpi += "''                                      using ($0+0.95):($8/1000) with points  ls 2 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+
+        plot_gpi += "'" + testfolder + "/derived/queue_nonecn_samplestats' using ($0+1.05):($2/1000):($6/1000):($9/1000) with yerrorbars ls 3 pointtype 7 ps 0.3 lw 1.5 title 'Non-ECN packets', \\\n"
         plot_gpi += "''                                             using ($0+1.05):($2/1000) with lines lc rgb 'gray'         title '', \\\n"
         plot_gpi += "''                                             using ($0+1.05):($10/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
-        plot_gpi += "''                                             using ($0+1.05):($6/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        plot_gpi += "''                                             using ($0+1.05):($4/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
+        if show_p75:
+            plot_gpi += "''                                         using ($0+1.05):($8/1000) with points  ls 3 pointtype 1 ps 0.3 lw 1.5 title '', \\\n"
 
         gpi += """
             plot \\
