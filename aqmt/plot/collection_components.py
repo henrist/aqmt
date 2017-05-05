@@ -427,7 +427,7 @@ def window_rate_ratio(y_logarithmic=False, keys=True):
             # line at y 1 (the perfect balance)
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 1 to graph 1, first 1 nohead ls 100 back
-            """ + add_scale(y_logarithmic, range_from='*<.5', range_from_log='.5', range_to='2<*')
+            """ + add_scale(y_logarithmic, range_from='*<.5', range_from_log='.01', range_to='2<*')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
