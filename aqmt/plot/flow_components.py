@@ -142,11 +142,11 @@ def queueing_delay(y_logarithmic=False, show_p75=True):
     return plot
 
 
-def drops_marks(y_logarithmic=False, show_total=False):
+def drops_marks(y_logarithmic=False, show_total=True):
     def plot(testfolder, plotdef):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         title = "Packets per sample" if not show_total else \
-                "Packets per sample \\n{/Times:Italic=10 Dotted lines are max}\\n{/Times:Italic=10 packets in the queue}"
+                "Packets per sample \\n{/Times:Italic=10 Dotted lines are}\\n{/Times:Italic=10 sum dropped and sent}"
         gpi = """
             set format y "%g"
             set ylabel \"""" + title + """\"
@@ -163,8 +163,12 @@ def drops_marks(y_logarithmic=False, show_total=False):
         plot_gpi += "'" + testfolder + "/ta/drops_nonecn'   using ($0+1):3 with linespoints ls 3 pointtype 7 ps 0.2 lw 1.5 title 'Drops (Non-ECN)', \\\n"
 
         if show_total:
-            plot_gpi += "'" + testfolder + "/ta/packets_ecn'   using ($0+1):1 with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
-            plot_gpi += "'" + testfolder + "/ta/packets_nonecn'   using ($0+1):1 with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
+            gpi += """
+                packets_ecn = "'< paste """ + testfolder + """/ta/drops_ecn """ + testfolder + """/ta/packets_ecn'"
+                packets_nonecn = "'< paste """ + testfolder + """/ta/drops_nonecn """ + testfolder + """/ta/packets_nonecn'"
+                """
+            plot_gpi += "@packets_ecn     using ($0+1):($3+$4) with linespoints ls 8 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
+            plot_gpi += "@packets_nonecn  using ($0+1):($3+$4) with linespoints ls 3 dt 3 pointtype 7 ps 0.2 lw 1.5 title '', \\\n"
 
         gpi += """
             plot \\
