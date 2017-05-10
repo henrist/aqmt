@@ -137,6 +137,7 @@ def component_container(component, tree, plotdef):
     gpi += component['gpi']
 
     gpi += """
+        unset logscale y
         unset label
         """
 

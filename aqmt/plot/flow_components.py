@@ -17,8 +17,6 @@ def utilization_queues():
         gpi = """
             set format y "%g"
             set ylabel 'Utilization per queue [%]'
-            set style fill transparent solid 0.5 noborder
-            set key above
             """ + add_scale(y_logarithmic, range_from_log='1000', range_to='100<*') + """
 
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
@@ -43,9 +41,7 @@ def utilization_queues():
             plot \\
             """ + add_plot(plot_gpi) + """
 
-            unset label
             unset arrow 100
-            unset logscale y
             """
 
         return {
@@ -71,7 +67,6 @@ def rate_per_flow(y_logarithmic=False):
         gpi = """
             set format y "%.0f"
             set ylabel 'Rate per flow [b/s]'
-            set key right center inside
             """ + add_scale(y_logarithmic, range_from_log='1000', range_to='10000<*') + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
@@ -107,8 +102,6 @@ def queueing_delay(y_logarithmic=False, show_p75=True):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
-            unset bars
-            set key above
             set xtics out nomirror
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*') + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
@@ -157,9 +150,7 @@ def drops_marks(y_logarithmic=False, show_total=False):
         gpi = """
             set format y "%g"
             set ylabel \"""" + title + """\"
-            set bars
             set xtics in mirror
-            set key above
             """ + add_scale(y_logarithmic, range_to='10<*') + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
@@ -196,9 +187,7 @@ def window(y_logarithmic=False):
         gpi = """
             set format y "%g"
             set ylabel "Estimated window size\\n{/Times:Italic=10 [1448 B]}"
-            set bars
             set xtics in mirror
-            set key above
             """ + add_scale(y_logarithmic, range_to='10<*') + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """

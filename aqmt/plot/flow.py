@@ -82,6 +82,20 @@ def build_plot(testfolder, components, x_scale=1, y_scale=1, title='DEFAULT',
                 ('skip_sample_line' not in result or \
                     not result['skip_sample_line']):
             result = add_sample_line(result)
+
+        gpi = """
+            set key right center inside
+            """
+
+        gpi += result['gpi']
+
+        gpi += """
+            unset logscale y
+            unset label
+            """
+
+        result['gpi'] = gpi
+
         return result
 
     def merge_components():

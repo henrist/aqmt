@@ -40,8 +40,6 @@ def plot_flow_cpu():
             set format y "%g"
             set format x "%g s"
             set ylabel 'CPU usage'
-            set style fill transparent solid 1 noborder
-            set key above
             set yrange [0:100]
             set xrange [-2:*]
 
@@ -60,7 +58,6 @@ def plot_flow_cpu():
                 @dstat using ($0-2):($5)                 with filledcurve x1 lw 1.5 title 'iowait'
 
             set format y "%h"
-            unset label
             unset datafile
             """
         return {
@@ -82,7 +79,6 @@ def plot_comparison_cpu(keys=True):
 
         gpi = """
             set ylabel "CPU usage [%]"
-            set style fill transparent solid 1 noborder
             """ + add_scale(y_logarithmic, range_to='100')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -138,10 +134,7 @@ def plot_comparison_cpu(keys=True):
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + add_plot(plot_gpi) + """
-
-            unset logscale y
-            """
+            """ + add_plot(plot_gpi)
 
         return {
             'y_logarithmic': y_logarithmic,
@@ -160,7 +153,6 @@ def plot_flow_int_csw():
             set format y "%g"
             set format x "%g s"
             set ylabel 'System interrupts'
-            set key above
             set yrange [0:*]
             set xrange [-2:*]
 
@@ -175,7 +167,6 @@ def plot_flow_int_csw():
                 @dstat using ($0-2):9 with lines lw 1.5 title 'context switches'
 
             set format y "%h"
-            unset label
             unset datafile
             """
         return {
@@ -242,10 +233,7 @@ def plot_comparison_int_csw(y_logarithmic=False, keys=True):
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + add_plot(plot_gpi) + """
-
-            unset logscale y
-            """
+            """ + add_plot(plot_gpi)
 
         return {
             'y_logarithmic': y_logarithmic,

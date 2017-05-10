@@ -140,9 +140,7 @@ def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
         gpi = """
             set format y "%g"
             set format x "%g s"
-            set ylabel 'RTT reported at sender [ms]""" + ylabel_extra + """'
-            set style fill transparent solid 0.5 noborder
-            set key above
+            set ylabel "RTT reported at sender [ms]""" + ylabel_extra + """"
             set yrange [0<*:*]
 
             set label "Time:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
@@ -165,7 +163,6 @@ def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
                 $data_node_b using """ + xpos + """:2 smooth bezier with lines   lc 2 lw 3 notitle
 
             set format y "%h"
-            unset label
             """
         return {
             'gpi': gpi,
@@ -237,10 +234,7 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True, subtract_base_rtt=False)
         treeutil.walk_leaf(tree, leaf)
         gpi += """
             plot \\
-            """ + add_plot(plot_gpi) + """
-
-            unset logscale y
-            """
+            """ + add_plot(plot_gpi)
 
         return {
             'y_logarithmic': y_logarithmic,
