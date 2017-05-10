@@ -102,6 +102,21 @@ def branch_bitrate(bitrate_list, title='%d', titlelabel='Linkrate [Mb/s]'):
     return step
 
 
+def branch_udp_ect(ect_set):
+    def branch(testdef):
+        for node, ect, title, traffic_tag in ect_set:
+            testdef.udp_node = node
+            testdef.udp_ect = ect
+            testdef.udp_tag = traffic_tag
+
+            yield {
+                'tag': 'udp-%s' % ect,
+                'title': title,
+                'titlelabel': 'UDP ECN',
+            }
+    return branch
+
+
 def branch_runif(checks, titlelabel='Run if'):
     def step(testdef):
         for tag, fn, title in checks:
