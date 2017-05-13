@@ -229,13 +229,14 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True, subtract_base_rtt=False)
             plot_gpi += ("""\\
                 %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 1 %s, \\
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
-                %s   using """ + xpos + """:3:10:6    with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 2 %s, \\
+                %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 2 %s, \\
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
                 """) % (
                     "$data_rtt_a" + str(x),
                     xtic,
                     "title 'Server A' " if add_title else 'notitle',
                     "$data_rtt_b" + str(x),
+                    xtic,
                     "title 'Server B' " if add_title else 'notitle'
                 )
 
