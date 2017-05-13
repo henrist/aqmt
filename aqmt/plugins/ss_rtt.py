@@ -137,6 +137,15 @@ def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
         if subtract_base_rtt:
             ylabel_extra = '\\n{/Times:Italic=10 Excluding base RTT}'
 
+        data_a = get_list(testfolder, 'A')
+        data_b = get_list(testfolder, 'B')
+
+        x_max = max(
+            [0] +
+            [int(x.split()[0]) for x in data_a.splitlines()] +
+            [int(x.split()[0]) for x in data_b.splitlines()]
+        ) / 1000
+
         gpi = """
             set format y "%g"
             set format x "%g s"
@@ -146,14 +155,13 @@ def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
             set label "Time:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             $data_node_a << EOD
-            """ + get_list(testfolder, 'A') + """
+            """ + data_a + """
             EOD
             $data_node_b << EOD
-            """ + get_list(testfolder, 'B') + """
+            """ + data_b + """
             EOD
 
-            stats $data_node_a using ($1/1000) nooutput
-            set xrange [-""" + str(initial_delay) + """:STATS_max]
+            set xrange [-""" + str(initial_delay) + """:""" + str(x_max - initial_delay) + """]
 
             plot \\
                 1 lc rgb '#FFFF0000' notitle, \\
