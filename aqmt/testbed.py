@@ -31,7 +31,7 @@ class Testbed:
     ECN_INITIATE = 1
     ECN_ALLOW = 2
 
-    def __init__(self):
+    def __init__(self, duration=250*1000, sample_time=1000, idle=None):
         self.bitrate = 1000000
 
         self.rtt_clients = 0  # in ms
@@ -50,9 +50,11 @@ class Testbed:
         self.cc_b = 'cubic'
         self.ecn_b = self.ECN_ALLOW
 
-        self.ta_idle = None  # time to skip in seconds when building aggregated data, default to be RTT-dependent
-        self.ta_delay = 1000
-        self.ta_samples = 250
+        self.ta_delay = sample_time
+        self.ta_samples = math.ceil(duration / sample_time)
+
+        # time to skip in seconds when building aggregated data, default to be RTT-dependent
+        self.ta_idle = idle
 
         self.traffic_port = 5500
 
