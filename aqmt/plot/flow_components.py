@@ -2,22 +2,16 @@ from collections import OrderedDict
 from .common import add_plot, add_scale
 
 
-def utilization_queues():
-    y_logarithmic = False
-
+def utilization_queues(y_logarithmic=False):
     """
     Plot utilization per queue
-
-    We do not support logarithmic scale as we are using 'stats'
-    command in gnuplot that don't support it.
     """
 
     def plot(testfolder, plotdef):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
-            set ylabel 'Utilization per queue [%]'
-            """ + add_scale(y_logarithmic, range_from_log='1000', range_to='100<*') + """
+            set ylabel 'Utilization [%]'
 
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
@@ -25,6 +19,9 @@ def utilization_queues():
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
 
             stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
+
+            # make sure stats is run before logscale is set
+            """ + add_scale(y_logarithmic, range_to='100<*', range_to_log='105') + """
             """
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
