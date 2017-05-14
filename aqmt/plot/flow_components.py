@@ -94,13 +94,19 @@ def rate_per_flow(y_logarithmic=False):
     return plot
 
 
-def queueing_delay(y_logarithmic=False, show_p75=True):
+def queueing_delay(y_logarithmic=False, show_p75=True,
+        range_from=None, range_from_log=None,
+        range_to=None, range_to_log=None):
     def plot(testfolder, plotdef):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set ylabel "Queueing delay [ms]\\n{/Times:Italic=10 (min, p_{25}, mean, p_{99}, max)}"
             set xtics out nomirror
-            """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='5<*') + """
+            """ + add_scale(
+                y_logarithmic,
+                range_from=range_from, range_from_log=range_from_log,
+                range_to=range_to, range_to_log=range_to_log
+            ) + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
