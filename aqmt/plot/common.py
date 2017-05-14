@@ -14,8 +14,11 @@ def add_plot(gpi):
     return re.sub(r',(\s*\\?\s*\\?\s*)$', '\g<1>', gpi)
 
 
-def add_scale(y_logarithmic, range_from='0', range_from_log='1', range_to='1<*', range_to_log=None):
+def add_scale(y_logarithmic, range_from=None, range_from_log=None,
+        range_to=None, range_to_log=None):
     if y_logarithmic:
+        if range_from_log is None:
+            range_from_log = '1'
         if range_to_log is None:
             range_to_log = '*'
         return """
@@ -23,6 +26,10 @@ def add_scale(y_logarithmic, range_from='0', range_from_log='1', range_to='1<*',
             set yrange [""" + range_from_log + """:""" + range_to_log + """]
             """
     else:
+        if range_from is None:
+            range_from = '0'
+        if range_to is None:
+            range_to = '1<*'
         return """
             set yrange [""" + range_from + """:""" + range_to + """]
             """
