@@ -2,7 +2,7 @@ from collections import OrderedDict
 from .common import add_plot, add_scale
 
 
-def utilization_queues(y_logarithmic=False):
+def utilization_queues(y_logarithmic=False, total=True, ecn=True, flows=True):
     """
     Plot utilization per queue
     """
@@ -17,9 +17,14 @@ def utilization_queues(y_logarithmic=False):
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
+            """
 
-            stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
+        if flows:
+            gpi += """
+                stats '""" + testfolder + """/derived/util_tagged' using 1 nooutput
+                """
 
+        gpi += """
             # make sure stats is run before logscale is set
             """ + add_scale(y_logarithmic, range_to='100<*', range_to_log='105') + """
             """
@@ -27,12 +32,15 @@ def utilization_queues(y_logarithmic=False):
         # add hidden line to force autoscaling if using logarithimic plot without any points
         plot_gpi = " 1 lc rgb '#FFFF0000' notitle, \\\n"
 
-        #ls 1 lw 1.5 lc variable
-        plot_gpi += "'" + testfolder + "/derived/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', \\\n"
-        plot_gpi += "''                                   using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', \\\n"
-        plot_gpi += "''                                   using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', \\\n"
+        if total:
+            plot_gpi += "'" + testfolder + "/derived/util'    using ($0+1):($2*100)   with lines ls 1 lw 1.5 title 'Total utilization', \\\n"
 
-        plot_gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/derived/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1), \\\n"
+        if ecn:
+            plot_gpi += "''                                   using ($0+1):($3*100)   with lines ls 2 lw 1.5 title 'ECN utilization', \\\n"
+            plot_gpi += "''                                   using ($0+1):($4*100)   with lines ls 3 lw 1.5 title 'Non-ECN utilization', \\\n"
+
+        if flows:
+            plot_gpi += "for [IDX=0:STATS_blocks-1] '" + testfolder + "/derived/util_tagged' index IDX using ($1+1):($2*100) with lines ls (IDX+3) title columnheader(1), \\\n"
 
         gpi += """
             plot \\
