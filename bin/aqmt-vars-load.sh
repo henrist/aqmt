@@ -16,6 +16,6 @@ if ! [[ "$PATH" == *"aqmt"* ]]; then
 fi
 
 # add python library to PYTHONPATH if needed
-if ! [[ "$PYTONPATH" == *"aqmt"* ]]; then
-    export PYTHONPATH="$(dirname $(readlink -f $BASH_SOURCE)):$PYTHONPATH"
+if ! [[ "$PYTHONPATH" == *"aqmt"* ]]; then
+    export PYTHONPATH="$(dirname $(dirname $(readlink -f $BASH_SOURCE))):$PYTHONPATH"
 fi
