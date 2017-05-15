@@ -204,7 +204,7 @@ def window(y_logarithmic=False):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
-            set ylabel "Estimated window size\\n{/Times:Italic=10 [1448 B]}"
+            set ylabel "Window size\\n{/Times:Italic=10 (Estimated)}\\n{/Times:Italic=10 [1448 B]}"
             set xtics in mirror
             """ + add_scale(y_logarithmic, range_to='10<*') + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
