@@ -43,7 +43,7 @@ def plot_labels(tree, plotdef, component, tmargin):
 
     def branch(treenode, x, depth, width):
         nonlocal first_titlelabel, gpi
-        fontsize = max(6, min(10, 11 - depth_sizes[depth] / (pow(plotdef.x_scale, 4) * 12)))
+        fontsize = max(8, min(10, 11 - depth_sizes[depth] / (pow(plotdef.x_scale, 4) * 12)))
 
         ypos = 1 + (0.04 + 0.04 * (n_depth - depth - 1)) * scale
 
@@ -109,7 +109,7 @@ def component_container(component, tree, plotdef):
     r = ("rotate by %s" % plotdef.rotate_xtics) if plotdef.rotate_xtics else ""
     gpi = """
         unset bars
-        set xtic """ + r + """ font ',""" + str(max(5, min(10, 15 - n_nodes / 18))) + """'
+        set xtic """ + r + """ font ',""" + str(max(8, min(10, 15 - n_nodes / 18))) + """'
         set key above
         set xrange [-2:""" + str(n_nodes + 1) + """]
         set boxwidth 0.2
