@@ -15,7 +15,8 @@ from .treeutil import reorder_levels, skip_levels as tree_skip_levels
 import pprint
 import sys
 
-def plot_folder_compare(folder, level_order=None, skip_levels=0,
+def plot_folder_compare(folder, name='comparison',
+        level_order=None, skip_levels=0,
         components=None, title=None, subtitle=None, **kwargs):
     """
     - If title and/or subtitle is given they will override the value
@@ -45,7 +46,7 @@ def plot_folder_compare(folder, level_order=None, skip_levels=0,
         tree['subtitle'] = None if subtitle == False else subtitle
 
     export(
-        folder + '/comparison',
+        folder + '/' + name,
         collection.build_plot(
             tree,
             components=components,
