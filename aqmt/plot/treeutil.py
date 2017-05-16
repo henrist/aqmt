@@ -368,6 +368,13 @@ def skip_levels(tree, number_of_levels):
     Select the left node number_of_levels deep and
     return the new tree
     """
+
+    # allow to select specific branches in a three instead of default first
+    if type(number_of_levels) is list:
+        for branch in number_of_levels:
+            tree = tree['children'][branch]
+        return tree
+
     while number_of_levels > 0:
         tree = tree['children'][0]
         number_of_levels -= 1
