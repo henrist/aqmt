@@ -300,3 +300,22 @@ def get_xlabel(tree):
 
     treeutil.walk_leaf(tree, fn)
     return xlabel
+
+
+def pt_generator():
+    """
+    Building point styles for use in plots.
+    """
+    pool = [1,2,3,8,10,12,14]
+    i = 0
+    tags = {}
+
+    def get_val(tag):
+        nonlocal i
+        if tag not in tags:
+            tags[tag] = pool[i % len(pool)]
+            i += 1
+
+        return tags[tag]
+
+    return get_val

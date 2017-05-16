@@ -227,9 +227,9 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True, subtract_base_rtt=False)
             xtic = "" if plotdef.custom_xtics else ":xtic(2)"
 
             plot_gpi += ("""\\
-                %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 1 %s, \\
+                %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 8 ps 0.6 lw 1.5 lc 1 %s, \\
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
-                %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 7 ps 0.4 lw 1.5 lc 2 %s, \\
+                %s   using """ + xpos + """:3:10:6%s  with yerrorbars ls 3 pt 2 ps 0.6 lw 1.5 lc 2 %s, \\
                 ''   using """ + xpos + """:3         with lines      lc rgb 'gray' notitle, \\
                 """) % (
                     "$data_rtt_a" + str(x),
