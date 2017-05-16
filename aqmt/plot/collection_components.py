@@ -288,7 +288,7 @@ def window(y_logarithmic=False, keys=True):
         gap = collectionutil.get_gap(tree)
 
         gpi = """
-            set ylabel "Est. window size {/Times:Italic=10 [1448 B]}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
+            set ylabel "Window size\\n{/Times:Italic=10 (Estimated) [1448 B]}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             """ + add_scale(y_logarithmic)
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
@@ -351,7 +351,7 @@ def drops_marks(y_logarithmic=False, keys=True):
 
         gpi = """
             # drops and marks
-            set ylabel "Drop/marks per queue [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
+            set ylabel "Drop/marks [%]\\n{/Times=10 (of total traffic in the queue)}\\n{/Times:Italic=10 (p_1, p_{25}, mean, p_{75}, p_{99})}"
             set xtic offset first 0
             """ + add_scale(y_logarithmic, range_from_log='.1', range_to='1<*')
 

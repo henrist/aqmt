@@ -149,7 +149,7 @@ def plot_flow_rtt(initial_delay=0, subtract_base_rtt=False):
         gpi = """
             set format y "%g"
             set format x "%g s"
-            set ylabel "RTT reported at sender [ms]""" + ylabel_extra + """"
+            set ylabel "RTT at sender [ms]""" + ylabel_extra + """"
             set yrange [0<*:*]
 
             set label "Time:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
@@ -192,7 +192,7 @@ def plot_comparison_rtt(y_logarithmic=False, keys=True, subtract_base_rtt=False)
             ylabel_extra = '\\n{/Times:Italic=10 Excluding base RTT}'
 
         gpi = """
-            set ylabel "RTT reported at sender""" + ylabel_extra + """\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
+            set ylabel "RTT at sender""" + ylabel_extra + """\\n{/Times:Italic=10 [ms] (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic)
 
         # add hidden line to force autoscaling if using logarithimic plot without any points
