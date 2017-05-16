@@ -354,7 +354,7 @@ def reorder_levels(tree, level_order=None):
 
     swap_list = build_swap_list(level_order)
     if len(swap_list) > 0 and max(swap_list) >= levels:
-        raise Exception("Out of bound level: %d. Only have %d levels" % (max(swap_list, levels)))
+        raise Exception("Out of bound level: %d. Only have %d levels" % (max(swap_list), levels))
 
     # apply the calculated node swapping to the tree
     for level in swap_list:
