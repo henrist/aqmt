@@ -104,7 +104,7 @@ def component_container(component, tree, plotdef):
     if show_labels:
         tmargin += .7 * n_depth
     if 'key_rows' in component and component['key_rows'] > 0:
-        tmargin += 1.8 + 1.3 * (component['key_rows'] - 1)
+        tmargin += 1.5 + 1.1 * (component['key_rows'] - 1)
 
     r = ("rotate by %s" % plotdef.rotate_xtics) if plotdef.rotate_xtics else ""
     gpi = """

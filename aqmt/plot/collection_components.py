@@ -19,7 +19,7 @@ def utilization_total_only(y_logarithmic=False):
             set style line 100 lt 1 lc rgb 'black' lw 1.5 dt 3
             set arrow 100 from graph 0, first 100 to graph 1, first 100 nohead ls 100 back
 
-            set ylabel "Total utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
+            set ylabel "Utilization [%]\\n{/Times:Italic=10 (p_1, mean, p_{99})}"
             """ + add_scale(y_logarithmic, range_from_log='0.1', range_to='*<105', range_to_log='105')
 
         # add hidden line to force autoscaling if using logarithimic plot without any points

@@ -36,7 +36,7 @@ def add_scale(y_logarithmic, range_from=None, range_from_log=None,
 
 def plot_header():
     return """
-        set key spacing 1.3
+        set key spacing 1.1
         set grid xtics ytics ztics lw 1 lc rgb 'black'
 
         # from https://github.com/aschn/gnuplot-colorbrewer
