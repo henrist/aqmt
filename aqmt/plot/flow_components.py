@@ -199,14 +199,24 @@ def drops_marks(y_logarithmic=False, show_total=True):
     return plot
 
 
-def window(y_logarithmic=False):
+def window(y_logarithmic=False,
+        range_from=None, range_from_log=None,
+        range_to=None, range_to_log=None):
+
+    if range_to is None:
+        range_to = '10<*'
+
     def plot(testfolder, plotdef):
         label_y_pos = -0.06 * (1/plotdef.y_scale)
         gpi = """
             set format y "%g"
             set ylabel "Window size\\n{/Times:Italic=10 (Estimated)}\\n{/Times:Italic=10 [1448 B]}"
             set xtics in mirror
-            """ + add_scale(y_logarithmic, range_to='10<*') + """
+            """ + add_scale(
+                y_logarithmic,
+                range_from=range_from, range_from_log=range_from_log,
+                range_to=range_to, range_to_log=range_to_log
+            ) + """
             set label "Sample #:" at graph -0.01, graph """ + str(label_y_pos) + """ font 'Times-Roman,11pt' tc rgb 'black' right
             """
 
