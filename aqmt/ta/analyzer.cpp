@@ -17,7 +17,6 @@
 #include <inttypes.h>
 #include <strings.h>
 #include <fstream>
-#include <sys/stat.h>
 #include <vector>
 #include <math.h>
 #include <array>
@@ -43,7 +42,6 @@ public:
     double cv;
 };
 
-static void *pcapLoop(void *param);
 static void *printInfo(void *param);
 
 uint64_t getStamp()
@@ -54,20 +52,24 @@ uint64_t getStamp()
     return ((uint64_t)monotime.tv_sec) * US_PER_S + monotime.tv_nsec / NSEC_PER_US;
 }
 
-ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, uint32_t nrs)
+ThreadParam::ThreadParam( uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs)
 {
+    // initialize qdelay conversion table
+    for (int i = 0; i < QS_LIMIT; ++i) {
+        qdelay_decode_table[i] = qdelay_decode(i);
+    }
+
     db1 = new DataBlock();
     db2 = new DataBlock();
     db1->init();
     db1->start = getStamp();
-
-    m_descr = descr;
 
     pthread_mutexattr_t errorcheck;
     pthread_mutexattr_init(&errorcheck);
     pthread_mutex_init(&m_mutex, &errorcheck);
     m_sinterval = sinterval;
     m_folder = folder;
+    ipclass = ipc;
     m_nrs = nrs;
 
     packets_captured = 0;
@@ -75,6 +77,15 @@ ThreadParam::ThreadParam(pcap_t *descr, uint32_t sinterval, std::string folder, 
 
     quit = false;
     sample_id = 0;
+
+    // initialize pthread condition used to quit threads on interrupts
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init(&quit_cond, &attr);
+    pthread_mutex_init(&quit_lock, NULL);
+
+
 }
 
 void ThreadParam::swapDB(){ // called by printInfo
@@ -89,10 +100,7 @@ void ThreadParam::swapDB(){ // called by printInfo
 }
 
 // we need ThreadParam global to use it in the signal handler
-ThreadParam *tp;
-
-// table of qdelay values (no need to decode all the time..)
-int qdelay_decode_table[QS_LIMIT];
+static ThreadParam *tp;
 
 void signalHandler(int signum) {
     tp->quit = true;
@@ -149,6 +157,8 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     uint8_t ts = iph->tos;
     if ((ts & 3) == 3)
         mark = 1;
+    if (tp->ipclass)
+        ts = ntohl(iph->saddr);
 
     pthread_mutex_lock(&tp->m_mutex);
 
@@ -188,9 +198,9 @@ void processPacket(u_char *, const struct pcap_pkthdr *header, const u_char *buf
     pthread_mutex_unlock(&tp->m_mutex);
 }
 
-void openFileW(std::ofstream *file, std::string filename) {
-    *file = std::ofstream(filename.c_str());
-    if (!file->is_open()) {
+void openFileW(std::ofstream& file, std::string filename) {
+    file.open(filename.c_str());
+    if (!file.is_open()) {
         std::cerr << "Error opening file for writing: " << filename << std::endl;
         exit(1);
     }
@@ -212,7 +222,7 @@ void printStreamInfo(SrcDst sd)
     std::cout << IPtoString(sd.m_dstip) << ":" << sd.m_dstport;
 }
 
-int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::string &pcapfilter, uint32_t nrs)
+int setup_pcap(ThreadParam *param, char *dev, std::string &pcapfilter) 
 {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *descr;
@@ -226,38 +236,36 @@ int start_analysis(char *dev, std::string folder, uint32_t sinterval, std::strin
         mask = 0;
     }
 
-    descr = pcap_open_live(dev, BUFSIZ, 0, 1, errbuf);
+    param->m_descr = pcap_open_live(dev, BUFSIZ, 0, 1, errbuf);
 
-    if (descr == NULL) {
+    if (param->m_descr == NULL) {
         printf("pcap_open_live(): %s\n", errbuf);
         exit(1);
     }
 
-    if (pcap_compile(descr, &fp, pcapfilter.c_str(), 0, net) == -1) {
-        fprintf(stderr, "Couldn't parse filter: %s\n", pcap_geterr(descr));
+    if (pcap_compile(param->m_descr, &fp, pcapfilter.c_str(), 0, net) == -1) {
+        fprintf(stderr, "Couldn't parse filter: %s\n", pcap_geterr(param->m_descr));
         return(2);
     }
 
-    if (pcap_setfilter(descr, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter: %s\n", pcap_geterr(descr));
+    if (pcap_setfilter(param->m_descr, &fp) == -1) {
+        fprintf(stderr, "Couldn't install filter: %s\n", pcap_geterr(param->m_descr));
         return(2);
     }
+}
+void setThreadParam(ThreadParam *param)
+{
+    tp = param;
+}
 
-    mkdir(folder.c_str(), 0777);
-
+int start_analysis(ThreadParam *param)
+{
     pthread_t thread_id[2];
     pthread_attr_t attrs;
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_JOINABLE);
     int res;
-    tp = new ThreadParam(descr, sinterval, folder, nrs);
-
-    // initialize pthread condition used to quit threads on interrupts
-    pthread_condattr_t attr;
-    pthread_condattr_init(&attr);
-    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-    pthread_cond_init(&tp->quit_cond, &attr);
-    pthread_mutex_init(&tp->quit_lock, NULL);
+    setThreadParam(param);
 
     thread_id[0] = 0;
     res = pthread_create(&thread_id[0], &attrs, &pcapLoop, NULL);
@@ -380,24 +388,24 @@ void *printInfo(void *)
     // per sample
     printf("Output folder: %s\n", tp->m_folder.c_str());
 
-    std::ofstream f_packets_ecn;           openFileW(&f_packets_ecn,           tp->m_folder + "/packets_ecn");
-    std::ofstream f_packets_nonecn;        openFileW(&f_packets_nonecn,        tp->m_folder + "/packets_nonecn");
+    std::ofstream f_packets_ecn;           openFileW(f_packets_ecn,           tp->m_folder + "/packets_ecn");
+    std::ofstream f_packets_nonecn;        openFileW(f_packets_nonecn,        tp->m_folder + "/packets_nonecn");
 
-    std::ofstream f_queue_packets_ecn00;   openFileW(&f_queue_packets_ecn00,   tp->m_folder + "/queue_packets_ecn00");
-    std::ofstream f_queue_packets_ecn01;   openFileW(&f_queue_packets_ecn01,   tp->m_folder + "/queue_packets_ecn01");
-    std::ofstream f_queue_packets_ecn10;   openFileW(&f_queue_packets_ecn10,   tp->m_folder + "/queue_packets_ecn10");
-    std::ofstream f_queue_packets_ecn11;   openFileW(&f_queue_packets_ecn11,   tp->m_folder + "/queue_packets_ecn11");
-    std::ofstream f_queue_drops_ecn00;     openFileW(&f_queue_drops_ecn00,     tp->m_folder + "/queue_drops_ecn00");
-    std::ofstream f_queue_drops_ecn01;     openFileW(&f_queue_drops_ecn01,     tp->m_folder + "/queue_drops_ecn01");
-    std::ofstream f_queue_drops_ecn10;     openFileW(&f_queue_drops_ecn10,     tp->m_folder + "/queue_drops_ecn10");
-    std::ofstream f_queue_drops_ecn11;     openFileW(&f_queue_drops_ecn11,     tp->m_folder + "/queue_drops_ecn11");
+    std::ofstream f_queue_packets_ecn00;   openFileW(f_queue_packets_ecn00,   tp->m_folder + "/queue_packets_ecn00");
+    std::ofstream f_queue_packets_ecn01;   openFileW(f_queue_packets_ecn01,   tp->m_folder + "/queue_packets_ecn01");
+    std::ofstream f_queue_packets_ecn10;   openFileW(f_queue_packets_ecn10,   tp->m_folder + "/queue_packets_ecn10");
+    std::ofstream f_queue_packets_ecn11;   openFileW(f_queue_packets_ecn11,   tp->m_folder + "/queue_packets_ecn11");
+    std::ofstream f_queue_drops_ecn00;     openFileW(f_queue_drops_ecn00,     tp->m_folder + "/queue_drops_ecn00");
+    std::ofstream f_queue_drops_ecn01;     openFileW(f_queue_drops_ecn01,     tp->m_folder + "/queue_drops_ecn01");
+    std::ofstream f_queue_drops_ecn10;     openFileW(f_queue_drops_ecn10,     tp->m_folder + "/queue_drops_ecn10");
+    std::ofstream f_queue_drops_ecn11;     openFileW(f_queue_drops_ecn11,     tp->m_folder + "/queue_drops_ecn11");
 
-    std::ofstream f_rate_ecn;              openFileW(&f_rate_ecn,              tp->m_folder + "/rate_ecn");
-    std::ofstream f_rate_nonecn;           openFileW(&f_rate_nonecn,           tp->m_folder + "/rate_nonecn");
-    std::ofstream f_drops_ecn;             openFileW(&f_drops_ecn,             tp->m_folder + "/drops_ecn");
-    std::ofstream f_drops_nonecn;          openFileW(&f_drops_nonecn,          tp->m_folder + "/drops_nonecn");
-    std::ofstream f_marks_ecn;             openFileW(&f_marks_ecn,             tp->m_folder + "/marks_ecn");
-    std::ofstream f_rate;                  openFileW(&f_rate,                  tp->m_folder + "/rate");
+    std::ofstream f_rate_ecn;              openFileW(f_rate_ecn,              tp->m_folder + "/rate_ecn");
+    std::ofstream f_rate_nonecn;           openFileW(f_rate_nonecn,           tp->m_folder + "/rate_nonecn");
+    std::ofstream f_drops_ecn;             openFileW(f_drops_ecn,             tp->m_folder + "/drops_ecn");
+    std::ofstream f_drops_nonecn;          openFileW(f_drops_nonecn,          tp->m_folder + "/drops_nonecn");
+    std::ofstream f_marks_ecn;             openFileW(f_marks_ecn,             tp->m_folder + "/marks_ecn");
+    std::ofstream f_rate;                  openFileW(f_rate,                  tp->m_folder + "/rate");
 
     // first column in header contains the number of columns following
     f_queue_packets_ecn00 << QS_LIMIT;
@@ -412,14 +420,14 @@ void *printInfo(void *)
     // header row contains the queue delay this column represents
     // e.g. a cell value multiplied by this header cell yields queue delay in us
     for (int i = 0; i < QS_LIMIT; ++i) {
-        f_queue_packets_ecn00 << " " << qdelay_decode_table[i];
-        f_queue_packets_ecn01 << " " << qdelay_decode_table[i];
-        f_queue_packets_ecn10 << " " << qdelay_decode_table[i];
-        f_queue_packets_ecn11 << " " << qdelay_decode_table[i];
-        f_queue_drops_ecn00 << " " << qdelay_decode_table[i];
-        f_queue_drops_ecn01 << " " << qdelay_decode_table[i];
-        f_queue_drops_ecn10 << " " << qdelay_decode_table[i];
-        f_queue_drops_ecn11 << " " << qdelay_decode_table[i];
+        f_queue_packets_ecn00 << " " << tp->qdelay_decode_table[i];
+        f_queue_packets_ecn01 << " " << tp->qdelay_decode_table[i];
+        f_queue_packets_ecn10 << " " << tp->qdelay_decode_table[i];
+        f_queue_packets_ecn11 << " " << tp->qdelay_decode_table[i];
+        f_queue_drops_ecn00 << " " << tp->qdelay_decode_table[i];
+        f_queue_drops_ecn01 << " " << tp->qdelay_decode_table[i];
+        f_queue_drops_ecn10 << " " << tp->qdelay_decode_table[i];
+        f_queue_drops_ecn11 << " " << tp->qdelay_decode_table[i];
     }
     f_queue_packets_ecn00 << std::endl;
     f_queue_packets_ecn01 << std::endl;
@@ -473,7 +481,7 @@ void *printInfo(void *)
             if (tp->db2->qs.ecn00[i] > 0 || tp->db2->qs.ecn01[i] > 0 || tp->db2->qs.ecn10[i] > 0 || tp->db2->qs.ecn11[i] > 0) {
                 // TODO: can we make it less verbose? e.g. group by some intervals?
                 printf("%9.3f:  %8d %8d %8d %8d\n",
-                    (double) qdelay_decode_table[i] / 1000,
+                    (double) tp->qdelay_decode_table[i] / 1000,
                     tp->db2->qs.ecn00[i],
                     tp->db2->qs.ecn01[i],
                     tp->db2->qs.ecn10[i],
@@ -602,11 +610,11 @@ void *printInfo(void *)
     // write per flow stats
     // (we wait till here because we don't know how many
     //  flows there are before the test is finished)
-    std::ofstream f_flows_rate_ecn;     openFileW(&f_flows_rate_ecn,      tp->m_folder + "/flows_rate_ecn");
-    std::ofstream f_flows_rate_nonecn;  openFileW(&f_flows_rate_nonecn,   tp->m_folder + "/flows_rate_nonecn");
-    std::ofstream f_flows_drops_ecn;    openFileW(&f_flows_drops_ecn,     tp->m_folder + "/flows_drops_ecn");
-    std::ofstream f_flows_drops_nonecn; openFileW(&f_flows_drops_nonecn,  tp->m_folder + "/flows_drops_nonecn");
-    std::ofstream f_flows_marks_ecn;    openFileW(&f_flows_marks_ecn,     tp->m_folder + "/flows_marks_ecn");
+    std::ofstream f_flows_rate_ecn;     openFileW(f_flows_rate_ecn,      tp->m_folder + "/flows_rate_ecn");
+    std::ofstream f_flows_rate_nonecn;  openFileW(f_flows_rate_nonecn,   tp->m_folder + "/flows_rate_nonecn");
+    std::ofstream f_flows_drops_ecn;    openFileW(f_flows_drops_ecn,     tp->m_folder + "/flows_drops_ecn");
+    std::ofstream f_flows_drops_nonecn; openFileW(f_flows_drops_nonecn,  tp->m_folder + "/flows_drops_nonecn");
+    std::ofstream f_flows_marks_ecn;    openFileW(f_flows_marks_ecn,     tp->m_folder + "/flows_marks_ecn");
 
     // note: drop and mark numbers per flow don't really tell us much, as
     //       the numbers include whichever packet was handled before this
@@ -647,8 +655,8 @@ void *printInfo(void *)
     f_flows_marks_ecn.close();
 
     // save flow details
-    std::ofstream f_flows_ecn;    openFileW(&f_flows_ecn,    tp->m_folder + "/flows_ecn");
-    std::ofstream f_flows_nonecn; openFileW(&f_flows_nonecn, tp->m_folder + "/flows_nonecn");
+    std::ofstream f_flows_ecn;    openFileW(f_flows_ecn,    tp->m_folder + "/flows_ecn");
+    std::ofstream f_flows_nonecn; openFileW(f_flows_nonecn, tp->m_folder + "/flows_nonecn");
 
     for (auto const& kv: tp->fd_pf_ecn) {
         f_flows_ecn << getProtoRepr(kv.first.m_proto) << " " << IPtoString(kv.first.m_srcip) << " " << kv.first.m_srcport << " " << IPtoString(kv.first.m_dstip) << " " << kv.first.m_dstport << std::endl;
@@ -664,40 +672,4 @@ void *printInfo(void *)
     return 0;
 }
 
-void usage(int argc, char* argv[])
-{
-    printf("Usage: %s <dev> <pcap filter exp> <output folder> <sample interval (ms)> [nrsamples]\n", argv[0]);
-    printf("pcap filter: what to capture. ex.: \"ip and src net 10.187.255.0/24\"\n");
-    printf("If nrsamples is not specified, the samples will be recorded until interrupted\n");
-    exit(1);
-}
 
-int main(int argc, char **argv)
-{
-    char *dev;
-    uint32_t sinterval;
-    uint32_t nrs = 0;
-
-    // initialize qdelay conversion table
-    for (int i = 0; i < QS_LIMIT; ++i) {
-        qdelay_decode_table[i] = decodeQdelay(i);
-    }
-
-    if (argc < 5)
-        usage(argc, argv);
-
-    dev = argv[1];
-
-    std::string pcapfilter = argv[2];
-    std::string folder = argv[3];
-    sinterval = atoi(argv[4]);
-
-    std::cout << "pcap filter: " << pcapfilter << std::endl;
-
-    if (argc > 5)
-        nrs = atoi(argv[5]);
-
-    start_analysis(dev, folder, sinterval, pcapfilter, nrs);
-
-    return 0;
-}

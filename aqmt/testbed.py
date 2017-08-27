@@ -31,7 +31,7 @@ class Testbed:
     ECN_INITIATE = 1
     ECN_ALLOW = 2
 
-    def __init__(self, duration=250*1000, sample_time=1000, idle=None):
+    def __init__(self, duration=250*1000, sample_time=1000, ip_class='t', idle=None):
         self.bitrate = 1000000
 
         self.rtt_clients = 0  # in ms
@@ -51,6 +51,7 @@ class Testbed:
         self.ecn_b = self.ECN_ALLOW
 
         self.ta_delay = sample_time
+	self.ip_classification = ip_class
         self.ta_samples = math.ceil(duration / sample_time)
 
         # time to skip in seconds when building aggregated data, default to be RTT-dependent

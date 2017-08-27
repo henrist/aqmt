@@ -189,17 +189,17 @@ struct Results {
 struct Parameters *params = new Parameters();
 struct Results *res = new Results();
 
-void openFileR(std::ifstream *file, std::string filename) {
-    *file = std::ifstream(filename.c_str());
-    if (!file->is_open()) {
+void openFileR(std::ifstream& file, std::string filename) {
+    file.open(filename.c_str());
+    if (!file.is_open()) {
         std::cerr << "Error opening file for reading: " << filename << std::endl;
         exit(1);
     }
 }
 
-void openFileW(std::ofstream *file, std::string filename) {
-    *file = std::ofstream(filename.c_str());
-    if (!file->is_open()) {
+void openFileW(std::ofstream& file, std::string filename) {
+    file.open(filename.c_str());
+    if (!file.is_open()) {
         std::cerr << "Error opening file for writing: " << filename << std::endl;
         exit(1);
     }
@@ -207,7 +207,7 @@ void openFileW(std::ofstream *file, std::string filename) {
 
 void writeToFile(std::string filename, std::string data) {
     std::ofstream file;
-    openFileW(&file, params->folder + "/" + filename);
+    openFileW(file, params->folder + "/" + filename);
     file << data;
     file.close();
 }
@@ -225,8 +225,8 @@ void writeStatistics(std::string filename, Statistics *stats) {
 
 void readFileMarks(std::string filename_marks, Statistics *stats, std::string filename_tot) {
     std::ifstream infile_marks, infile_tot;
-    openFileR(&infile_marks, filename_marks);
-    openFileR(&infile_tot, filename_tot);
+    openFileR(infile_marks, filename_marks);
+    openFileR(infile_tot, filename_tot);
 
     std::vector<double> *samples = new std::vector<double>();
 
@@ -273,8 +273,8 @@ void readFileMarks(std::string filename_marks, Statistics *stats, std::string fi
 
 void readFileDrops(std::string filename_drops, Statistics *stats, std::string filename_tot) {
     std::ifstream infile_drops, infile_tot;
-    openFileR(&infile_drops, filename_drops);
-    openFileR(&infile_tot, filename_tot);
+    openFileR(infile_drops, filename_drops);
+    openFileR(infile_tot, filename_tot);
 
     std::vector<double> *samples = new std::vector<double>();
 
@@ -325,7 +325,7 @@ void readFileDrops(std::string filename_drops, Statistics *stats, std::string fi
 
 void readFileRate(std::string filename, Statistics *stats_rate, Statistics *stats_win, double avg_queue, double rtt) {
     std::ifstream infile;
-    openFileR(&infile, filename);
+    openFileR(infile, filename);
 
     std::vector<double> *samples_rate = new std::vector<double>();
     std::vector<double> *samples_win = new std::vector<double>();
@@ -379,8 +379,8 @@ void getSamplesUtilization() {
     std::string filename_nonecn = params->folder + "/ta/rate_nonecn";
 
     std::ifstream infile_ecn, infile_nonecn;
-    openFileR(&infile_ecn, filename_ecn);
-    openFileR(&infile_nonecn, filename_nonecn);
+    openFileR(infile_ecn, filename_ecn);
+    openFileR(infile_nonecn, filename_nonecn);
 
     std::vector<double> *samples_ecn = new std::vector<double>();
     std::vector<double> *samples_nonecn = new std::vector<double>();
@@ -434,7 +434,7 @@ void getSamplesUtilization() {
 
 void readFileQS(std::string filename, Statistics *stats) {
     std::ifstream infile;
-    openFileR(&infile, filename);
+    openFileR(infile, filename);
 
     std::vector<double> *samples = new std::vector<double>();
 

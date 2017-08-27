@@ -3,17 +3,17 @@
 #include <vector>
 #include <iostream>
 
-void openFileR(std::ifstream *file, std::string filename) {
-    *file = std::ifstream(filename.c_str());
-    if (!file->is_open()) {
+void openFileR(std::ifstream& file, std::string filename) {
+    file.open(filename.c_str());
+    if (!file.is_open()) {
         std::cerr << "Error opening file for reading: " << filename << std::endl;
         exit(1);
     }
 }
 
-void openFileW(std::ofstream *file, std::string filename) {
-    *file = std::ofstream(filename.c_str());
-    if (!file->is_open()) {
+void openFileW(std::ofstream& file, std::string filename) {
+    file.open(filename.c_str());
+    if (!file.is_open()) {
         std::cerr << "Error opening file for writing: " << filename << std::endl;
         exit(1);
     }
@@ -23,7 +23,7 @@ void readFile(std::string filename, std::vector<uint64_t> **header,
     std::vector<uint64_t> **values, int samples_to_skip)
 {
     std::ifstream infile;
-    openFileR(&infile, filename);
+    openFileR(infile, filename);
 
     // Format of file:
     // Header row: <number of columns> <value 1 header> <value 2 header> ...
@@ -75,8 +75,8 @@ void readFile(std::string filename, std::vector<uint64_t> **header,
 
 void writePdfCdf(std::string filename_pdf, std::string filename_cdf, std::vector<uint64_t> *header, std::vector<uint64_t> *sent, std::vector<uint64_t> *drops) {
     std::ofstream f_pdf, f_cdf;
-    openFileW(&f_pdf, filename_pdf);
-    openFileW(&f_cdf, filename_cdf);
+    openFileW(f_pdf, filename_pdf);
+    openFileW(f_cdf, filename_cdf);
 
     // Columns in the output:
     // (one row for each queue delay)

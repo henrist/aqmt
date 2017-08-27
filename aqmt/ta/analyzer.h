@@ -12,6 +12,10 @@
 
 #define QS_LIMIT 2048
 #define PDF_UPPERLIM 500
+#define NSEC_PER_SEC 1000000000UL
+#define NSEC_PER_MS 1000000UL
+#define US_PER_S 1000000UL
+#define NSEC_PER_US 1000UL
 
 struct SrcDst {
 public:
@@ -120,6 +124,9 @@ public:
 
 struct ThreadParam {
 public:
+    // table of qdelay values (no need to decode all the time..)
+    int qdelay_decode_table[QS_LIMIT];
+    
     uint64_t packets_captured;
     uint64_t packets_processed;
     uint64_t start;
@@ -129,10 +136,11 @@ public:
     pcap_t* m_descr;
     uint32_t m_sinterval;
     std::string m_folder;
+    bool ipclass;
     uint32_t m_nrs;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_ecn;
     std::map<SrcDst,std::vector<FlowData>> fd_pf_nonecn;
-    ThreadParam(pcap_t* descr, uint32_t sinterval, std::string folder, uint32_t nrs);
+    ThreadParam(uint32_t sinterval, std::string folder, bool ipc, uint32_t nrs);
     void swapDB();
     volatile bool quit;
     pthread_cond_t quit_cond;
@@ -142,6 +150,12 @@ public:
 };
 
 uint64_t getStamp();
-int start_analysis(char *dev, char *folder, uint32_t sinterval, std::string &pcapfilter, uint32_t nrs);
+
+void *pcapLoop(void *);
+int setup_pcap(ThreadParam *param, char *dev, std::string &pcapfilter);
+int start_analysis(ThreadParam *param);
+void processFD();
+void wait(uint64_t sleep_ns);
+void setThreadParam(ThreadParam *param);
 
 #endif // ANALYSIS_H
