@@ -405,6 +405,7 @@ void *printInfo(void *)
     std::ofstream f_drops_ecn;             openFileW(f_drops_ecn,             tp->m_folder + "/drops_ecn");
     std::ofstream f_drops_nonecn;          openFileW(f_drops_nonecn,          tp->m_folder + "/drops_nonecn");
     std::ofstream f_marks_ecn;             openFileW(f_marks_ecn,             tp->m_folder + "/marks_ecn");
+    std::ofstream f_marks_nonecn;          openFileW(f_marks_nonecn,             tp->m_folder + "/marks_nonecn");
     std::ofstream f_rate;                  openFileW(f_rate,                  tp->m_folder + "/rate");
 
     // first column in header contains the number of columns following
@@ -513,6 +514,7 @@ void *printInfo(void *)
         f_drops_ecn    << tp->sample_id << " " << time_ms;
         f_drops_nonecn << tp->sample_id << " " << time_ms;
         f_marks_ecn    << tp->sample_id << " " << time_ms;
+	f_marks_nonecn << tp->sample_id << " " << time_ms;
         f_rate         << tp->sample_id << " " << time_ms;
 
         processFD();
@@ -522,6 +524,7 @@ void *printInfo(void *)
         uint64_t drops_ecn = 0;
         uint64_t drops_nonecn = 0;
         uint64_t marks_ecn = 0;
+	uint64_t marks_nonecn = 0;
 
         for (auto const& val: tp->fd_pf_ecn) {
             rate_ecn += val.second.at(tp->sample_id).rate;
@@ -536,10 +539,12 @@ void *printInfo(void *)
         for (auto const& val: tp->fd_pf_nonecn) {
             rate_nonecn += val.second.at(tp->sample_id).rate;
             drops_nonecn += val.second.at(tp->sample_id).drops;
+	    marks_nonecn += val.second.at(tp->sample_id).marks;
         }
 
         f_rate_nonecn << " " << rate_nonecn;
         f_drops_nonecn << " " << drops_nonecn;
+	f_marks_nonecn << " " << marks_nonecn;
 
         f_rate << " " << (rate_ecn + rate_nonecn);
 
@@ -549,6 +554,7 @@ void *printInfo(void *)
         f_drops_ecn << std::endl;
         f_drops_nonecn << std::endl;
         f_marks_ecn << std::endl;
+	f_marks_nonecn << std::endl;
 
         f_packets_ecn << tp->db2->tot_packets_ecn << std::endl;
         f_packets_nonecn << tp->db2->tot_packets_nonecn << std::endl;
@@ -615,6 +621,7 @@ void *printInfo(void *)
     std::ofstream f_flows_drops_ecn;    openFileW(f_flows_drops_ecn,     tp->m_folder + "/flows_drops_ecn");
     std::ofstream f_flows_drops_nonecn; openFileW(f_flows_drops_nonecn,  tp->m_folder + "/flows_drops_nonecn");
     std::ofstream f_flows_marks_ecn;    openFileW(f_flows_marks_ecn,     tp->m_folder + "/flows_marks_ecn");
+    std::ofstream f_flows_marks_nonecn; openFileW(f_flows_marks_nonecn,  tp->m_folder + "/flows_marks_nonecn");
 
     // note: drop and mark numbers per flow don't really tell us much, as
     //       the numbers include whichever packet was handled before this
@@ -628,6 +635,7 @@ void *printInfo(void *)
 
         f_flows_rate_nonecn << i << " " << tp->sample_times[i];
         f_flows_drops_nonecn << i << " " << tp->sample_times[i];
+	f_flows_marks_nonecn << i << " " << tp->sample_times[i];
 
         for (auto const& kv: tp->fd_pf_ecn) {
             f_flows_rate_ecn << " " << kv.second.at(i).rate;
@@ -638,6 +646,7 @@ void *printInfo(void *)
         for (auto const& kv: tp->fd_pf_nonecn) {
             f_flows_rate_nonecn << " " << kv.second.at(i).rate;
             f_flows_drops_nonecn << " " << kv.second.at(i).drops;
+	    f_flows_marks_nonecn << " " << kv.second.at(i).marks;
         }
 
         f_flows_rate_ecn << std::endl;
@@ -646,12 +655,14 @@ void *printInfo(void *)
 
         f_flows_rate_nonecn << std::endl;
         f_flows_drops_nonecn << std::endl;
+	f_flows_marks_nonecn << std::endl;
     }
 
     f_flows_rate_ecn.close();
     f_flows_rate_nonecn.close();
     f_flows_drops_ecn.close();
     f_flows_drops_nonecn.close();
+    f_flows_marks_ecn.close();
     f_flows_marks_ecn.close();
 
     // save flow details
