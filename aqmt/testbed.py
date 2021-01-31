@@ -51,7 +51,7 @@ class Testbed:
         self.ecn_b = self.ECN_ALLOW
 
         self.ta_delay = sample_time
-	self.ip_classification = ip_class
+        self.ip_classification = ip_class
         self.ta_samples = math.ceil(duration / sample_time)
 
         # time to skip in seconds when building aggregated data, default to be RTT-dependent
