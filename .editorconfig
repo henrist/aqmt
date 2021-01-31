@@ -11,7 +11,7 @@ charset = utf-8
 indent_size = 2
 
 # use kernel code style
-[sch*/**.{c,h},common/*.{c,h}]
+[{sch*/**.{c,h},common/*.{c,h}}]
 indent_size = 8
 indent_style = tab
 trim_trailing_whitespace = true
